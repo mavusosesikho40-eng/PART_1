@@ -1,5 +1,7 @@
 # Subscription Tracker
 
+[![Tests](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/tests.yml/badge.svg)](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/tests.yml)
+
 A Java console app for keeping track of your subscriptions — what they cost,
 how often you pay, and when the next payment is due.
 
@@ -88,6 +90,9 @@ never committed.
 ## Running the tests
 
 The tests are JUnit 4 tests in `test/subscriptiontracker/`.
+
+They also run automatically on GitHub for every pull request and every push to `master`
+(see `.github/workflows/tests.yml`); the result shows as a check on the pull request.
 
 - **NetBeans:** **Run → Test Project** (Alt+F6). If NetBeans reports a missing JUnit or Hamcrest
   library, right-click the project and choose **Resolve Project Problems** to download it.
