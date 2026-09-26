@@ -18,6 +18,7 @@ import java.util.Scanner;
 public class SubscriptionTracker {
 
     private static final String DATA_FILE = "subscriptions.txt";
+    private static final String CSV_FILE = "subscriptions.csv";
 
     private final SubscriptionManager manager = new SubscriptionManager();
     private final SubscriptionStorage storage;
@@ -52,6 +53,7 @@ public class SubscriptionTracker {
                 case "5" -> upcomingPayments();
                 case "6" -> spendingSummary();
                 case "7" -> searchByCategory();
+                case "8" -> exportToCsv();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -70,6 +72,7 @@ public class SubscriptionTracker {
         System.out.println("5. Upcoming payments");
         System.out.println("6. Spending summary");
         System.out.println("7. Search by category");
+        System.out.println("8. Export to CSV");
         System.out.println("0. Exit");
     }
 
@@ -198,6 +201,22 @@ public class SubscriptionTracker {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         System.out.println(matches.size() + " found. Monthly: " + money(monthly)
                 + "  Yearly: " + money(yearly));
+    }
+
+    private void exportToCsv() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions to export.");
+            return;
+        }
+        String name = readText("File to export to", CSV_FILE);
+        try {
+            Path file = Path.of(name);
+            CsvExporter.export(manager.getAll(), file);
+            System.out.println("Exported " + manager.getAll().size() + " subscription(s) to "
+                    + file.toAbsolutePath());
+        } catch (IOException | RuntimeException e) {
+            System.out.println("Could not export to " + name + ": " + e.getMessage());
+        }
     }
 
     // ---- Display helpers ----
