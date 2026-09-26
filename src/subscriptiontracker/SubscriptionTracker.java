@@ -54,12 +54,7 @@ public class SubscriptionTracker {
                 case "6" -> spendingSummary();
                 case "7" -> searchByCategory();
                 case "8" -> exportToCsv();
-                case "9" -> sortByCost();
-                case "10" -> sortByNextPayment();
-                case "11" -> sortByName();
-                case "12" -> sortByCategory();
-                case "13" -> sortByCycle();
-                case "14" -> sortById();
+                case "9" -> sortSubscriptions();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -79,12 +74,7 @@ public class SubscriptionTracker {
         System.out.println("6. Spending summary");
         System.out.println("7. Search by category");
         System.out.println("8. Export to CSV");
-        System.out.println("9. Sort by cost");
-        System.out.println("10. Sort by next payment date");
-        System.out.println("11. Sort by name");
-        System.out.println("12. Sort by category");
-        System.out.println("13. Sort by billing cycle");
-        System.out.println("14. Sort by ID");
+        System.out.println("9. Sort subscriptions");
         System.out.println("0. Exit");
     }
 
@@ -231,11 +221,34 @@ public class SubscriptionTracker {
         }
     }
 
-    private void sortByCost() {
+    private void sortSubscriptions() {
         if (manager.isEmpty()) {
             System.out.println("You have no subscriptions yet.");
             return;
         }
+        System.out.println("Sort by:");
+        System.out.println("  1. Cost per month");
+        System.out.println("  2. Next payment date");
+        System.out.println("  3. Name");
+        System.out.println("  4. Category");
+        System.out.println("  5. Billing cycle");
+        System.out.println("  6. ID");
+        String choice = prompt("Sort by (blank to cancel)");
+        if (choice == null || choice.isEmpty()) {
+            return;
+        }
+        switch (choice) {
+            case "1" -> sortByCost();
+            case "2" -> sortByNextPayment();
+            case "3" -> sortByName();
+            case "4" -> sortByCategory();
+            case "5" -> sortByCycle();
+            case "6" -> sortById();
+            default -> System.out.println("Please choose 1-6.");
+        }
+    }
+
+    private void sortByCost() {
         System.out.println("  1. Most expensive first");
         System.out.println("  2. Cheapest first");
         String choice = prompt("Order [1]");
@@ -256,10 +269,6 @@ public class SubscriptionTracker {
     }
 
     private void sortByNextPayment() {
-        if (manager.isEmpty()) {
-            System.out.println("You have no subscriptions yet.");
-            return;
-        }
         System.out.println("  1. Soonest first");
         System.out.println("  2. Latest first");
         String choice = prompt("Order [1]");
@@ -280,10 +289,6 @@ public class SubscriptionTracker {
     }
 
     private void sortByName() {
-        if (manager.isEmpty()) {
-            System.out.println("You have no subscriptions yet.");
-            return;
-        }
         System.out.println("  1. A to Z");
         System.out.println("  2. Z to A");
         String choice = prompt("Order [1]");
@@ -296,10 +301,6 @@ public class SubscriptionTracker {
     }
 
     private void sortByCategory() {
-        if (manager.isEmpty()) {
-            System.out.println("You have no subscriptions yet.");
-            return;
-        }
         System.out.println("  1. A to Z");
         System.out.println("  2. Z to A");
         String choice = prompt("Order [1]");
@@ -312,10 +313,6 @@ public class SubscriptionTracker {
     }
 
     private void sortByCycle() {
-        if (manager.isEmpty()) {
-            System.out.println("You have no subscriptions yet.");
-            return;
-        }
         System.out.println("  1. Shortest first (Weekly to Yearly)");
         System.out.println("  2. Longest first (Yearly to Weekly)");
         String choice = prompt("Order [1]");
@@ -328,10 +325,6 @@ public class SubscriptionTracker {
     }
 
     private void sortById() {
-        if (manager.isEmpty()) {
-            System.out.println("You have no subscriptions yet.");
-            return;
-        }
         System.out.println("  1. Lowest first (oldest added first)");
         System.out.println("  2. Highest first (newest added first)");
         String choice = prompt("Order [1]");

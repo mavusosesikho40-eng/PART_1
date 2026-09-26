@@ -234,7 +234,7 @@ public class SubscriptionTrackerTest {
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
                 "3\tGym\t250.00\tMONTHLY\t" + due + "\tHealth");
 
-        String out = run("9", "", "0");
+        String out = run("9", "1", "", "0");
 
         assertTrue(out.indexOf("Gym") < out.indexOf("Adobe"));
         assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
@@ -247,7 +247,7 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("9", "2", "0");
+        String out = run("9", "1", "2", "0");
 
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
         assertTrue(out.contains("Sorted by cost per month, cheapest first."));
@@ -258,7 +258,7 @@ public class SubscriptionTrackerTest {
         seed("1\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(90) + "\tSoftware",
                 "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(12) + "\tStreaming");
 
-        String out = run("10", "", "0");
+        String out = run("9", "2", "", "0");
 
         assertTrue(out.indexOf("Netflix") < out.indexOf("Adobe"));
         assertTrue(out.contains("in 12 days"));
@@ -271,7 +271,7 @@ public class SubscriptionTrackerTest {
         seed("1\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(90) + "\tSoftware",
                 "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(12) + "\tStreaming");
 
-        String out = run("10", "2", "0");
+        String out = run("9", "2", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Netflix"));
         assertTrue(out.contains("Sorted by next payment date, latest first."));
@@ -284,7 +284,7 @@ public class SubscriptionTrackerTest {
                 "2\tAdobe\t2400.00\tYEARLY\t" + due.plusDays(1) + "\tSoftware",
                 "3\tNetflix\t199.00\tMONTHLY\t" + due.plusDays(2) + "\tStreaming");
 
-        String out = run("11", "", "0");
+        String out = run("9", "3", "", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Netflix"));
         assertTrue(out.indexOf("Netflix") < out.indexOf("Spotify"));
@@ -297,7 +297,7 @@ public class SubscriptionTrackerTest {
         seed("1\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
                 "2\tSpotify\t59.99\tMONTHLY\t" + due.plusDays(1) + "\tMusic");
 
-        String out = run("11", "2", "0");
+        String out = run("9", "3", "2", "0");
 
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
         assertTrue(out.contains("Sorted by name, Z to A."));
@@ -310,7 +310,7 @@ public class SubscriptionTrackerTest {
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "3\tGym\t250.00\tMONTHLY\t" + due + "\tHealth");
 
-        String out = run("12", "", "0");
+        String out = run("9", "4", "", "0");
 
         assertTrue(out.indexOf("Gym") < out.indexOf("Spotify"));
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
@@ -323,7 +323,7 @@ public class SubscriptionTrackerTest {
         seed("1\tGym\t250.00\tMONTHLY\t" + due + "\tHealth",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("12", "2", "0");
+        String out = run("9", "4", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Gym"));
         assertTrue(out.contains("Sorted by category, Z to A."));
@@ -336,7 +336,7 @@ public class SubscriptionTrackerTest {
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "3\tCoffee\t20.00\tWEEKLY\t" + due + "\tFood");
 
-        String out = run("13", "", "0");
+        String out = run("9", "5", "", "0");
 
         assertTrue(out.indexOf("Coffee") < out.indexOf("Spotify"));
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
@@ -349,7 +349,7 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("13", "2", "0");
+        String out = run("9", "5", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
         assertTrue(out.contains("Sorted by billing cycle, longest first."));
@@ -361,7 +361,7 @@ public class SubscriptionTrackerTest {
                 "1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(30) + "\tMusic",
                 "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(25) + "\tStreaming");
 
-        String out = run("14", "", "0");
+        String out = run("9", "6", "", "0");
 
         assertTrue(out.indexOf("Spotify") < out.indexOf("Netflix"));
         assertTrue(out.indexOf("Netflix") < out.indexOf("Adobe"));
@@ -373,10 +373,38 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tMusic",
                 "2\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(30) + "\tSoftware");
 
-        String out = run("14", "2", "0");
+        String out = run("9", "6", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
         assertTrue(out.contains("Sorted by ID, highest first."));
+    }
+
+    @Test
+    public void sortMenuRejectsUnknownChoice() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("9", "7", "0");
+
+        assertTrue(out.contains("Please choose 1-6."));
+        assertTrue(!out.contains("Sorted by"));
+    }
+
+    @Test
+    public void sortMenuBlankCancels() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("9", "", "0");
+
+        assertTrue(!out.contains("Order [1]"));
+        assertTrue(!out.contains("Sorted by"));
+    }
+
+    @Test
+    public void sortMenuWithNoSubscriptions() {
+        String out = run("9", "0");
+
+        assertTrue(out.contains("You have no subscriptions yet."));
+        assertTrue(!out.contains("Sort by:"));
     }
 
     @Test
