@@ -42,7 +42,8 @@ class DesktopScreenshots {
     fun drawEveryScreen() {
         FileKit.init(appId = "SubscriptionTrackerScreenshots")
         val out = File("build/desktop-screenshots").apply { mkdirs() }
-        val sizes = listOf("desktop" to (1200 to 820), "phone" to (412 to 900))
+        // Taller than a real window, so each picture shows the whole screen.
+        val sizes = listOf("desktop" to (1200 to 1500), "phone" to (412 to 1500))
         for ((sizeName, size) in sizes) {
             for (screen in listOf("subscriptions", "upcoming", "spending", "cancelled", "add")) {
                 val file = sampleFile()

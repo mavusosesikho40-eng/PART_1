@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.vinceglb.filekit.dialogs.FileKitType
@@ -173,9 +174,10 @@ fun App(
         } else Row {
         if (wide) {
             NavigationRail(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 header = {
-                    Text("Subscription\nTracker", style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(vertical = 16.dp))
+                    Text("Subscription\nTracker", style = MaterialTheme.typography.labelLarge,
+                        textAlign = TextAlign.Center, modifier = Modifier.padding(top = 20.dp, bottom = 12.dp))
                 },
             ) {
                 Tab.entries.forEach { t ->
