@@ -132,15 +132,22 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret, so the release has no Android app. See README.md, 'Updates that keep your data'."
-            exit 0
-          fi
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/signing.jks"
           export SIGNING_KEYSTORE_FILE="$RUNNER_TEMP/signing.jks"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$SIGNING_KEYSTORE_FILE"
+          else
+            # Still build and sign it, with a throwaway key, to check the release
+            # build works; but it isn't published, since it couldn't update the app.
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret, so the release has no Android app. See README.md, 'Updates that keep your data'."
+            export SIGNING_KEYSTORE_PASSWORD=throwaway
+            keytool -genkeypair -keystore "$SIGNING_KEYSTORE_FILE" -storetype PKCS12 -alias subscriptions \
+              -keyalg RSA -keysize 2048 -validity 1 -storepass throwaway -keypass throwaway -dname "CN=Throwaway"
+          fi
           ./gradlew --no-configuration-cache :composeApp:assembleRelease
-          mkdir -p release
-          cp composeApp/build/outputs/apk/release/composeApp-release.apk "release/SubscriptionTracker-1.0.${{ github.run_number }}.apk"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            mkdir -p release
+            cp composeApp/build/outputs/apk/release/composeApp-release.apk "release/SubscriptionTracker-1.0.${{ github.run_number }}.apk"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
