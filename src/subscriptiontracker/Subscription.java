@@ -2,6 +2,9 @@ package subscriptiontracker;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A single subscription the user pays for.
@@ -16,6 +19,7 @@ public class Subscription {
     private String category;
     private boolean freeTrial;
     private LocalDate cancelledOn;
+    private final List<PriceChange> priceChanges = new ArrayList<>();
 
     public Subscription(int id, String name, BigDecimal cost, BillingCycle cycle,
             LocalDate nextPayment, String category) {
@@ -81,6 +85,38 @@ public class Subscription {
 
     public void setFreeTrial(boolean freeTrial) {
         this.freeTrial = freeTrial;
+    }
+
+    /**
+     * Changes the cost per payment and records the old and new price, so
+     * price rises can be tracked. Nothing is recorded if the cost is the same.
+     */
+    public void changePrice(BigDecimal newCost, LocalDate today) {
+        if (newCost.compareTo(cost) == 0) {
+            return;
+        }
+        priceChanges.add(new PriceChange(today, cost, newCost));
+        cost = newCost;
+    }
+
+    /** Adds a price change loaded from storage; the current cost is left as it is. */
+    public void restorePriceChange(PriceChange change) {
+        priceChanges.add(change);
+    }
+
+    /** Recorded price changes, oldest first. */
+    public List<PriceChange> getPriceChanges() {
+        return Collections.unmodifiableList(priceChanges);
+    }
+
+    /** What each payment cost on the given day, based on the recorded price changes. */
+    public BigDecimal getCostOn(LocalDate date) {
+        for (PriceChange change : priceChanges) {
+            if (change.date().isAfter(date)) {
+                return change.oldCost();
+            }
+        }
+        return cost;
     }
 
     public boolean isCancelled() {

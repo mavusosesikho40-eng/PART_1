@@ -2,6 +2,7 @@ package subscriptiontracker;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -107,6 +108,50 @@ public class SubscriptionTest {
 
         assertFalse(sub.isCancelled());
         assertEquals(LocalDate.of(2026, 10, 1), sub.getNextPayment());
+    }
+
+    @Test
+    public void changePriceRecordsTheOldAndNewCost() {
+        Subscription sub = monthly(TODAY);
+
+        sub.changePrice(new BigDecimal("229.00"), TODAY);
+
+        assertEquals(new BigDecimal("229.00"), sub.getCost());
+        assertEquals(List.of(new PriceChange(TODAY, new BigDecimal("199.00"), new BigDecimal("229.00"))),
+                sub.getPriceChanges());
+    }
+
+    @Test
+    public void sameCostIsNotRecordedAsAChange() {
+        Subscription sub = monthly(TODAY);
+
+        sub.changePrice(new BigDecimal("199"), TODAY);
+
+        assertTrue(sub.getPriceChanges().isEmpty());
+    }
+
+    @Test
+    public void costOnADayUsesThePriceHistory() {
+        Subscription sub = monthly(TODAY);
+        sub.changePrice(new BigDecimal("229.00"), LocalDate.of(2026, 3, 1));
+        sub.changePrice(new BigDecimal("249.00"), LocalDate.of(2026, 8, 1));
+
+        assertEquals(new BigDecimal("199.00"), sub.getCostOn(LocalDate.of(2026, 1, 1)));
+        assertEquals(new BigDecimal("229.00"), sub.getCostOn(LocalDate.of(2026, 3, 1)));
+        assertEquals(new BigDecimal("229.00"), sub.getCostOn(LocalDate.of(2026, 7, 31)));
+        assertEquals(new BigDecimal("249.00"), sub.getCostOn(TODAY));
+    }
+
+    @Test
+    public void priceChangeDifferenceAndPercent() {
+        PriceChange rise = new PriceChange(TODAY, new BigDecimal("169.00"), new BigDecimal("199.00"));
+        PriceChange drop = new PriceChange(TODAY, new BigDecimal("200.00"), new BigDecimal("150.00"));
+        PriceChange fromFree = new PriceChange(TODAY, new BigDecimal("0.00"), new BigDecimal("99.00"));
+
+        assertEquals(new BigDecimal("30.00"), rise.difference());
+        assertEquals(new BigDecimal("18"), rise.percent());
+        assertEquals(new BigDecimal("-25"), drop.percent());
+        assertEquals(null, fromFree.percent());
     }
 
     @Test

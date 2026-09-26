@@ -363,6 +363,33 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void priceChangesAreListedNewestFirstForActiveSubscriptions() {
+        add("Netflix", "169", BillingCycle.MONTHLY, TODAY, "Streaming")
+                .changePrice(new BigDecimal("199"), TODAY.minusDays(10));
+        add("Spotify", "49.99", BillingCycle.MONTHLY, TODAY, "Music")
+                .changePrice(new BigDecimal("59.99"), TODAY.minusDays(2));
+        Subscription gone = add("Gym", "200", BillingCycle.MONTHLY, TODAY, "Health");
+        gone.changePrice(new BigDecimal("250"), TODAY.minusDays(1));
+        gone.cancel(TODAY);
+
+        assertEquals(List.of("Spotify", "Netflix"), manager.getPriceChanges().stream()
+                .map(e -> e.subscription().getName()).toList());
+    }
+
+    @Test
+    public void monthlyPriceChangeCountsOnlyChangesSinceTheDate() {
+        Subscription netflix = add("Netflix", "169", BillingCycle.MONTHLY, TODAY, "Streaming");
+        netflix.changePrice(new BigDecimal("199"), TODAY.minusMonths(3));
+        Subscription adobe = add("Adobe", "1800", BillingCycle.YEARLY, TODAY, "Software");
+        adobe.changePrice(new BigDecimal("2400"), TODAY.minusMonths(1));   // +50.00 a month
+        add("Old", "100", BillingCycle.MONTHLY, TODAY, "X")
+                .changePrice(new BigDecimal("150"), TODAY.minusYears(2));  // before the window
+        add("New", "300", BillingCycle.MONTHLY, TODAY, "X");               // no change at all
+
+        assertEquals(new BigDecimal("80.00"), manager.getMonthlyPriceChangeSince(TODAY.minusYears(1)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");
