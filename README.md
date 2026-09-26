@@ -73,7 +73,7 @@ ignored.
 | Column | Needed? | Also recognised as | Notes |
 | --- | --- | --- | --- |
 | Name | Yes | Subscription, Service | |
-| Cost | Yes | Price, Amount | `199`, `R 1,299.00`, `$1 299.50` and `1299,50` all work. |
+| Cost | Yes | Price, Amount | `199`, `R 1,299.00`, `$1 299.50`, `1299,50` and `1.299,50` all work. |
 | Billing Cycle | No (Monthly) | Cycle, Billing, Frequency | Weekly, Monthly, Quarterly or Yearly (also Annual/Annually). |
 | Next Payment | No (today) | Next Payment Date, Next Due, Due Date, Next Billing Date | `2026-10-01`, `2026/10/01` or `01/10/2026` (day first). |
 | Category | No (Other) | | |

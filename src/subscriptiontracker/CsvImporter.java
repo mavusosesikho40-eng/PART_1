@@ -128,13 +128,21 @@ public final class CsvImporter {
     }
 
     /**
-     * Reads an amount such as "199", "R 1,299.00", "$1 299.50" or "1299,50"
-     * (a comma followed by one or two digits at the end is a decimal comma).
+     * Reads an amount such as "199", "R 1,299.00", "$1 299.50", "1299,50" or
+     * "1.299,50". When both a dot and a comma appear, whichever comes last is
+     * the decimal point; a lone comma followed by one or two digits at the
+     * end is a decimal comma; any other comma separates thousands.
      */
     static BigDecimal parseAmount(String text) {
         String digits = text.replaceAll("[^0-9.,\\-]", "");
-        if (digits.contains(",") && !digits.contains(".") && digits.matches(".*,\\d{1,2}")) {
-            digits = digits.replace(",", ".");
+        int lastComma = digits.lastIndexOf(',');
+        int lastDot = digits.lastIndexOf('.');
+        if (lastComma >= 0 && lastDot >= 0) {
+            digits = lastComma > lastDot
+                    ? digits.replace(".", "").replace(',', '.')
+                    : digits.replace(",", "");
+        } else if (lastComma >= 0 && digits.matches(".*,\\d{1,2}")) {
+            digits = digits.replace(',', '.');
         } else {
             digits = digits.replace(",", "");
         }

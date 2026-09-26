@@ -140,6 +140,14 @@ public class CsvImporterTest {
     }
 
     @Test
+    public void whenBothSeparatorsAppearTheLastOneIsTheDecimalPoint() {
+        assertEquals(new BigDecimal("1299.50"), CsvImporter.parseAmount("1.299,50"));
+        assertEquals(new BigDecimal("1299.50"), CsvImporter.parseAmount("€ 1.299,50"));
+        assertEquals(new BigDecimal("1234567.89"), CsvImporter.parseAmount("1.234.567,89"));
+        assertEquals(new BigDecimal("1234567.89"), CsvImporter.parseAmount("1,234,567.89"));
+    }
+
+    @Test
     public void datesInCommonFormats() {
         LocalDate expected = LocalDate.of(2026, 3, 1);
         assertEquals(expected, CsvImporter.parseDate("2026-03-01"));
