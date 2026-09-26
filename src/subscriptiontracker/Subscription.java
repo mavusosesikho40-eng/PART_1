@@ -19,6 +19,7 @@ public class Subscription {
     private String category;
     private boolean freeTrial;
     private LocalDate cancelledOn;
+    private String note = "";
     private final List<PriceChange> priceChanges = new ArrayList<>();
 
     public Subscription(int id, String name, BigDecimal cost, BillingCycle cycle,
@@ -85,6 +86,19 @@ public class Subscription {
 
     public void setFreeTrial(boolean freeTrial) {
         this.freeTrial = freeTrial;
+    }
+
+    /** A free-text note, e.g. which account or card it's on; empty if there is none. */
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note == null ? "" : note.strip();
+    }
+
+    public boolean hasNote() {
+        return !note.isEmpty();
     }
 
     /**

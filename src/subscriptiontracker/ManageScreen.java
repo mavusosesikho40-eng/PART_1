@@ -32,6 +32,19 @@ class ManageScreen {
             return;
         }
         printTable(manager.getAll());
+        printNotes(manager.getAll());
+    }
+
+    /** Lists the notes of any subscriptions that have one, under a table. */
+    private static void printNotes(List<Subscription> subs) {
+        List<Subscription> withNotes = subs.stream().filter(Subscription::hasNote).toList();
+        if (withNotes.isEmpty()) {
+            return;
+        }
+        System.out.println("Notes:");
+        for (Subscription s : withNotes) {
+            System.out.println("  #" + s.getId() + " " + s.getName() + ": " + s.getNote());
+        }
     }
 
     void addSubscription() {
@@ -54,9 +67,11 @@ class ManageScreen {
             return;
         }
         String category = console.readText("Category (e.g. Streaming, Music, Software)", "Other");
+        String note = console.readText("Note, e.g. which account or card it's on (optional)", null);
 
         Subscription sub = manager.add(name, cost, cycle, next, category);
         sub.setFreeTrial(trial);
+        sub.setNote(note);
         sub.rollForward(LocalDate.now());
         save.run();
         System.out.println("Added \"" + name + "\" (#" + sub.getId() + ").");
@@ -97,6 +112,7 @@ class ManageScreen {
         sub.setFreeTrial(console.readYesNo("Free trial? (y/n)", sub.isFreeTrial()));
         sub.setNextPayment(console.readDate(dateLabel(sub.isFreeTrial()), sub.getNextPayment()));
         sub.setCategory(console.readText("Category", sub.getCategory()));
+        readNote(sub);
         sub.rollForward(LocalDate.now());
         save.run();
         System.out.println("Updated \"" + sub.getName() + "\".");
@@ -157,6 +173,17 @@ class ManageScreen {
             System.out.println("Removed \"" + sub.getName() + "\".");
         } else {
             System.out.println("Nothing removed.");
+        }
+    }
+
+    /** Asks for a note; blank keeps the current one and "-" removes it. */
+    private void readNote(Subscription sub) {
+        String label = sub.hasNote() ? "Note (- to remove)" : "Note (optional)";
+        String note = console.readText(label, sub.hasNote() ? sub.getNote() : null);
+        if ("-".equals(note)) {
+            sub.setNote("");
+        } else if (note != null) {
+            sub.setNote(note);
         }
     }
 

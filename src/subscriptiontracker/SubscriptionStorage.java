@@ -19,7 +19,8 @@ import java.util.List;
  * Each line holds: id, name, cost, cycle, next payment date, category,
  * followed by optional flags: "TRIAL" for a free trial and
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription, and one
- * "PRICE=yyyy-mm-dd:old:new" for each recorded price change.
+ * "PRICE=yyyy-mm-dd:old:new" for each recorded price change, and
+ * "NOTE=text" for a note.
  * If a monthly budget is set, the first line is "BUDGET" and the amount.
  *
  * <p>Saving never leaves a half-written file behind: the new contents are
@@ -33,6 +34,7 @@ public class SubscriptionStorage {
     private static final String TRIAL = "TRIAL";
     private static final String CANCELLED = "CANCELLED=";
     private static final String PRICE = "PRICE=";
+    private static final String NOTE = "NOTE=";
 
     private final Path file;
 
@@ -83,6 +85,9 @@ public class SubscriptionStorage {
             }
             if (s.isCancelled()) {
                 line += SEPARATOR + CANCELLED + s.getCancelledOn();
+            }
+            if (s.hasNote()) {
+                line += SEPARATOR + NOTE + s.getNote();
             }
             for (PriceChange change : s.getPriceChanges()) {
                 line += SEPARATOR + PRICE + change.date() + ":" + change.oldCost().toPlainString()
@@ -153,6 +158,8 @@ public class SubscriptionStorage {
                         sub.setFreeTrial(true);
                     } else if (parts[i].startsWith(CANCELLED)) {
                         sub.cancel(LocalDate.parse(parts[i].substring(CANCELLED.length())));
+                    } else if (parts[i].startsWith(NOTE)) {
+                        sub.setNote(parts[i].substring(NOTE.length()));
                     } else if (parts[i].startsWith(PRICE)) {
                         String[] price = parts[i].substring(PRICE.length()).split(":", -1);
                         sub.restorePriceChange(new PriceChange(LocalDate.parse(price[0]),

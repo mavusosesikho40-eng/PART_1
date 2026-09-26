@@ -155,6 +155,20 @@ public class SubscriptionTest {
     }
 
     @Test
+    public void noteIsTrimmedAndEmptyByDefault() {
+        Subscription sub = monthly(TODAY);
+        assertFalse(sub.hasNote());
+        assertEquals("", sub.getNote());
+
+        sub.setNote("  family plan  ");
+        assertTrue(sub.hasNote());
+        assertEquals("family plan", sub.getNote());
+
+        sub.setNote(null);
+        assertFalse(sub.hasNote());
+    }
+
+    @Test
     public void monthlyAndYearlyCostsFollowBillingCycle() {
         Subscription sub = new Subscription(1, "Adobe", new BigDecimal("2400.00"),
                 BillingCycle.YEARLY, TODAY, "Software");
