@@ -40,8 +40,8 @@ Options 3 to 7 open a short sub-menu; press Enter on a blank line to go back.
 | &nbsp;&nbsp;&nbsp;→ Sort | Sort by cost per month, next payment date, name, category, billing cycle or ID, in either direction. |
 | **6. Spending, budget and savings** → Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
 | &nbsp;&nbsp;&nbsp;→ Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
-| &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
-| &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
+| &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again, or remove it permanently. |
+| &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`, or per month if the billing cycle changed too: `199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
 | &nbsp;&nbsp;&nbsp;→ Currency symbol | Show every amount with a symbol, e.g. `R 199.00` or `$199.00` (symbols ending in a letter get a space). Enter `-` to remove it. The CSV export always uses plain numbers. |
 | **7. Import or export CSV** → Export | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 | &nbsp;&nbsp;&nbsp;→ Import | Adds subscriptions from a CSV file: one exported by the app, or a spreadsheet saved as CSV. See [Importing from a spreadsheet](#importing-from-a-spreadsheet). |
@@ -50,7 +50,8 @@ A few things happen automatically:
 
 - **Reminders on startup** — payments due in the next 7 days are shown when the app opens.
 - **Payment dates roll forward** — once a payment date has passed, it moves to the next one
-  (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01).
+  (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01). Subscriptions billed late in the
+  month keep their day: one billed on the 31st is due 28 Feb, then 31 Mar again.
 - **Free-trial reminders** — trials ending in the next 7 days are called out at startup, with what
   you'll be charged unless you cancel. Trials are marked "(trial)" in lists, and once the end date
   has passed a trial becomes a normal paid subscription.
@@ -72,14 +73,15 @@ ignored.
 | Column | Needed? | Also recognised as | Notes |
 | --- | --- | --- | --- |
 | Name | Yes | Subscription, Service | |
-| Cost | Yes | Price, Amount | `199`, `R 1,299.00`, `$1 299.50` and `1299,50` all work. |
+| Cost | Yes | Price, Amount | `199`, `R 1,299.00`, `$1 299.50`, `1299,50` and `1.299,50` all work. |
 | Billing Cycle | No (Monthly) | Cycle, Billing, Frequency | Weekly, Monthly, Quarterly or Yearly (also Annual/Annually). |
 | Next Payment | No (today) | Next Payment Date, Next Due, Due Date, Next Billing Date | `2026-10-01`, `2026/10/01` or `01/10/2026` (day first). |
 | Category | No (Other) | | |
 | Free Trial | No | Trial | Yes/No. |
 | Note | No | Notes | |
 
-Files separated by commas, semicolons (as Excel saves them with some regional settings) or tabs
+Files saved as UTF-8 or in the Windows character set (Excel's "CSV (Comma delimited)") both work,
+so accents and symbols like "€" come through. Files separated by commas, semicolons (as Excel saves them with some regional settings) or tabs
 all work. Rows that can't be read, or whose name is already in your list, are skipped, and the app
 tells you which rows and why; everything else is imported.
 
@@ -122,8 +124,10 @@ ID    Name    Cost    Cycle    Next payment    Category
 
 Free trials have `TRIAL` as an extra column at the end of the line, cancelled subscriptions
 have `CANCELLED=` followed by the date they were cancelled, and each recorded price change adds a
-`PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00`. A note is saved as a
-`NOTE=` column. If you've set a monthly
+`PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00` (with the old and new billing
+cycle added, e.g. `:MONTHLY:YEARLY`, if the plan changed at the same time). A note is saved as a
+`NOTE=` column, and a `DAY=31` column remembers the billing day while a short month has moved
+the date earlier. If you've set a monthly
 budget, it's saved on the first line as `BUDGET` followed by the amount, and a currency symbol is
 saved on a `CURRENCY` line.
 
@@ -135,6 +139,9 @@ once that's safely on disk does it replace `subscriptions.txt`.
 
 - **`subscriptions.txt.bak`** — the previous version, kept every time the app saves. If something
   goes wrong, rename it to `subscriptions.txt` to go back one save.
+- **Edited it in Notepad?** The file is normally saved as UTF-8, but if it's been saved in the Windows
+  character set (Notepad's "ANSI"), the app still reads it, accents and all, and saves it back as UTF-8.
+  If the file can't be read at all, the app warns you and won't save over it.
 - **`subscriptions.txt.unreadable`** — if the app ever finds lines it can't read when it starts, it
   warns you and copies the file exactly as it was here before saving anything, so those lines
   aren't lost.

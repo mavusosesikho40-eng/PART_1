@@ -117,7 +117,8 @@ public class SubscriptionTest {
         sub.changePrice(new BigDecimal("229.00"), TODAY);
 
         assertEquals(new BigDecimal("229.00"), sub.getCost());
-        assertEquals(List.of(new PriceChange(TODAY, new BigDecimal("199.00"), new BigDecimal("229.00"))),
+        assertEquals(List.of(new PriceChange(TODAY, new BigDecimal("199.00"), new BigDecimal("229.00"),
+                BillingCycle.MONTHLY)),
                 sub.getPriceChanges());
     }
 
@@ -136,17 +137,20 @@ public class SubscriptionTest {
         sub.changePrice(new BigDecimal("229.00"), LocalDate.of(2026, 3, 1));
         sub.changePrice(new BigDecimal("249.00"), LocalDate.of(2026, 8, 1));
 
-        assertEquals(new BigDecimal("199.00"), sub.getCostOn(LocalDate.of(2026, 1, 1)));
-        assertEquals(new BigDecimal("229.00"), sub.getCostOn(LocalDate.of(2026, 3, 1)));
-        assertEquals(new BigDecimal("229.00"), sub.getCostOn(LocalDate.of(2026, 7, 31)));
-        assertEquals(new BigDecimal("249.00"), sub.getCostOn(TODAY));
+        assertEquals(new BigDecimal("199.00"), sub.getMonthlyCostOn(LocalDate.of(2026, 1, 1)));
+        assertEquals(new BigDecimal("229.00"), sub.getMonthlyCostOn(LocalDate.of(2026, 3, 1)));
+        assertEquals(new BigDecimal("229.00"), sub.getMonthlyCostOn(LocalDate.of(2026, 7, 31)));
+        assertEquals(new BigDecimal("249.00"), sub.getMonthlyCostOn(TODAY));
     }
 
     @Test
     public void priceChangeDifferenceAndPercent() {
-        PriceChange rise = new PriceChange(TODAY, new BigDecimal("169.00"), new BigDecimal("199.00"));
-        PriceChange drop = new PriceChange(TODAY, new BigDecimal("200.00"), new BigDecimal("150.00"));
-        PriceChange fromFree = new PriceChange(TODAY, new BigDecimal("0.00"), new BigDecimal("99.00"));
+        PriceChange rise = new PriceChange(TODAY, new BigDecimal("169.00"), new BigDecimal("199.00"),
+                BillingCycle.MONTHLY);
+        PriceChange drop = new PriceChange(TODAY, new BigDecimal("200.00"), new BigDecimal("150.00"),
+                BillingCycle.MONTHLY);
+        PriceChange fromFree = new PriceChange(TODAY, new BigDecimal("0.00"), new BigDecimal("99.00"),
+                BillingCycle.MONTHLY);
 
         assertEquals(new BigDecimal("30.00"), rise.difference());
         assertEquals(new BigDecimal("18"), rise.percent());
@@ -166,6 +170,75 @@ public class SubscriptionTest {
 
         sub.setNote(null);
         assertFalse(sub.hasNote());
+    }
+
+    @Test
+    public void billingOnThe31stGoesBackToThe31stAfterAShortMonth() {
+        Subscription sub = new Subscription(1, "Gym", new BigDecimal("250"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 1, 31), "Health");
+
+        sub.rollForward(LocalDate.of(2026, 2, 10));
+        assertEquals(LocalDate.of(2026, 2, 28), sub.getNextPayment());
+
+        sub.rollForward(LocalDate.of(2026, 3, 10));
+        assertEquals(LocalDate.of(2026, 3, 31), sub.getNextPayment());
+
+        sub.rollForward(LocalDate.of(2026, 5, 15));
+        assertEquals(LocalDate.of(2026, 5, 31), sub.getNextPayment());
+        assertEquals(31, sub.getBillingDay());
+    }
+
+    @Test
+    public void quarterlyAndYearlyKeepTheirBillingDayToo() {
+        Subscription quarterly = new Subscription(1, "Insurance", BigDecimal.TEN, BillingCycle.QUARTERLY,
+                LocalDate.of(2025, 11, 30), "Health");
+        quarterly.rollForward(LocalDate.of(2026, 3, 1));
+        assertEquals(LocalDate.of(2026, 5, 30), quarterly.getNextPayment());
+
+        Subscription leapYear = new Subscription(2, "Domain", BigDecimal.TEN, BillingCycle.YEARLY,
+                LocalDate.of(2028, 2, 29), "Software");
+        leapYear.rollForward(LocalDate.of(2029, 3, 1));
+        assertEquals(LocalDate.of(2030, 2, 28), leapYear.getNextPayment());
+        leapYear.rollForward(LocalDate.of(2032, 2, 1));
+        assertEquals(LocalDate.of(2032, 2, 29), leapYear.getNextPayment());
+    }
+
+    @Test
+    public void settingANewDateChangesTheBillingDayButKeepingTheSameDateDoesNot() {
+        Subscription sub = new Subscription(1, "Gym", BigDecimal.TEN, BillingCycle.MONTHLY,
+                LocalDate.of(2026, 1, 31), "Health");
+        sub.rollForward(LocalDate.of(2026, 2, 10));
+
+        sub.setNextPayment(sub.getNextPayment());
+        assertEquals(31, sub.getBillingDay());
+
+        sub.setNextPayment(LocalDate.of(2026, 3, 15));
+        assertEquals(15, sub.getBillingDay());
+    }
+
+    @Test
+    public void savedSoFarFollowsTheBillingDay() {
+        Subscription sub = new Subscription(1, "Gym", new BigDecimal("100"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 1, 31), "Health");
+        sub.cancel(LocalDate.of(2026, 1, 20));
+
+        // Payments skipped on 31 Jan, 28 Feb and 31 Mar.
+        assertEquals(new BigDecimal("300"), sub.getSavedSoFar(LocalDate.of(2026, 3, 31)));
+    }
+
+    @Test
+    public void priceChangeWithANewBillingCycleIsComparedPerMonth() {
+        Subscription sub = monthly(TODAY);   // 199.00 a month
+
+        sub.changePrice(new BigDecimal("2000.00"), BillingCycle.YEARLY, TODAY);
+
+        assertEquals(BillingCycle.YEARLY, sub.getCycle());
+        PriceChange change = sub.getPriceChanges().get(0);
+        assertTrue(change.cycleChanged());
+        // 2,000.00 a year is 166.67 a month: 32.33 a month less, not 1,801.00 more.
+        assertEquals(new BigDecimal("-32.33"), change.monthlyDifference());
+        assertEquals(new BigDecimal("-16"), change.percent());
+        assertEquals(new BigDecimal("199.00"), sub.getMonthlyCostOn(TODAY.minusDays(1)));
     }
 
     @Test

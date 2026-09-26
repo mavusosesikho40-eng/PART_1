@@ -309,6 +309,59 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void readsAFileSavedInTheWindowsCharacterSet() throws IOException {
+        // "Café Club" as Notepad's "ANSI" encoding saves it: é is the single byte 0xE9.
+        Files.write(file, ("1\tCaf\u00e9 Club\t50.00\tMONTHLY\t2026-10-01\tFood\n")
+                .getBytes(java.nio.charset.Charset.forName("windows-1252")));
+        SubscriptionManager manager = new SubscriptionManager();
+
+        assertEquals(0, storage.load(manager));
+        assertEquals("Caf\u00e9 Club", manager.find(1).orElseThrow().getName());
+    }
+
+    @Test
+    public void readsAUtf8FileWithAByteOrderMark() throws IOException {
+        Files.writeString(file, "\uFEFF1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming\n");
+        SubscriptionManager manager = new SubscriptionManager();
+
+        assertEquals(0, storage.load(manager));
+        assertEquals("Netflix", manager.find(1).orElseThrow().getName());
+    }
+
+    @Test
+    public void billingDayIsSavedOnlyWhenItDiffersFromTheDate() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.add("Gym", new BigDecimal("250.00"), BillingCycle.MONTHLY, LocalDate.of(2026, 1, 31), "Health")
+                .rollForward(LocalDate.of(2026, 2, 10));
+        original.add("Spotify", new BigDecimal("59.99"), BillingCycle.MONTHLY, LocalDate.of(2026, 2, 15), "Music");
+        storage.save(original);
+
+        assertEquals(List.of("2\tSpotify\t59.99\tMONTHLY\t2026-02-15\tMusic",
+                "1\tGym\t250.00\tMONTHLY\t2026-02-28\tHealth\tDAY=31"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        Subscription gym = loaded.find(1).orElseThrow();
+        assertEquals(31, gym.getBillingDay());
+        gym.rollForward(LocalDate.of(2026, 3, 10));
+        assertEquals(LocalDate.of(2026, 3, 31), gym.getNextPayment());
+    }
+
+    @Test
+    public void priceChangeWithABillingCycleChangeIsSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.add("Netflix", new BigDecimal("199.00"), BillingCycle.MONTHLY, LocalDate.of(2026, 10, 1), "Streaming")
+                .changePrice(new BigDecimal("2000.00"), BillingCycle.YEARLY, LocalDate.of(2026, 9, 1));
+        storage.save(original);
+
+        assertTrue(Files.readString(file).contains("PRICE=2026-09-01:199.00:2000.00:MONTHLY:YEARLY"));
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertEquals(original.find(1).orElseThrow().getPriceChanges(), loaded.find(1).orElseThrow().getPriceChanges());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

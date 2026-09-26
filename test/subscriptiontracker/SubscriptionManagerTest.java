@@ -390,6 +390,14 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void monthlyPriceChangeHandlesASwitchToAYearlyPlan() {
+        add("Netflix", "199.00", BillingCycle.MONTHLY, TODAY, "Streaming")
+                .changePrice(new BigDecimal("2000.00"), BillingCycle.YEARLY, TODAY.minusMonths(1));
+
+        assertEquals(new BigDecimal("-32.33"), manager.getMonthlyPriceChangeSince(TODAY.minusYears(1)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

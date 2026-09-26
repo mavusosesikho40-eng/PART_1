@@ -19,8 +19,10 @@ import java.util.List;
  * Each line holds: id, name, cost, cycle, next payment date, category,
  * followed by optional flags: "TRIAL" for a free trial and
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription, and one
- * "PRICE=yyyy-mm-dd:old:new" for each recorded price change, and
- * "NOTE=text" for a note.
+ * "PRICE=yyyy-mm-dd:old:new" for each recorded price change (with
+ * ":OLDCYCLE:NEWCYCLE" added if the billing cycle changed too), and
+ * "NOTE=text" for a note, and "DAY=n" when the billing day differs from the
+ * next payment's day (e.g. billed on the 31st, next payment 28 Feb).
  * If a monthly budget is set, the first line is "BUDGET" and the amount; a
  * currency symbol is saved the same way on a "CURRENCY" line.
  *
@@ -37,6 +39,7 @@ public class SubscriptionStorage {
     private static final String CANCELLED = "CANCELLED=";
     private static final String PRICE = "PRICE=";
     private static final String NOTE = "NOTE=";
+    private static final String DAY = "DAY=";
 
     private final Path file;
 
@@ -91,12 +94,18 @@ public class SubscriptionStorage {
             if (s.isCancelled()) {
                 line += SEPARATOR + CANCELLED + s.getCancelledOn();
             }
+            if (s.getBillingDay() != s.getNextPayment().getDayOfMonth()) {
+                line += SEPARATOR + DAY + s.getBillingDay();
+            }
             if (s.hasNote()) {
                 line += SEPARATOR + NOTE + s.getNote();
             }
             for (PriceChange change : s.getPriceChanges()) {
                 line += SEPARATOR + PRICE + change.date() + ":" + change.oldCost().toPlainString()
                         + ":" + change.newCost().toPlainString();
+                if (change.cycleChanged()) {
+                    line += ":" + change.oldCycle().name() + ":" + change.newCycle().name();
+                }
             }
             lines.add(line);
         }
@@ -132,7 +141,8 @@ public class SubscriptionStorage {
 
     /**
      * Loads saved subscriptions into the manager. Lines that cannot be read
-     * are skipped and counted.
+     * are skipped and counted. The file may be UTF-8 or, if it was edited in
+     * Notepad, the Windows character set; it is always saved as UTF-8.
      *
      * @return the number of lines that were skipped
      */
@@ -141,7 +151,7 @@ public class SubscriptionStorage {
             return 0;
         }
         int skipped = 0;
-        for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
+        for (String line : TextFiles.read(file).split("\\R")) {
             if (line.isBlank()) {
                 continue;
             }
@@ -167,12 +177,16 @@ public class SubscriptionStorage {
                         sub.setFreeTrial(true);
                     } else if (parts[i].startsWith(CANCELLED)) {
                         sub.cancel(LocalDate.parse(parts[i].substring(CANCELLED.length())));
+                    } else if (parts[i].startsWith(DAY)) {
+                        sub.restoreBillingDay(Integer.parseInt(parts[i].substring(DAY.length())));
                     } else if (parts[i].startsWith(NOTE)) {
                         sub.setNote(parts[i].substring(NOTE.length()));
                     } else if (parts[i].startsWith(PRICE)) {
                         String[] price = parts[i].substring(PRICE.length()).split(":", -1);
+                        BillingCycle oldCycle = price.length > 3 ? BillingCycle.valueOf(price[3]) : sub.getCycle();
+                        BillingCycle newCycle = price.length > 4 ? BillingCycle.valueOf(price[4]) : sub.getCycle();
                         sub.restorePriceChange(new PriceChange(LocalDate.parse(price[0]),
-                                new BigDecimal(price[1]), new BigDecimal(price[2])));
+                                new BigDecimal(price[1]), new BigDecimal(price[2]), oldCycle, newCycle));
                     }
                 }
                 manager.restore(sub);
