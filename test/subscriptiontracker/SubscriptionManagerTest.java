@@ -149,6 +149,17 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void sortByNextPaymentInEitherDirection() {
+        add("Later", "1", BillingCycle.MONTHLY, TODAY.plusDays(30), "X");
+        add("Soon", "1", BillingCycle.MONTHLY, TODAY.plusDays(1), "X");
+        add("beta", "1", BillingCycle.MONTHLY, TODAY.plusDays(10), "X");
+        add("Alpha", "1", BillingCycle.MONTHLY, TODAY.plusDays(10), "X");
+
+        assertEquals(List.of("Soon", "Alpha", "beta", "Later"), names(manager.getSortedByNextPayment(true)));
+        assertEquals(List.of("Later", "Alpha", "beta", "Soon"), names(manager.getSortedByNextPayment(false)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

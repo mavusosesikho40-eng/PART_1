@@ -254,6 +254,30 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void sortByNextPaymentShowsSoonestFirstByDefault() throws IOException {
+        seed("1\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(90) + "\tSoftware",
+                "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(12) + "\tStreaming");
+
+        String out = run("10", "", "0");
+
+        assertTrue(out.indexOf("Netflix") < out.indexOf("Adobe"));
+        assertTrue(out.contains("in 12 days"));
+        assertTrue(out.contains("in 90 days"));
+        assertTrue(out.contains("Sorted by next payment date, soonest first."));
+    }
+
+    @Test
+    public void sortByNextPaymentCanShowLatestFirst() throws IOException {
+        seed("1\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(90) + "\tSoftware",
+                "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(12) + "\tStreaming");
+
+        String out = run("10", "2", "0");
+
+        assertTrue(out.indexOf("Adobe") < out.indexOf("Netflix"));
+        assertTrue(out.contains("Sorted by next payment date, latest first."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 
