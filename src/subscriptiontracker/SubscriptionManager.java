@@ -78,13 +78,46 @@ public class SubscriptionManager {
         return subscriptions.stream().filter(s -> s.getId() == id).findFirst();
     }
 
+    /** True when there are no active subscriptions (cancelled ones don't count). */
     public boolean isEmpty() {
-        return subscriptions.isEmpty();
+        return active().isEmpty();
     }
 
-    /** All subscriptions, soonest payment first. */
+    /** Active subscriptions, soonest payment first. Cancelled ones are left out. */
     public List<Subscription> getAll() {
         return getSortedByNextPayment(true);
+    }
+
+    /** Every subscription, active and cancelled, soonest payment first; used for saving. */
+    public List<Subscription> getAllIncludingCancelled() {
+        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        sorted.sort(Comparator.comparing(Subscription::getNextPayment)
+                .thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
+        return sorted;
+    }
+
+    /** Cancelled subscriptions, most recently cancelled first. */
+    public List<Subscription> getCancelled() {
+        List<Subscription> cancelled = new ArrayList<>(subscriptions.stream().filter(Subscription::isCancelled).toList());
+        cancelled.sort(Comparator.comparing(Subscription::getCancelledOn).reversed()
+                .thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
+        return cancelled;
+    }
+
+    /** Total saved so far by all cancelled subscriptions. */
+    public BigDecimal getSavedSoFar(LocalDate today) {
+        return subscriptions.stream().map(s -> s.getSavedSoFar(today))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** What the cancelled subscriptions would cost per month if they were still active. */
+    public BigDecimal getCancelledMonthlyTotal() {
+        return getCancelled().stream().map(Subscription::getMonthlyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private List<Subscription> active() {
+        return subscriptions.stream().filter(s -> !s.isCancelled()).toList();
     }
 
     /**
@@ -96,7 +129,7 @@ public class SubscriptionManager {
         if (!soonestFirst) {
             byDate = byDate.reversed();
         }
-        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        List<Subscription> sorted = new ArrayList<>(active());
         sorted.sort(byDate.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
         return sorted;
     }
@@ -129,7 +162,7 @@ public class SubscriptionManager {
         if (highestFirst) {
             byCost = byCost.reversed();
         }
-        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        List<Subscription> sorted = new ArrayList<>(active());
         sorted.sort(byCost.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
         return sorted;
     }
@@ -143,7 +176,7 @@ public class SubscriptionManager {
         if (!aToZ) {
             byName = byName.reversed();
         }
-        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        List<Subscription> sorted = new ArrayList<>(active());
         sorted.sort(byName.thenComparing(Subscription::getNextPayment));
         return sorted;
     }
@@ -158,7 +191,7 @@ public class SubscriptionManager {
         if (!aToZ) {
             byCategory = byCategory.reversed();
         }
-        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        List<Subscription> sorted = new ArrayList<>(active());
         sorted.sort(byCategory.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
         return sorted;
     }
@@ -173,7 +206,7 @@ public class SubscriptionManager {
         if (!shortestFirst) {
             byCycle = byCycle.reversed();
         }
-        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        List<Subscription> sorted = new ArrayList<>(active());
         sorted.sort(byCycle.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
         return sorted;
     }
@@ -187,7 +220,7 @@ public class SubscriptionManager {
         if (!lowestFirst) {
             byId = byId.reversed();
         }
-        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        List<Subscription> sorted = new ArrayList<>(active());
         sorted.sort(byId);
         return sorted;
     }
@@ -203,19 +236,19 @@ public class SubscriptionManager {
     }
 
     public BigDecimal getMonthlyTotal() {
-        return subscriptions.stream().map(Subscription::getMonthlyCost)
+        return active().stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public BigDecimal getYearlyTotal() {
-        return subscriptions.stream().map(Subscription::getYearlyCost)
+        return active().stream().map(Subscription::getYearlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /** Monthly cost per category, sorted by category name. */
     public Map<String, BigDecimal> getMonthlyByCategory() {
         Map<String, BigDecimal> totals = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Subscription s : subscriptions) {
+        for (Subscription s : active()) {
             totals.merge(s.getCategory(), s.getMonthlyCost(), BigDecimal::add);
         }
         return totals;
@@ -228,7 +261,7 @@ public class SubscriptionManager {
      */
     public int rollForwardAll(LocalDate today) {
         int count = 0;
-        for (Subscription s : subscriptions) {
+        for (Subscription s : active()) {
             if (s.rollForward(today)) {
                 count++;
             }

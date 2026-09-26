@@ -561,6 +561,74 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void cancellingMovesASubscriptionToTheCancelledList() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming",
+                "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
+
+        String out = run("12", "1", "y", "6", "0");
+
+        assertTrue(out.contains("Cancelled \"Netflix\". You'll save 199.00 a month (2,388.00 a year)."));
+        assertTrue(out.contains("Monthly total: 59.99"));
+        Subscription netflix = saved().find(1).orElseThrow();
+        assertEquals(LocalDate.now(), netflix.getCancelledOn());
+    }
+
+    @Test
+    public void answeringNoLeavesTheSubscriptionActive() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("12", "1", "n", "0");
+
+        assertTrue(out.contains("Nothing cancelled."));
+        assertTrue(!saved().find(1).orElseThrow().isCancelled());
+    }
+
+    @Test
+    public void cancelledListShowsSavingsSoFar() throws IOException {
+        LocalDate skipped = LocalDate.now().minusDays(35);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + skipped + "\tStreaming\tCANCELLED=" + skipped.minusDays(5),
+                "2\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tMusic");
+
+        String out = run("13", "", "0");
+
+        assertTrue(out.contains("Saved so far: 398.00"));
+        assertTrue(out.contains("Cancelling these saves you 199.00 a month (2,388.00 a year)."));
+        assertEquals(skipped, saved().find(1).orElseThrow().getNextPayment());
+    }
+
+    @Test
+    public void cancelledListWhenNothingIsCancelled() {
+        String out = run("13", "0");
+
+        assertTrue(out.contains("You haven't cancelled any subscriptions."));
+    }
+
+    @Test
+    public void restoringMakesItActiveAgainWithAFutureDate() throws IOException {
+        LocalDate skipped = LocalDate.now().minusDays(35);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + skipped + "\tStreaming\tCANCELLED=" + skipped.minusDays(5));
+
+        String out = run("13", "1", "1", "0");
+
+        assertTrue(out.contains("Restored \"Netflix\"."));
+        Subscription netflix = saved().find(1).orElseThrow();
+        assertTrue(!netflix.isCancelled());
+        assertTrue(!netflix.getNextPayment().isBefore(LocalDate.now()));
+    }
+
+    @Test
+    public void cancelledSubscriptionsCannotBeEditedByTypingTheirId() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\tCANCELLED=" + LocalDate.now(),
+                "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
+
+        String out = run("3", "1", "0");
+
+        assertTrue(out.contains("No subscription with ID 1."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

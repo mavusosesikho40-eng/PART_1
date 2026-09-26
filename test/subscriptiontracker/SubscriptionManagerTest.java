@@ -299,6 +299,58 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void cancelledSubscriptionsAreLeftOutOfListsAndTotals() {
+        add("Spotify", "59.99", BillingCycle.MONTHLY, TODAY.plusDays(2), "Music");
+        Subscription netflix = add("Netflix", "199.00", BillingCycle.MONTHLY, TODAY.plusDays(1), "Streaming");
+        netflix.setFreeTrial(true);
+        netflix.cancel(TODAY);
+
+        assertEquals(List.of("Spotify"), names(manager.getAll()));
+        assertEquals(List.of("Spotify"), names(manager.getSortedByCost(true)));
+        assertEquals(List.of("Spotify"), names(manager.getSortedByName(true)));
+        assertEquals(List.of("Spotify"), names(manager.getUpcoming(TODAY, 7)));
+        assertTrue(manager.searchByCategory("Stream").isEmpty());
+        assertTrue(manager.getFreeTrials().isEmpty());
+        assertEquals(new BigDecimal("59.99"), manager.getMonthlyTotal());
+        assertEquals(List.of("Music"), List.copyOf(manager.getMonthlyByCategory().keySet()));
+        assertEquals(2, manager.getAllIncludingCancelled().size());
+    }
+
+    @Test
+    public void onlyCancelledSubscriptionsCountsAsEmpty() {
+        add("Netflix", "199", BillingCycle.MONTHLY, TODAY, "Streaming").cancel(TODAY);
+
+        assertTrue(manager.isEmpty());
+        assertEquals(1, manager.getCancelled().size());
+    }
+
+    @Test
+    public void budgetIgnoresCancelledSubscriptions() {
+        manager.setMonthlyBudget(new BigDecimal("100"));
+        add("Netflix", "199", BillingCycle.MONTHLY, TODAY, "Streaming").cancel(TODAY);
+
+        assertEquals(SubscriptionManager.BudgetStatus.UNDER, manager.getBudgetStatus());
+    }
+
+    @Test
+    public void cancelledListIsMostRecentFirstWithSavings() {
+        add("Old", "10", BillingCycle.MONTHLY, TODAY.minusDays(60), "X").cancel(TODAY.minusDays(70));
+        add("New", "20", BillingCycle.YEARLY, TODAY.plusDays(100), "X").cancel(TODAY.minusDays(1));
+
+        assertEquals(List.of("New", "Old"), names(manager.getCancelled()));
+        // "Old" skipped payments 60 and 30 days ago; "New" hasn't skipped one yet.
+        assertEquals(new BigDecimal("20"), manager.getSavedSoFar(TODAY));
+        assertEquals(new BigDecimal("11.67"), manager.getCancelledMonthlyTotal());
+    }
+
+    @Test
+    public void rollForwardAllSkipsCancelledSubscriptions() {
+        add("Cancelled", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X").cancel(TODAY.minusDays(5));
+
+        assertEquals(0, manager.rollForwardAll(TODAY));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

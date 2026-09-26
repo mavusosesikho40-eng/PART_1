@@ -60,6 +60,8 @@ public class SubscriptionTracker {
                 case "9" -> sortSubscriptions();
                 case "10" -> monthlyBudget();
                 case "11" -> listFreeTrials();
+                case "12" -> cancelSubscription();
+                case "13" -> cancelledSubscriptions();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -82,6 +84,8 @@ public class SubscriptionTracker {
         System.out.println("9. Sort subscriptions");
         System.out.println("10. Monthly budget");
         System.out.println("11. Free trials");
+        System.out.println("12. Cancel a subscription");
+        System.out.println("13. Cancelled subscriptions and savings");
         System.out.println("0. Exit");
     }
 
@@ -396,6 +400,66 @@ public class SubscriptionTracker {
         System.out.println("Cancel before the end date if you don't want to be charged.");
     }
 
+    private void cancelSubscription() {
+        Optional<Subscription> found = pickSubscription("cancel");
+        if (found.isEmpty()) {
+            return;
+        }
+        Subscription sub = found.get();
+        String answer = prompt("Cancel \"" + sub.getName() + "\"? It moves to your cancelled list. (y/n)");
+        if (answer == null || !answer.equalsIgnoreCase("y")) {
+            System.out.println("Nothing cancelled.");
+            return;
+        }
+        sub.cancel(LocalDate.now());
+        save();
+        System.out.println("Cancelled \"" + sub.getName() + "\". You'll save " + money(sub.getMonthlyCost())
+                + " a month (" + money(sub.getYearlyCost()) + " a year).");
+    }
+
+    private void cancelledSubscriptions() {
+        List<Subscription> cancelled = manager.getCancelled();
+        if (cancelled.isEmpty()) {
+            System.out.println("You haven't cancelled any subscriptions. Choose 12 to cancel one.");
+            return;
+        }
+        LocalDate today = LocalDate.now();
+        String format = "%-4s %-20s %-12s %12s %14s%n";
+        System.out.printf(format, "ID", "Name", "Cancelled", "Per month", "Saved so far");
+        System.out.println("-".repeat(66));
+        for (Subscription s : cancelled) {
+            System.out.printf(format, s.getId(), shorten(s.getName(), 20), s.getCancelledOn(),
+                    money(s.getMonthlyCost()), money(s.getSavedSoFar(today)));
+        }
+        BigDecimal yearly = cancelled.stream().map(Subscription::getYearlyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        System.out.println("Saved so far: " + money(manager.getSavedSoFar(today)));
+        System.out.println("Cancelling these saves you " + money(manager.getCancelledMonthlyTotal())
+                + " a month (" + money(yearly) + " a year).");
+
+        String input = prompt("ID to restore if you've signed up again (blank to go back)");
+        if (input == null || input.isEmpty()) {
+            return;
+        }
+        Optional<Subscription> found;
+        try {
+            found = manager.find(Integer.parseInt(input)).filter(Subscription::isCancelled);
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a number.");
+            return;
+        }
+        if (found.isEmpty()) {
+            System.out.println("No cancelled subscription with ID " + input + ".");
+            return;
+        }
+        Subscription sub = found.get();
+        sub.reactivate(today);
+        save();
+        System.out.println("Restored \"" + sub.getName() + "\". Next payment: " + sub.getNextPayment()
+                + " (" + dueIn(sub.getNextPayment()) + ").");
+        showBudgetWarning();
+    }
+
     // ---- Display helpers ----
 
     /** Reminds about free trials that end soon, before they start charging. */
@@ -587,12 +651,13 @@ public class SubscriptionTracker {
             return Optional.empty();
         }
         printTable(manager.getAll());
-        String input = prompt("ID of the subscription to " + action + " (blank to cancel)");
+        String input = prompt("ID of the subscription to " + action + " (blank to go back)");
         if (input == null || input.isEmpty()) {
             return Optional.empty();
         }
         try {
-            Optional<Subscription> found = manager.find(Integer.parseInt(input));
+            Optional<Subscription> found = manager.find(Integer.parseInt(input))
+                    .filter(s -> !s.isCancelled());
             if (found.isEmpty()) {
                 System.out.println("No subscription with ID " + input + ".");
             }
