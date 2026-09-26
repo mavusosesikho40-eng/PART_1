@@ -108,11 +108,11 @@ jobs:
           name: desktop-test-results
           path: composeApp/build/reports/tests/
 
-  # ---- Releases: every push to master that passes, as v1.0.<run number> ----
+  # ---- Releases: built on every push, published for pushes to master as v1.0.<run number> ----
 
   release-android:
     name: Signed Android app
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: [android, ios, desktop]
     runs-on: ubuntu-latest
     steps:
@@ -150,7 +150,7 @@ jobs:
 
   release-windows:
     name: Windows installer
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: [android, ios, desktop]
     runs-on: windows-latest
     steps:
@@ -177,6 +177,7 @@ jobs:
 
   release:
     name: Publish the release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [release-android, release-windows]
     runs-on: ubuntu-latest
     permissions:
