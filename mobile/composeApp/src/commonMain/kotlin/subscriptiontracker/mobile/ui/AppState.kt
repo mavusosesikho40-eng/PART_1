@@ -8,6 +8,7 @@ import kotlinx.datetime.LocalDate
 import okio.FileSystem
 import okio.IOException
 import okio.Path
+import subscriptiontracker.mobile.data.Backup
 import subscriptiontracker.mobile.data.Dates
 import subscriptiontracker.mobile.data.Format
 import subscriptiontracker.mobile.data.Storage
@@ -17,12 +18,15 @@ import subscriptiontracker.mobile.data.SubscriptionManager
 /**
  * The subscriptions and the file they're saved in. Every change goes
  * through [changed], which saves straight away and makes every screen
- * redraw (they read [version]).
+ * redraw (they read [version]). [onSaved] is told after every save, so the
+ * phone can refresh its widget and reminders.
  */
-class AppState(fileSystem: FileSystem, file: Path) {
+class AppState(fileSystem: FileSystem, file: Path, private val onSaved: (SubscriptionManager) -> Unit = {}) {
 
     private val storage = Storage(fileSystem, file)
-    val manager = SubscriptionManager()
+
+    var manager by mutableStateOf(SubscriptionManager())
+        private set
 
     /** Bumped on every change, so screens that read it redraw. */
     var version by mutableIntStateOf(0)
@@ -47,9 +51,17 @@ class AppState(fileSystem: FileSystem, file: Path) {
                     "the file was copied to ${result.unreadableCopy?.name} first."
             }
             if (manager.rollForwardAll(today) > 0) save()
+            onSaved(manager)
         } catch (e: IOException) {
             loadError = "Couldn't read your subscriptions (${e.message}). Nothing will be saved until the app is restarted."
         }
+    }
+
+    /** Replaces everything with a backup's contents, then saves. */
+    fun restore(backup: Backup) {
+        manager = backup.manager
+        changed("Restored ${backup.manager.all.size} subscription(s)" +
+            (if (backup.manager.cancelled.isEmpty()) "" else " and ${backup.manager.cancelled.size} cancelled") + ".")
     }
 
     /** Saves after a change, redraws, and shows [text] (or why saving failed). */
@@ -62,6 +74,7 @@ class AppState(fileSystem: FileSystem, file: Path) {
         if (loadError != null) return false
         return try {
             storage.save(manager)
+            onSaved(manager)
             true
         } catch (e: IOException) {
             false

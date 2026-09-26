@@ -12,5 +12,5 @@ import subscriptiontracker.mobile.ui.App
 fun MainViewController() = ComposeUIViewController {
     // Saved in the app's Documents folder, which iOS backs up with the phone.
     val documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).first() as String
-    App(FileSystem.SYSTEM, documents.toPath() / "subscriptions.txt")
+    App(FileSystem.SYSTEM, documents.toPath() / "subscriptions.txt", onSaved = { IosReminders.schedule(it) })
 }
