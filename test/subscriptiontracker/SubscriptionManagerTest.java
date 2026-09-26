@@ -129,6 +129,26 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void sortByCostComparesMonthlyEquivalents() {
+        add("Adobe", "2400.00", BillingCycle.YEARLY, TODAY, "Software");   // 200.00 a month
+        add("Gym", "250.00", BillingCycle.MONTHLY, TODAY, "Health");       // 250.00 a month
+        add("Spotify", "59.99", BillingCycle.MONTHLY, TODAY, "Music");
+        add("Coffee", "20.00", BillingCycle.WEEKLY, TODAY, "Food");        // 86.67 a month
+
+        assertEquals(List.of("Gym", "Adobe", "Coffee", "Spotify"), names(manager.getSortedByCost(true)));
+        assertEquals(List.of("Spotify", "Coffee", "Adobe", "Gym"), names(manager.getSortedByCost(false)));
+    }
+
+    @Test
+    public void sortByCostOrdersEqualCostsByName() {
+        add("netflix", "199", BillingCycle.MONTHLY, TODAY, "Streaming");
+        add("Apple TV", "199", BillingCycle.MONTHLY, TODAY, "Streaming");
+
+        assertEquals(List.of("Apple TV", "netflix"), names(manager.getSortedByCost(true)));
+        assertEquals(List.of("Apple TV", "netflix"), names(manager.getSortedByCost(false)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");
