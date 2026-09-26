@@ -115,7 +115,7 @@ public class SubscriptionTrackerTest {
         LocalDate due = LocalDate.now().plusDays(5);
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
-        run("3", "1", "", "69.99", "", "", "", "", "0");
+        run("3", "1", "1", "", "69.99", "", "", "", "", "0");
 
         Subscription sub = saved().find(1).orElseThrow();
         assertEquals("Spotify", sub.getName());
@@ -131,7 +131,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming",
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
-        run("4", "1", "n", "4", "2", "y", "0");
+        run("3", "3", "1", "n", "3", "3", "2", "y", "0");
 
         SubscriptionManager manager = saved();
         assertTrue(manager.find(1).isPresent());
@@ -142,7 +142,7 @@ public class SubscriptionTrackerTest {
     public void unknownIdIsReported() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(5) + "\tStreaming");
 
-        String out = run("4", "42", "0");
+        String out = run("3", "3", "42", "0");
 
         assertTrue(out.contains("No subscription with ID 42."));
         assertTrue(saved().find(1).isPresent());
@@ -175,7 +175,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("6", "0");
+        String out = run("6", "1", "0");
 
         assertTrue(out.contains("Monthly total: 399.00"));
         assertTrue(out.contains("Yearly total:  4,788.00"));
@@ -188,7 +188,7 @@ public class SubscriptionTrackerTest {
                 "2\tShowmax\t99.00\tMONTHLY\t" + due + "\tstreaming",
                 "3\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("7", "stream", "0");
+        String out = run("5", "1", "stream", "0");
 
         assertTrue(out.contains("Categories: Software, Streaming"));
         assertTrue(out.contains("Netflix"));
@@ -201,7 +201,7 @@ public class SubscriptionTrackerTest {
     public void searchByCategoryReportsNoMatches() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("7", "Gaming", "0");
+        String out = run("5", "1", "Gaming", "0");
 
         assertTrue(out.contains("No subscriptions in a category matching \"Gaming\"."));
     }
@@ -212,7 +212,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming");
         Path csv = folder.getRoot().toPath().resolve("export.csv");
 
-        String out = run("8", csv.toString(), "0");
+        String out = run("7", csv.toString(), "0");
 
         assertTrue(out.contains("Exported 1 subscription(s) to"));
         List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
@@ -222,7 +222,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void exportWithNoSubscriptionsWritesNothing() {
-        String out = run("8", "0");
+        String out = run("7", "0");
 
         assertTrue(out.contains("You have no subscriptions to export."));
     }
@@ -234,7 +234,7 @@ public class SubscriptionTrackerTest {
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
                 "3\tGym\t250.00\tMONTHLY\t" + due + "\tHealth");
 
-        String out = run("9", "1", "", "0");
+        String out = run("5", "3", "1", "", "0");
 
         assertTrue(out.indexOf("Gym") < out.indexOf("Adobe"));
         assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
@@ -247,7 +247,7 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("9", "1", "2", "0");
+        String out = run("5", "3", "1", "2", "0");
 
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
         assertTrue(out.contains("Sorted by cost per month, cheapest first."));
@@ -258,7 +258,7 @@ public class SubscriptionTrackerTest {
         seed("1\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(90) + "\tSoftware",
                 "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(12) + "\tStreaming");
 
-        String out = run("9", "2", "", "0");
+        String out = run("5", "3", "2", "", "0");
 
         assertTrue(out.indexOf("Netflix") < out.indexOf("Adobe"));
         assertTrue(out.contains("in 12 days"));
@@ -271,7 +271,7 @@ public class SubscriptionTrackerTest {
         seed("1\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(90) + "\tSoftware",
                 "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(12) + "\tStreaming");
 
-        String out = run("9", "2", "2", "0");
+        String out = run("5", "3", "2", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Netflix"));
         assertTrue(out.contains("Sorted by next payment date, latest first."));
@@ -284,7 +284,7 @@ public class SubscriptionTrackerTest {
                 "2\tAdobe\t2400.00\tYEARLY\t" + due.plusDays(1) + "\tSoftware",
                 "3\tNetflix\t199.00\tMONTHLY\t" + due.plusDays(2) + "\tStreaming");
 
-        String out = run("9", "3", "", "0");
+        String out = run("5", "3", "3", "", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Netflix"));
         assertTrue(out.indexOf("Netflix") < out.indexOf("Spotify"));
@@ -297,7 +297,7 @@ public class SubscriptionTrackerTest {
         seed("1\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
                 "2\tSpotify\t59.99\tMONTHLY\t" + due.plusDays(1) + "\tMusic");
 
-        String out = run("9", "3", "2", "0");
+        String out = run("5", "3", "3", "2", "0");
 
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
         assertTrue(out.contains("Sorted by name, Z to A."));
@@ -310,7 +310,7 @@ public class SubscriptionTrackerTest {
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "3\tGym\t250.00\tMONTHLY\t" + due + "\tHealth");
 
-        String out = run("9", "4", "", "0");
+        String out = run("5", "3", "4", "", "0");
 
         assertTrue(out.indexOf("Gym") < out.indexOf("Spotify"));
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
@@ -323,7 +323,7 @@ public class SubscriptionTrackerTest {
         seed("1\tGym\t250.00\tMONTHLY\t" + due + "\tHealth",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("9", "4", "2", "0");
+        String out = run("5", "3", "4", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Gym"));
         assertTrue(out.contains("Sorted by category, Z to A."));
@@ -336,7 +336,7 @@ public class SubscriptionTrackerTest {
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "3\tCoffee\t20.00\tWEEKLY\t" + due + "\tFood");
 
-        String out = run("9", "5", "", "0");
+        String out = run("5", "3", "5", "", "0");
 
         assertTrue(out.indexOf("Coffee") < out.indexOf("Spotify"));
         assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
@@ -349,7 +349,7 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("9", "5", "2", "0");
+        String out = run("5", "3", "5", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
         assertTrue(out.contains("Sorted by billing cycle, longest first."));
@@ -361,7 +361,7 @@ public class SubscriptionTrackerTest {
                 "1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(30) + "\tMusic",
                 "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(25) + "\tStreaming");
 
-        String out = run("9", "6", "", "0");
+        String out = run("5", "3", "6", "", "0");
 
         assertTrue(out.indexOf("Spotify") < out.indexOf("Netflix"));
         assertTrue(out.indexOf("Netflix") < out.indexOf("Adobe"));
@@ -373,7 +373,7 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tMusic",
                 "2\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(30) + "\tSoftware");
 
-        String out = run("9", "6", "2", "0");
+        String out = run("5", "3", "6", "2", "0");
 
         assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
         assertTrue(out.contains("Sorted by ID, highest first."));
@@ -383,7 +383,7 @@ public class SubscriptionTrackerTest {
     public void sortMenuRejectsUnknownChoice() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("9", "7", "0");
+        String out = run("5", "3", "7", "0");
 
         assertTrue(out.contains("Please choose 1-6."));
         assertTrue(!out.contains("Sorted by"));
@@ -393,7 +393,7 @@ public class SubscriptionTrackerTest {
     public void sortMenuBlankCancels() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("9", "", "0");
+        String out = run("5", "3", "", "0");
 
         assertTrue(!out.contains("Order [1]"));
         assertTrue(!out.contains("Sorted by"));
@@ -401,7 +401,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void sortMenuWithNoSubscriptions() {
-        String out = run("9", "0");
+        String out = run("5", "3", "0");
 
         assertTrue(out.contains("You have no subscriptions yet."));
         assertTrue(!out.contains("Sort by:"));
@@ -411,7 +411,7 @@ public class SubscriptionTrackerTest {
     public void settingABudgetSavesItAndWarnsWhenClose() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("10", "200", "0");
+        String out = run("6", "2", "200", "0");
 
         assertTrue(out.contains("You haven't set a monthly budget."));
         assertTrue(out.contains("Monthly budget set to 200.00."));
@@ -459,7 +459,7 @@ public class SubscriptionTrackerTest {
         seed("BUDGET\t1000.00",
                 "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("6", "0");
+        String out = run("6", "1", "0");
 
         assertTrue(out.contains("Budget:        1,000.00 a month; you're spending 199.00 (19%), 801.00 left."));
     }
@@ -469,7 +469,7 @@ public class SubscriptionTrackerTest {
         seed("BUDGET\t500.00",
                 "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("10", "", "10", "0", "0");
+        String out = run("6", "2", "", "6", "2", "0", "0");
 
         assertTrue(out.contains("Monthly budget unchanged."));
         assertTrue(out.contains("Monthly budget removed."));
@@ -524,7 +524,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tTRIAL",
                 "2\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(10) + "\tMusic");
 
-        String out = run("11", "0");
+        String out = run("4", "2", "0");
 
         assertTrue(out.contains("Trial ends"));
         assertTrue(out.contains("in 20 days"));
@@ -536,7 +536,7 @@ public class SubscriptionTrackerTest {
     public void freeTrialsMenuWithNoTrials() throws IOException {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(10) + "\tMusic");
 
-        String out = run("11", "0");
+        String out = run("4", "2", "0");
 
         assertTrue(out.contains("You have no free trials."));
     }
@@ -554,7 +554,7 @@ public class SubscriptionTrackerTest {
     public void editingCanTurnATrialIntoAPaidSubscription() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tTRIAL");
 
-        String out = run("3", "1", "", "", "", "n", "", "", "0");
+        String out = run("3", "1", "1", "", "", "", "n", "", "", "0");
 
         assertTrue(out.contains("Free trial? (y/n) [y]"));
         assertTrue(!saved().find(1).orElseThrow().isFreeTrial());
@@ -566,7 +566,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming",
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
-        String out = run("12", "1", "y", "6", "0");
+        String out = run("3", "2", "1", "y", "6", "1", "0");
 
         assertTrue(out.contains("Cancelled \"Netflix\". You'll save 199.00 a month (2,388.00 a year)."));
         assertTrue(out.contains("Monthly total: 59.99"));
@@ -578,7 +578,7 @@ public class SubscriptionTrackerTest {
     public void answeringNoLeavesTheSubscriptionActive() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("12", "1", "n", "0");
+        String out = run("3", "2", "1", "n", "0");
 
         assertTrue(out.contains("Nothing cancelled."));
         assertTrue(!saved().find(1).orElseThrow().isCancelled());
@@ -590,7 +590,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + skipped + "\tStreaming\tCANCELLED=" + skipped.minusDays(5),
                 "2\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tMusic");
 
-        String out = run("13", "", "0");
+        String out = run("6", "3", "", "0");
 
         assertTrue(out.contains("Saved so far: 398.00"));
         assertTrue(out.contains("Cancelling these saves you 199.00 a month (2,388.00 a year)."));
@@ -599,7 +599,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void cancelledListWhenNothingIsCancelled() {
-        String out = run("13", "0");
+        String out = run("6", "3", "0");
 
         assertTrue(out.contains("You haven't cancelled any subscriptions."));
     }
@@ -609,7 +609,7 @@ public class SubscriptionTrackerTest {
         LocalDate skipped = LocalDate.now().minusDays(35);
         seed("1\tNetflix\t199.00\tMONTHLY\t" + skipped + "\tStreaming\tCANCELLED=" + skipped.minusDays(5));
 
-        String out = run("13", "1", "1", "0");
+        String out = run("6", "3", "1", "1", "0");
 
         assertTrue(out.contains("Restored \"Netflix\"."));
         Subscription netflix = saved().find(1).orElseThrow();
@@ -623,7 +623,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\tCANCELLED=" + LocalDate.now(),
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
-        String out = run("3", "1", "0");
+        String out = run("3", "1", "1", "0");
 
         assertTrue(out.contains("No subscription with ID 1."));
     }
@@ -635,7 +635,7 @@ public class SubscriptionTrackerTest {
                 "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
                 "3\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
 
-        String out = run("14", "2", "0");
+        String out = run("5", "2", "2", "0");
 
         assertTrue(out.contains("Netflix"));
         assertTrue(out.contains("Spotify"));
@@ -647,7 +647,7 @@ public class SubscriptionTrackerTest {
     public void filterByCycleWithNoMatches() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("14", "1", "0");
+        String out = run("5", "2", "1", "0");
 
         assertTrue(out.contains("No weekly subscriptions."));
     }
@@ -656,7 +656,7 @@ public class SubscriptionTrackerTest {
     public void filterByCycleBlankGoesBack() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("14", "", "0");
+        String out = run("5", "2", "", "0");
 
         assertTrue(!out.contains("found."));
     }
@@ -674,6 +674,49 @@ public class SubscriptionTrackerTest {
         Path copy = file.resolveSibling(file.getFileName() + ".unreadable");
         assertTrue(Files.readAllLines(copy, StandardCharsets.UTF_8).contains("this line is broken"));
         assertEquals(3, saved().getAll().size());
+    }
+
+    @Test
+    public void mainMenuGroupsTheOptions() {
+        String out = run("0");
+
+        assertTrue(out.contains("3. Edit, cancel or remove a subscription"));
+        assertTrue(out.contains("4. Upcoming payments and free trials"));
+        assertTrue(out.contains("5. Search, filter and sort"));
+        assertTrue(out.contains("6. Spending, budget and savings"));
+        assertTrue(out.contains("7. Export to CSV"));
+        assertTrue(!out.contains("8. "));
+    }
+
+    @Test
+    public void subMenuBlankGoesBackToTheMainMenu() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "", "1", "0");
+
+        assertTrue(out.contains("-- Spending, budget and savings --"));
+        assertTrue(!out.contains("Monthly total"));
+        // The "1" after the blank answer was read by the main menu, so the table is shown.
+        assertTrue(out.contains("ID   Name"));
+    }
+
+    @Test
+    public void subMenuRejectsUnknownChoice() {
+        String out = run("3", "9", "0");
+
+        assertTrue(out.contains("Please choose 1-3."));
+    }
+
+    @Test
+    public void upcomingPaymentsShowsTheChosenNumberOfDays() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(10) + "\tStreaming",
+                "2\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(60) + "\tSoftware");
+
+        String out = run("4", "1", "14", "0");
+
+        assertTrue(out.contains("Payments due in the next 14 days:"));
+        assertTrue(out.contains("Total due: 199.00"));
+        assertTrue(!out.contains("Adobe"));
     }
 
     @Test
