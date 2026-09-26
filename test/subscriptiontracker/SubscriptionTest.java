@@ -75,6 +75,41 @@ public class SubscriptionTest {
     }
 
     @Test
+    public void savedSoFarCountsThePaymentsSkippedSinceCancelling() {
+        Subscription sub = monthly(LocalDate.of(2026, 7, 1));
+        sub.cancel(LocalDate.of(2026, 6, 20));
+
+        // Payments skipped on 1 July, 1 August and 1 September.
+        assertEquals(new BigDecimal("597.00"), sub.getSavedSoFar(TODAY));
+        assertEquals(0, sub.getSavedSoFar(LocalDate.of(2026, 6, 30)).signum());
+    }
+
+    @Test
+    public void activeSubscriptionHasSavedNothing() {
+        assertEquals(BigDecimal.ZERO, monthly(TODAY.minusDays(40)).getSavedSoFar(TODAY));
+    }
+
+    @Test
+    public void cancelledSubscriptionIsNotRolledForward() {
+        Subscription sub = monthly(TODAY.minusDays(40));
+        sub.cancel(TODAY.minusDays(45));
+
+        assertFalse(sub.rollForward(TODAY));
+        assertEquals(TODAY.minusDays(40), sub.getNextPayment());
+    }
+
+    @Test
+    public void reactivatingClearsTheCancellationAndMovesTheDateForward() {
+        Subscription sub = monthly(LocalDate.of(2026, 7, 1));
+        sub.cancel(LocalDate.of(2026, 6, 20));
+
+        sub.reactivate(TODAY);
+
+        assertFalse(sub.isCancelled());
+        assertEquals(LocalDate.of(2026, 10, 1), sub.getNextPayment());
+    }
+
+    @Test
     public void monthlyAndYearlyCostsFollowBillingCycle() {
         Subscription sub = new Subscription(1, "Adobe", new BigDecimal("2400.00"),
                 BillingCycle.YEARLY, TODAY, "Software");

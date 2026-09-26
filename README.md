@@ -23,6 +23,8 @@ Payments due in the next 7 days:
 9. Sort subscriptions
 10. Monthly budget
 11. Free trials
+12. Cancel a subscription
+13. Cancelled subscriptions and savings
 0. Exit
 ```
 
@@ -33,7 +35,7 @@ Payments due in the next 7 days:
 | 1. View all subscriptions | Table of every subscription, soonest payment first. |
 | 2. Add a subscription | Name, cost, billing cycle (weekly, monthly, quarterly or yearly), whether it's a free trial, next payment date (`YYYY-MM-DD`) and category. For a free trial, the date is when the trial ends and the first charge is taken. Invalid answers are asked again; a blank name cancels. |
 | 3. Edit a subscription | Change any field, including whether it's a free trial; press Enter to keep the current value. |
-| 4. Remove a subscription | Asks for confirmation first. |
+| 4. Remove a subscription | Deletes it permanently (asks for confirmation first). To keep a record instead, use 12. |
 | 5. Upcoming payments | Payments due in the next N days (30 by default) and their total. |
 | 6. Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
 | 7. Search by category | Finds subscriptions whose category contains your search text, ignoring case, with their totals. |
@@ -41,6 +43,8 @@ Payments due in the next 7 days:
 | 9. Sort subscriptions | Sort by cost per month, next payment date, name, category, billing cycle or ID, in either direction. |
 | 10. Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
 | 11. Free trials | Lists your free trials, soonest ending first, with how long is left and what they'll cost afterwards. |
+| 12. Cancel a subscription | Moves a subscription to your cancelled list instead of deleting it, and shows what you'll save per month and per year. |
+| 13. Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
 
 A few things happen automatically:
 
@@ -50,6 +54,8 @@ A few things happen automatically:
 - **Free-trial reminders** — trials ending in the next 7 days are called out at startup, with what
   you'll be charged unless you cancel. Trials are marked "(trial)" in lists, and once the end date
   has passed a trial becomes a normal paid subscription.
+- **Cancelled subscriptions stay out of the way** — they're left out of every list, total, sort,
+  search, reminder, the budget and the CSV export, but kept in the data file for your savings.
 - **Budget warnings** — if you've set a monthly budget, you're warned at startup and after adding
   or editing a subscription when your subscriptions cost 90% or more of it, or go over it. The
   spending summary also shows how much of the budget you've used.
@@ -94,7 +100,8 @@ The file is plain text with one subscription per line, tab-separated:
 ID    Name    Cost    Cycle    Next payment    Category
 ```
 
-Free trials have `TRIAL` as an extra column at the end of the line. If you've set a monthly
+Free trials have `TRIAL` as an extra column at the end of the line, and cancelled subscriptions
+have `CANCELLED=` followed by the date they were cancelled. If you've set a monthly
 budget, it's saved on the first line as `BUDGET` followed by the amount.
 
 `subscriptions.txt` and `subscriptions.csv` are listed in `.gitignore`, so your personal data is

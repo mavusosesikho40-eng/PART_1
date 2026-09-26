@@ -153,6 +153,33 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void cancelledDateIsSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        Subscription sub = original.add("Trial", new BigDecimal("20"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 10, 2), "X");
+        sub.setFreeTrial(true);
+        sub.cancel(LocalDate.of(2026, 9, 20));
+        storage.save(original);
+
+        assertEquals(List.of("1\tTrial\t20\tMONTHLY\t2026-10-02\tX\tTRIAL\tCANCELLED=2026-09-20"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        Subscription back = loaded.find(1).orElseThrow();
+        assertEquals(LocalDate.of(2026, 9, 20), back.getCancelledOn());
+        assertTrue(back.isFreeTrial());
+    }
+
+    @Test
+    public void unreadableCancelledDateSkipsTheLine() throws IOException {
+        Files.write(file, List.of("1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming\tCANCELLED=soon"),
+                StandardCharsets.UTF_8);
+
+        assertEquals(1, storage.load(new SubscriptionManager()));
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

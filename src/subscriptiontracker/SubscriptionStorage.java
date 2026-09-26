@@ -12,7 +12,8 @@ import java.util.List;
 /**
  * Saves and loads subscriptions as a tab-separated text file.
  * Each line holds: id, name, cost, cycle, next payment date, category,
- * followed by "TRIAL" for a free trial.
+ * followed by optional flags: "TRIAL" for a free trial and
+ * "CANCELLED=yyyy-mm-dd" for a cancelled subscription.
  * If a monthly budget is set, the first line is "BUDGET" and the amount.
  */
 public class SubscriptionStorage {
@@ -20,6 +21,7 @@ public class SubscriptionStorage {
     private static final String SEPARATOR = "\t";
     private static final String BUDGET = "BUDGET";
     private static final String TRIAL = "TRIAL";
+    private static final String CANCELLED = "CANCELLED=";
 
     private final Path file;
 
@@ -35,7 +37,7 @@ public class SubscriptionStorage {
         List<String> lines = new ArrayList<>();
         manager.getMonthlyBudget().ifPresent(budget ->
                 lines.add(BUDGET + SEPARATOR + budget.toPlainString()));
-        for (Subscription s : manager.getAll()) {
+        for (Subscription s : manager.getAllIncludingCancelled()) {
             String line = String.join(SEPARATOR,
                     String.valueOf(s.getId()),
                     s.getName(),
@@ -43,7 +45,13 @@ public class SubscriptionStorage {
                     s.getCycle().name(),
                     s.getNextPayment().toString(),
                     s.getCategory());
-            lines.add(s.isFreeTrial() ? line + SEPARATOR + TRIAL : line);
+            if (s.isFreeTrial()) {
+                line += SEPARATOR + TRIAL;
+            }
+            if (s.isCancelled()) {
+                line += SEPARATOR + CANCELLED + s.getCancelledOn();
+            }
+            lines.add(line);
         }
         Files.write(file, lines, StandardCharsets.UTF_8);
     }
@@ -76,7 +84,13 @@ public class SubscriptionStorage {
                         BillingCycle.valueOf(parts[3]),
                         LocalDate.parse(parts[4]),
                         parts[5]);
-                sub.setFreeTrial(parts.length > 6 && parts[6].equals(TRIAL));
+                for (int i = 6; i < parts.length; i++) {
+                    if (parts[i].equals(TRIAL)) {
+                        sub.setFreeTrial(true);
+                    } else if (parts[i].startsWith(CANCELLED)) {
+                        sub.cancel(LocalDate.parse(parts[i].substring(CANCELLED.length())));
+                    }
+                }
                 manager.restore(sub);
             } catch (RuntimeException e) {
                 skipped++;

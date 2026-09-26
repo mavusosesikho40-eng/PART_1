@@ -15,6 +15,7 @@ public class Subscription {
     private LocalDate nextPayment;
     private String category;
     private boolean freeTrial;
+    private LocalDate cancelledOn;
 
     public Subscription(int id, String name, BigDecimal cost, BillingCycle cycle,
             LocalDate nextPayment, String category) {
@@ -82,6 +83,44 @@ public class Subscription {
         this.freeTrial = freeTrial;
     }
 
+    public boolean isCancelled() {
+        return cancelledOn != null;
+    }
+
+    /** The day it was cancelled, or null if it is active. */
+    public LocalDate getCancelledOn() {
+        return cancelledOn;
+    }
+
+    /**
+     * Cancels it. The next payment date is kept as the first payment that
+     * won't be made, which is where savings are counted from.
+     */
+    public void cancel(LocalDate today) {
+        cancelledOn = today;
+    }
+
+    /** Makes a cancelled subscription active again from today. */
+    public void reactivate(LocalDate today) {
+        cancelledOn = null;
+        rollForward(today);
+    }
+
+    /**
+     * How much has been saved by cancelling: the payments that would have
+     * been made from the next payment date up to and including today.
+     */
+    public BigDecimal getSavedSoFar(LocalDate today) {
+        if (!isCancelled()) {
+            return BigDecimal.ZERO;
+        }
+        int payments = 0;
+        for (LocalDate d = nextPayment; !d.isAfter(today); d = cycle.next(d)) {
+            payments++;
+        }
+        return cost.multiply(BigDecimal.valueOf(payments));
+    }
+
     public BigDecimal getMonthlyCost() {
         return cycle.toMonthly(cost);
     }
@@ -94,10 +133,14 @@ public class Subscription {
      * Moves the next payment date forward past any payments that have
      * already happened, so it always points at today or later. A free trial
      * whose end date has passed becomes a normal paid subscription.
+     * Cancelled subscriptions are left alone.
      *
      * @return true if the date changed
      */
     public boolean rollForward(LocalDate today) {
+        if (isCancelled()) {
+            return false;
+        }
         boolean changed = false;
         while (nextPayment.isBefore(today)) {
             nextPayment = cycle.next(nextPayment);
