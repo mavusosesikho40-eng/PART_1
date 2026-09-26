@@ -39,4 +39,5 @@ adb shell cmd statusbar expand-notifications
 sleep 3
 adb exec-out screencap -p > "$OUT/notifications.png"
 adb shell cmd statusbar collapse
+adb logcat -d > "$OUT/logcat.txt" || true
 ls -l "$OUT"
