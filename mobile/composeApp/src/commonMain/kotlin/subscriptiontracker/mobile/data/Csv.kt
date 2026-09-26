@@ -22,6 +22,7 @@ object CsvImporter {
         column("category", "category")
         column("trial", "free trial", "trial")
         column("note", "note", "notes")
+        column("currency", "currency")
     }
 
     fun importText(input: String, manager: SubscriptionManager, today: LocalDate): Result {
@@ -63,6 +64,11 @@ object CsvImporter {
                 val sub = manager.add(name, cost, cycle, next, category.ifEmpty { "Other" })
                 sub.freeTrial = cell("trial").lowercase() in setOf("yes", "y", "true", "1")
                 sub.note = cell("note").replace("\t", " ")
+                val currency = cell("currency")
+                if (currency.isNotEmpty()) {
+                    require(Format.isValidCurrencyCode(currency)) { "the currency \"$currency\" isn't a code like USD" }
+                    sub.currency = currency
+                }
                 sub.rollForward(today)
                 imported++
             } catch (e: IllegalArgumentException) {
@@ -195,7 +201,7 @@ object CsvImporter {
 object CsvExporter {
 
     private const val HEADER =
-        "ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial,Note"
+        "ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial,Note,Currency"
 
     fun toCsv(subscriptions: List<Subscription>): String {
         val csv = StringBuilder(HEADER).append("\r\n")
@@ -203,7 +209,7 @@ object CsvExporter {
             csv.append(listOf(
                 s.id.toString(), escape(s.name), escape(s.category), Money.toPlainString(s.cost), s.cycle.label,
                 s.nextPayment.toString(), Money.toPlainString(s.monthlyCost), Money.toPlainString(s.yearlyCost),
-                if (s.freeTrial) "Yes" else "No", escape(s.note),
+                if (s.freeTrial) "Yes" else "No", escape(s.note), s.currency,
             ).joinToString(",")).append("\r\n")
         }
         return csv.toString()

@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import subscriptiontracker.mobile.data.BillingCycle
 import subscriptiontracker.mobile.data.Dates
 import subscriptiontracker.mobile.data.Format
+import subscriptiontracker.mobile.data.Money
 import subscriptiontracker.mobile.data.Subscription
 import subscriptiontracker.mobile.data.SubscriptionForm
 
@@ -68,7 +69,7 @@ fun EditScreen(state: AppState, editing: Subscription?) {
     val today = state.today
     val format = state.format
     var form by remember {
-        mutableStateOf(if (editing == null) SubscriptionForm(date = today) else SubscriptionForm.from(editing))
+        mutableStateOf(if (editing == null) SubscriptionForm(date = today) else SubscriptionForm.from(editing, state.manager))
     }
     var problem by remember { mutableStateOf<String?>(null) }
     var pickingDate by remember { mutableStateOf(false) }
@@ -85,7 +86,7 @@ fun EditScreen(state: AppState, editing: Subscription?) {
             val sub = form.add(state.manager, today)
             state.changed("Added ${sub.name}.")
         } else {
-            val change = form.applyTo(editing, today)
+            val change = form.applyTo(editing, today, state.manager)
             state.changed("Saved ${editing.name}." + if (change == null) "" else " Price change recorded.")
         }
         close()
@@ -125,9 +126,13 @@ fun EditScreen(state: AppState, editing: Subscription?) {
                 onValueChange = { form = form.copy(cost = it); problem = null },
                 label = { Text("Cost") },
                 placeholder = { Text("0.00") },
-                prefix = if (format.currencySymbol.isEmpty()) null else { { Text(format.currencySymbol + " ") } },
+                prefix = when {
+                    form.isForeign -> { { Text(form.currency.trim().uppercase() + " ") } }
+                    format.currencySymbol.isEmpty() -> null
+                    else -> { { Text(format.currencySymbol + " ") } }
+                },
                 supportingText = if (editing != null && pending != null) {
-                    { Text("was ${format.money(editing.cost)}") }
+                    { Text("was ${format.moneyIn(editing.currency, editing.cost)}") }
                 } else {
                     null
                 },
@@ -138,12 +143,14 @@ fun EditScreen(state: AppState, editing: Subscription?) {
             if (pending != null) {
                 SwitchRow(
                     title = "Record this as a price change",
-                    detail = if (form.recordPriceChange) format.describe(pending) + ", kept in your price history"
+                    detail = if (form.recordPriceChange) format.describe(pending, editing.currency) + ", kept in your price history"
                     else "Just correcting a mistake: the old price is not kept",
                     checked = form.recordPriceChange,
                     onChange = { form = form.copy(recordPriceChange = it) },
                 )
             }
+
+            CurrencySection(form, format, onChange = { form = it; problem = null })
 
             Text("Billed", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -258,13 +265,13 @@ fun EditScreen(state: AppState, editing: Subscription?) {
     if (editing != null && confirmCancel) {
         ConfirmDialog(
             title = "Cancel ${editing.name}?",
-            text = "It moves to your cancelled list, and you'll save ${format.money(editing.monthlyCost)} a month " +
-                "(${format.money(editing.yearlyCost)} a year). Remember to cancel it with the provider too.",
+            text = "It moves to your cancelled list, and you'll save ${format.money(state.manager.homeMonthly(editing))} a month " +
+                "(${format.money(state.manager.homeYearly(editing))} a year). Remember to cancel it with the provider too.",
             confirm = "Cancel it",
             danger = true,
             onConfirm = {
                 editing.cancel(today)
-                state.changed("Cancelled ${editing.name}. You'll save ${format.money(editing.monthlyCost)} a month.")
+                state.changed("Cancelled ${editing.name}. You'll save ${format.money(state.manager.homeMonthly(editing))} a month.")
                 close()
             },
             onDismiss = { confirmCancel = false },
@@ -282,6 +289,53 @@ fun EditScreen(state: AppState, editing: Subscription?) {
                 close()
             },
             onDismiss = { confirmRemove = false },
+        )
+    }
+}
+
+/**
+ * For a subscription billed in another currency (e.g. USD): its code, and
+ * how much one unit is in your currency, with what the cost comes to.
+ */
+@Composable
+private fun CurrencySection(form: SubscriptionForm, format: Format, onChange: (SubscriptionForm) -> Unit) {
+    SwitchRow(
+        title = "Billed in another currency",
+        detail = if (form.isForeign) "Totals and the budget use the exchange rate below"
+        else "e.g. a service that charges in US dollars",
+        checked = form.isForeign,
+        onChange = { on -> onChange(form.copy(foreign = on, currency = form.currency.ifBlank { "USD" })) },
+    )
+    if (!form.isForeign) return
+    val code = form.currency.trim().uppercase()
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = form.currency,
+            onValueChange = { onChange(form.copy(currency = it.take(3).uppercase())) },
+            label = { Text("Currency") },
+            placeholder = { Text("USD") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+            modifier = Modifier.weight(1f),
+        )
+        OutlinedTextField(
+            value = form.rate,
+            onValueChange = { onChange(form.copy(rate = it)) },
+            label = { Text("1 ${code.ifEmpty { "unit" }} is") },
+            placeholder = { Text("18.25") },
+            prefix = if (format.currencySymbol.isEmpty()) null else { { Text(format.currencySymbol + " ") } },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1.4f),
+        )
+    }
+    val cost = form.parsedCost
+    val rate = form.parsedRate
+    if (cost != null && rate != null) {
+        Text(
+            "${form.cycle.label} cost: about ${format.money(Money.divideRounded(cost * rate, 1_000_000))}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

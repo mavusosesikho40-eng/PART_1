@@ -76,7 +76,7 @@ fun SubscriptionsScreen(state: AppState, padding: PaddingValues) {
     val cycle = BillingCycle.entries.getOrNull(cycleIndex)
     val sort = ListView.Sort.entries[sortIndex]
     val all = manager.all
-    val shown = ListView.sort(all.filter { ListView.matches(it, search, cycle) }, sort)
+    val shown = ListView.sort(all.filter { ListView.matches(it, search, cycle) }, sort, manager)
     val trials = manager.trialsEndingWithin(today, 7).filter { it.id !in dismissedTrials }
 
     LazyColumn(
@@ -121,7 +121,7 @@ fun SubscriptionsScreen(state: AppState, padding: PaddingValues) {
             item(key = "none") { EmptyNote("Nothing matches.") }
         }
         items(shown, key = { it.id }) { sub ->
-            SubscriptionRow(sub, format, today, onClick = { state.editing = AppState.Editing(sub) })
+            SubscriptionRow(sub, format, today, home = manager.homeCost(sub), onClick = { state.editing = AppState.Editing(sub) })
         }
         if (all.isNotEmpty()) {
             item(key = "count") {
@@ -174,7 +174,7 @@ private fun TrialReminder(
                 color = StatusColors.warning,
             )
             Text(
-                "${Format.date(trial.nextPayment)}. You'll be charged ${format.money(trial.cost)} unless you cancel." +
+                "${Format.date(trial.nextPayment)}. You'll be charged ${format.moneyIn(trial.currency, trial.cost)} unless you cancel." +
                     if (more > 0) " ($more more ending this week.)" else "",
                 style = MaterialTheme.typography.bodyMedium,
                 color = StatusColors.warning,
@@ -224,7 +224,7 @@ private fun SpendingCards(state: AppState) {
         val due = manager.upcoming(state.today, 7)
         SummaryCard(
             caption = "Next 7 days",
-            value = format.money(due.sumOf { it.cost }),
+            value = format.money(due.sumOf { manager.homeCost(it) }),
             detail = if (due.isEmpty()) "Nothing due" else "${due.size} payment${if (due.size == 1) "" else "s"}",
             modifier = Modifier.weight(1f),
         )
@@ -275,7 +275,7 @@ private fun FilterRow(
 
 /** One subscription: name, category and note on the left; cost and next payment on the right. */
 @Composable
-fun SubscriptionRow(sub: Subscription, format: Format, today: kotlinx.datetime.LocalDate, onClick: () -> Unit) {
+fun SubscriptionRow(sub: Subscription, format: Format, today: kotlinx.datetime.LocalDate, home: Long, onClick: () -> Unit) {
     AppCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -297,7 +297,11 @@ fun SubscriptionRow(sub: Subscription, format: Format, today: kotlinx.datetime.L
             }
             Spacer(Modifier.width(12.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text(format.money(sub.cost), fontWeight = FontWeight.SemiBold)
+                Text(format.moneyIn(sub.currency, sub.cost), fontWeight = FontWeight.SemiBold)
+                if (sub.isForeign) {
+                    Text("≈ " + format.money(home), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Text(
                     sub.cycle.label + " · " + Format.shortDate(sub.nextPayment),
                     style = MaterialTheme.typography.bodySmall,

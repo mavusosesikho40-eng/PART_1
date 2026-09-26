@@ -43,14 +43,29 @@ object Money {
      * Reads a plain decimal such as "199", "199.5" or "1234.567" (as saved in
      * the data file), rounding to cents half up. Throws if it isn't a number.
      */
-    fun parsePlain(text: String): Long {
-        val match = Regex("""(-?)(\d*)(?:\.(\d*))?""").matchEntire(text)
+    fun parsePlain(text: String): Long = parseScaled(text, 2)
+
+    /**
+     * Reads a plain decimal as a whole number of 1/10^[decimals] units,
+     * rounding half up: parseScaled("18.25", 6) is 18250000.
+     */
+    fun parseScaled(text: String, decimals: Int): Long {
+        val match = Regex("""(-?)(\d*)(?:\.(\d*))?""").matchEntire(text.trim())
             ?: throw NumberFormatException("not a number: $text")
         val (sign, whole, fraction) = match.destructured
         if (whole.isEmpty() && fraction.isEmpty()) throw NumberFormatException("not a number: $text")
-        if (whole.length > 15) throw NumberFormatException("too large: $text")
-        var cents = (whole.ifEmpty { "0" }.toLong()) * 100 + fraction.padEnd(2, '0').take(2).toLong()
-        if (fraction.length > 2 && fraction[2] >= '5') cents++
-        return if (sign == "-") -cents else cents
+        if (whole.length > 18 - decimals) throw NumberFormatException("too large: $text")
+        var scale = 1L
+        repeat(decimals) { scale *= 10 }
+        var units = (whole.ifEmpty { "0" }.toLong()) * scale + (fraction.padEnd(decimals, '0').take(decimals).ifEmpty { "0" }).toLong()
+        if (fraction.length > decimals && fraction[decimals] >= '5') units++
+        return if (sign == "-") -units else units
+    }
+
+    /** A rate in millionths as a short decimal: 18250000 is "18.25". */
+    fun rateToString(micro: Long): String {
+        val whole = micro / 1_000_000
+        val fraction = (micro % 1_000_000).toString().padStart(6, '0').trimEnd('0')
+        return if (fraction.isEmpty()) whole.toString() else "$whole.$fraction"
     }
 }

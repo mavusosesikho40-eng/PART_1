@@ -2,7 +2,18 @@ package subscriptiontracker.mobile.data
 
 import kotlinx.datetime.LocalDate
 
-/** A single subscription the user pays for. Amounts are in cents. */
+/** A payment that was made: on [date], [amount] in the subscription's currency. */
+data class Paid(
+    val date: LocalDate,
+    val amount: Long,
+    /** False when it was recorded automatically at the list price; true once you've said what you paid. */
+    val confirmed: Boolean,
+)
+
+/**
+ * A single subscription the user pays for. Amounts are in cents, in the
+ * subscription's [currency].
+ */
 class Subscription(
     val id: Int,
     var name: String,
@@ -33,6 +44,14 @@ class Subscription(
     /** Whether this is a free trial; the next payment date is then when the trial ends. */
     var freeTrial: Boolean = false
 
+    /** The currency it's billed in, e.g. "USD"; empty for your own currency. */
+    var currency: String = ""
+        set(value) {
+            field = value.trim().uppercase()
+        }
+
+    val isForeign: Boolean get() = currency.isNotEmpty()
+
     /** A free-text note, e.g. which account or card it's on; empty if there is none. */
     var note: String = ""
         set(value) {
@@ -44,6 +63,40 @@ class Subscription(
         private set
 
     private val changes = mutableListOf<PriceChange>()
+    private val paid = mutableListOf<Paid>()
+
+    /** Payments made, oldest first. */
+    val payments: List<Paid> get() = paid.sortedBy { it.date }
+
+    /** Adds a payment loaded from storage. */
+    fun restorePayment(payment: Paid) {
+        paid.removeAll { it.date == payment.date }
+        paid += payment
+    }
+
+    /**
+     * Records that the next payment was made, for [amount] (which may differ
+     * from the list price), and moves on to the payment after it. A free
+     * trial becomes a paid subscription.
+     */
+    fun markPaid(amount: Long): Paid {
+        val payment = Paid(nextPayment, amount, confirmed = true)
+        restorePayment(payment)
+        moveToNextPayment()
+        freeTrial = false
+        return payment
+    }
+
+    /** Changes what was paid on [date] to [amount], e.g. when it wasn't the list price. */
+    fun correctPayment(date: LocalDate, amount: Long) {
+        restorePayment(Paid(date, amount, confirmed = true))
+    }
+
+    private fun moveToNextPayment() {
+        val day = billingDay
+        nextPayment = cycle.next(nextPayment, day)
+        billingDay = day
+    }
 
     /** Recorded price changes, oldest first. */
     val priceChanges: List<PriceChange> get() = changes.toList()
@@ -91,10 +144,13 @@ class Subscription(
         cancelledOn = today
     }
 
-    /** Makes a cancelled subscription active again from today. */
+    /**
+     * Makes a cancelled subscription active again from today. The payments
+     * skipped while it was cancelled aren't recorded as paid.
+     */
     fun reactivate(today: LocalDate) {
         cancelledOn = null
-        rollForward(today)
+        rollForward(today, record = false)
     }
 
     /**
@@ -114,26 +170,22 @@ class Subscription(
 
     /**
      * Moves the next payment date forward past payments that have already
-     * happened, so it points at today or later. A free trial whose end date
-     * has passed becomes a normal paid subscription. Cancelled subscriptions
-     * are left alone.
+     * happened, so it points at today or later, recording each as paid at
+     * the list price (unless [record] is false, or it's already recorded).
+     * A free trial whose end date has passed becomes a normal paid
+     * subscription. Cancelled subscriptions are left alone.
      *
      * @return true if the date changed
      */
-    fun rollForward(today: LocalDate): Boolean {
+    fun rollForward(today: LocalDate, record: Boolean = true): Boolean {
         if (isCancelled) return false
         var changed = false
-        var d = nextPayment
-        while (d < today) {
-            d = cycle.next(d, billingDay)
+        while (nextPayment < today) {
+            if (record && paid.none { it.date == nextPayment }) paid += Paid(nextPayment, cost, confirmed = false)
+            moveToNextPayment()
             changed = true
         }
-        if (changed) {
-            val day = billingDay
-            nextPayment = d
-            billingDay = day
-            freeTrial = false
-        }
+        if (changed) freeTrial = false
         return changed
     }
 }

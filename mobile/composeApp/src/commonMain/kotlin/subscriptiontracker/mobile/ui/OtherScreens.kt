@@ -40,6 +40,7 @@ import subscriptiontracker.mobile.data.CsvImporter
 import subscriptiontracker.mobile.data.Format
 import subscriptiontracker.mobile.data.Money
 import subscriptiontracker.mobile.data.Subscription
+import subscriptiontracker.mobile.data.SubscriptionManager
 import subscriptiontracker.mobile.data.SubscriptionManager.BudgetStatus
 
 /** A scrolling screen with the usual side margins and room above the bottom bar. */
@@ -58,6 +59,14 @@ private fun ScreenList(padding: PaddingValues, content: LazyListScope.() -> Unit
 
 private val RANGES = listOf(7, 14, 30, 90)
 
+/** Why a typed amount can't be used, or null if it can. */
+private fun amountProblem(text: String): String? = try {
+    CsvImporter.parseAmount(text)
+    null
+} catch (e: IllegalArgumentException) {
+    "Please enter an amount, e.g. 199.00."
+}
+
 /** The "Upcoming" tab: payments due in the next few days, and free trials. */
 @Composable
 fun UpcomingScreen(state: AppState, padding: PaddingValues) {
@@ -67,8 +76,11 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
     val today = state.today
     var days by rememberSaveable { mutableStateOf(30) }
     var cancelling by remember { mutableStateOf<Subscription?>(null) }
+    var paying by remember { mutableStateOf<Subscription?>(null) }
 
     val payments = manager.paymentsWithin(today, days)
+    // Each subscription's next payment, when it's within a week, can be marked as paid.
+    val payable = payments.filter { it.date == it.subscription.nextPayment && it.date <= today.plus(7, DateTimeUnit.DAY) }.toSet()
     val trials = manager.freeTrials
 
     ScreenList(padding) {
@@ -82,7 +94,7 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
         item(key = "total") {
             SummaryCard(
                 caption = "Due in the next $days days",
-                value = format.money(payments.sumOf { it.subscription.cost }),
+                value = format.money(payments.sumOf { manager.homeCost(it.subscription) }),
                 detail = if (payments.isEmpty()) "Nothing due" else
                     "${payments.size} payment${if (payments.size == 1) "" else "s"}",
                 modifier = Modifier.fillMaxWidth(),
@@ -110,7 +122,12 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
                         Text(p.subscription.category, style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Text(format.money(p.subscription.cost), fontWeight = FontWeight.SemiBold)
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(format.moneyIn(p.subscription.currency, p.subscription.cost), fontWeight = FontWeight.SemiBold)
+                        if (p in payable) {
+                            TextButton(onClick = { paying = p.subscription }) { Text("Paid…") }
+                        }
+                    }
                 }
             }
         }
@@ -126,7 +143,7 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
                 Text(trial.name, fontWeight = FontWeight.Bold)
                 Text(
                     "Ends ${Format.date(trial.nextPayment)} (${Format.dueIn(trial.nextPayment, today)}), " +
-                        "then ${format.money(trial.cost)} ${trial.cycle.per}",
+                        "then ${format.moneyIn(trial.currency, trial.cost)} ${trial.cycle.per}",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (soon) StatusColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -139,6 +156,22 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
                 }
             }
         }
+    }
+
+    paying?.let { sub ->
+        TextInputDialog(
+            title = "${sub.name}: paid",
+            explanation = "What did you pay on ${Format.date(sub.nextPayment)}? It goes into your spending history, " +
+                "and the next payment moves on.",
+            initial = Money.toPlainString(sub.cost),
+            number = true,
+            onDismiss = { paying = null },
+            check = { amountProblem(it) },
+            onDone = { text ->
+                val paid = sub.markPaid(CsvImporter.parseAmount(text))
+                state.changed("Recorded ${format.moneyIn(sub.currency, paid.amount)} for ${sub.name}.")
+            },
+        )
     }
 
     cancelling?.let { trial ->
@@ -164,12 +197,18 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
     val format = state.format
     val today = state.today
     var editingBudget by remember { mutableStateOf(false) }
+    var editingRate by remember { mutableStateOf<String?>(null) }
+    var correcting by remember { mutableStateOf<SubscriptionManager.Spent?>(null) }
 
     val monthly = manager.monthlyTotal
     val budget = manager.monthlyBudget
     val changed = manager.monthlyPriceChangeSince(today.minus(1, DateTimeUnit.YEAR))
     val categories = manager.monthlyByCategory
     val history = manager.priceChanges
+    val months = manager.spentByMonth(today, 6)
+    val yearSpent = manager.spentBetween(today.minus(1, DateTimeUnit.YEAR), today)
+    val recent = manager.spent.take(10)
+    val currencies = (manager.rates.keys + manager.currenciesWithoutRate).sorted()
 
     ScreenList(padding) {
         item(key = "totals") {
@@ -236,6 +275,68 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
                 }
             }
         }
+        item(key = "spent") {
+            AppCard(Modifier.fillMaxWidth()) {
+                Text("Spent in the last 12 months", style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(format.money(yearSpent), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                val most = months.maxOfOrNull { it.total }?.takeIf { it > 0 } ?: 1L
+                months.forEach { month ->
+                    Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(Format.monthName(month.start), modifier = Modifier.width(72.dp),
+                            style = MaterialTheme.typography.bodyMedium)
+                        Bar(month.total.toFloat() / most.toFloat(), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                        Text(format.money(month.total), modifier = Modifier.width(110.dp).padding(start = 12.dp),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text("Payments are counted at the list price when their date passes. Use \"Paid…\" on the " +
+                    "Upcoming tab, or tap a payment below, to record what you actually paid.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        item(key = "recent-title") { SectionTitle("Recent payments") }
+        if (recent.isEmpty()) {
+            item(key = "no-recent") { EmptyNote("No payments yet. They're recorded as their dates pass.") }
+        } else {
+            item(key = "recent") {
+                AppCard(Modifier.fillMaxWidth()) {
+                    recent.forEachIndexed { i, entry ->
+                        if (i > 0) HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                        Row(Modifier.fillMaxWidth().clickable { correcting = entry }.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(entry.subscription.name, fontWeight = FontWeight.Bold)
+                                Text(Format.date(entry.paid.date) + if (entry.paid.confirmed) "" else " · list price",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text(format.moneyIn(entry.subscription.currency, entry.paid.amount))
+                        }
+                    }
+                }
+            }
+        }
+        if (currencies.isNotEmpty()) {
+            item(key = "rates") {
+                AppCard(Modifier.fillMaxWidth()) {
+                    Text("Exchange rates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    currencies.forEach { code ->
+                        val rate = manager.rates[code]
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (rate == null) "1 $code: no rate yet, counted 1 to 1"
+                                else "1 $code = ${format.moneyRate(rate)}",
+                                color = if (rate == null) StatusColors.warning else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { editingRate = code }) { Text(if (rate == null) "Set" else "Change") }
+                        }
+                    }
+                }
+            }
+        }
         item(key = "history-title") { SectionTitle("Price history") }
         if (history.isEmpty()) {
             item(key = "no-history") {
@@ -251,11 +352,43 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
                             Text(Format.date(entry.change.date), style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Text(format.describe(entry.change), style = MaterialTheme.typography.bodyMedium)
+                        Text(format.describe(entry.change, entry.subscription.currency), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
         }
+    }
+
+    editingRate?.let { code ->
+        TextInputDialog(
+            title = "Exchange rate for $code",
+            explanation = "How much one $code is in your currency. Update it now and then; totals and the budget use it.",
+            initial = manager.rates[code]?.let { Money.rateToString(it) } ?: "",
+            number = true,
+            onDismiss = { editingRate = null },
+            check = { text ->
+                val micro = try { Money.parseScaled(text.replace(',', '.'), 6) } catch (e: NumberFormatException) { 0L }
+                if (micro > 0) null else "Please enter a rate, e.g. 18.25."
+            },
+            onDone = { text ->
+                manager.setRate(code, Money.parseScaled(text.replace(',', '.'), 6))
+                state.changed("1 $code is now ${state.format.moneyRate(manager.rates.getValue(code))}.")
+            },
+        )
+    }
+    correcting?.let { entry ->
+        TextInputDialog(
+            title = "${entry.subscription.name}, ${Format.date(entry.paid.date)}",
+            explanation = "What did you actually pay?",
+            initial = Money.toPlainString(entry.paid.amount),
+            number = true,
+            onDismiss = { correcting = null },
+            check = { amountProblem(it) },
+            onDone = { text ->
+                entry.subscription.correctPayment(entry.paid.date, CsvImporter.parseAmount(text))
+                state.changed("Payment updated.")
+            },
+        )
     }
 
     if (editingBudget) {
@@ -305,7 +438,7 @@ fun CancelledScreen(state: AppState, padding: PaddingValues) {
         item(key = "rates") {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SummaryCard("Saving per month", format.money(manager.cancelledMonthlyTotal), Modifier.weight(1f))
-                SummaryCard("Saving per year", format.money(cancelled.sumOf { it.yearlyCost }), Modifier.weight(1f))
+                SummaryCard("Saving per year", format.money(cancelled.sumOf { manager.homeYearly(it) }), Modifier.weight(1f))
             }
         }
         item(key = "title") { SectionTitle("Cancelled") }
@@ -323,8 +456,8 @@ fun CancelledScreen(state: AppState, padding: PaddingValues) {
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text(format.money(sub.savedSoFar(today)), fontWeight = FontWeight.SemiBold, color = StatusColors.saved)
-                        Text("was ${format.money(sub.monthlyCost)} a month", style = MaterialTheme.typography.bodySmall,
+                        Text(format.money(manager.toHome(sub.currency, sub.savedSoFar(today))), fontWeight = FontWeight.SemiBold, color = StatusColors.saved)
+                        Text("was ${format.moneyIn(sub.currency, sub.monthlyCost)} a month", style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

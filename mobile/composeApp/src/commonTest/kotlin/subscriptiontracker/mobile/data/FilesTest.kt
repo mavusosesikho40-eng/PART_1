@@ -169,7 +169,7 @@ class CsvTest {
         a.note = "line one\nline two"
         m.add("Office", 120000, BillingCycle.YEARLY, LocalDate(2027, 1, 15), "Software").freeTrial = true
         val csv = CsvExporter.toCsv(m.all)
-        assertTrue(csv.startsWith("ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial,Note\r\n"))
+        assertTrue(csv.startsWith("ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial,Note,Currency\r\n"))
         assertTrue(csv.contains("1,\"Netflix, \"\"HD\"\"\",Streaming,199.00,Monthly,2026-10-01,199.00,2388.00,No,"))
 
         val copy = SubscriptionManager()

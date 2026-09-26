@@ -17,7 +17,23 @@ data class SubscriptionForm(
     val note: String = "",
     /** Whether a changed cost is recorded as a price change (true) or fixes a mistake (false). */
     val recordPriceChange: Boolean = true,
+    /** Whether it's billed in another currency. */
+    val foreign: Boolean = false,
+    /** That currency's code, e.g. "USD". */
+    val currency: String = "",
+    /** For another currency: how much one unit is in your currency, e.g. "18.25". */
+    val rate: String = "",
 ) {
+    val isForeign: Boolean get() = foreign
+
+    /** The exchange rate in millionths, or null if it isn't a positive number. */
+    val parsedRate: Long?
+        get() = try {
+            Money.parseScaled(rate.replace(',', '.'), 6).takeIf { it > 0 }
+        } catch (e: NumberFormatException) {
+            null
+        }
+
     /** The cost in cents, or null if it isn't an amount (or is negative). */
     val parsedCost: Long?
         get() = if (cost.isBlank()) null else try {
@@ -32,6 +48,8 @@ data class SubscriptionForm(
             oneLine(name).isEmpty() -> "Please enter a name."
             parsedCost == null -> "Please enter the cost as an amount, e.g. 99.99."
             date == null -> "Please choose the date."
+            isForeign && !Format.isValidCurrencyCode(currency) -> "Please enter the currency as a code like USD or EUR."
+            isForeign && parsedRate == null -> "Please enter the exchange rate, e.g. 18.25."
             else -> null
         }
 
@@ -70,6 +88,7 @@ data class SubscriptionForm(
     /** Adds a new subscription from the form. Call only when [problem] is null. */
     fun add(manager: SubscriptionManager, today: LocalDate): Subscription {
         val sub = manager.add(oneLine(name), parsedCost!!, cycle, date!!, oneLine(category).ifEmpty { "Other" })
+        applyCurrency(sub, manager)
         sub.freeTrial = freeTrial
         sub.note = oneLine(note)
         sub.rollForward(today)
@@ -81,7 +100,8 @@ data class SubscriptionForm(
      *
      * @return the price change that was recorded, or null if none was
      */
-    fun applyTo(sub: Subscription, today: LocalDate): PriceChange? {
+    fun applyTo(sub: Subscription, today: LocalDate, manager: SubscriptionManager? = null): PriceChange? {
+        if (manager != null) applyCurrency(sub, manager)
         val newCost = parsedCost!!
         var recorded: PriceChange? = null
         if (newCost != sub.cost && recordPriceChange) {
@@ -100,9 +120,15 @@ data class SubscriptionForm(
         return recorded
     }
 
+    /** Sets the subscription's currency, and the exchange rate for it. */
+    private fun applyCurrency(sub: Subscription, manager: SubscriptionManager) {
+        sub.currency = if (isForeign) currency else ""
+        if (isForeign) manager.setRate(sub.currency, parsedRate!!)
+    }
+
     companion object {
         /** A form filled in with a subscription's current values, for editing it. */
-        fun from(s: Subscription) = SubscriptionForm(
+        fun from(s: Subscription, manager: SubscriptionManager? = null) = SubscriptionForm(
             name = s.name,
             cost = Money.toPlainString(s.cost),
             cycle = s.cycle,
@@ -110,6 +136,9 @@ data class SubscriptionForm(
             date = s.nextPayment,
             category = s.category,
             note = s.note,
+            foreign = s.isForeign,
+            currency = s.currency,
+            rate = manager?.rates?.get(s.currency)?.let { Money.rateToString(it) } ?: "",
         )
 
         /**

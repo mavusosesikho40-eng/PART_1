@@ -65,6 +65,7 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
             val lines = mutableListOf<String>()
             manager.monthlyBudget?.let { lines += BUDGET + SEP + Money.toPlainString(it) }
             if (manager.currencySymbol.isNotEmpty()) lines += CURRENCY + SEP + manager.currencySymbol
+            for ((code, micro) in manager.rates.entries.sortedBy { it.key }) lines += RATE + SEP + code + SEP + Money.rateToString(micro)
             for (s in manager.allIncludingCancelled) {
                 val line = StringBuilder(listOf(
                     s.id.toString(), s.name, Money.toPlainString(s.cost), s.cycle.name, s.nextPayment.toString(), s.category,
@@ -73,10 +74,15 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
                 s.cancelledOn?.let { line.append(SEP).append(CANCELLED).append(it) }
                 if (s.billingDay != s.nextPayment.day) line.append(SEP).append(DAY).append(s.billingDay)
                 if (s.hasNote) line.append(SEP).append(NOTE).append(s.note)
+                if (s.isForeign) line.append(SEP).append(CUR).append(s.currency)
                 for (change in s.priceChanges) {
                     line.append(SEP).append(PRICE).append(change.date).append(':')
                         .append(Money.toPlainString(change.oldCost)).append(':').append(Money.toPlainString(change.newCost))
                     if (change.cycleChanged) line.append(':').append(change.oldCycle.name).append(':').append(change.newCycle.name)
+                }
+                for (p in s.payments) {
+                    line.append(SEP).append(PAID).append(p.date).append(':').append(Money.toPlainString(p.amount))
+                    if (!p.confirmed) line.append(":assumed")
                 }
                 lines += line.toString()
             }
@@ -93,6 +99,7 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
                     when (parts[0]) {
                         BUDGET -> manager.monthlyBudget = Money.parsePlain(parts[1])
                         CURRENCY -> manager.currencySymbol = parts[1]
+                        RATE -> manager.setRate(parts[1], Money.parseScaled(parts[2], 6))
                         else -> manager.restore(parseSubscription(parts))
                     }
                 } catch (e: IllegalArgumentException) {
@@ -115,6 +122,11 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
                     part.startsWith(CANCELLED) -> sub.cancel(LocalDate.parse(part.removePrefix(CANCELLED)))
                     part.startsWith(DAY) -> sub.restoreBillingDay(part.removePrefix(DAY).toInt())
                     part.startsWith(NOTE) -> sub.note = part.removePrefix(NOTE)
+                    part.startsWith(CUR) -> sub.currency = part.removePrefix(CUR)
+                    part.startsWith(PAID) -> {
+                        val p = part.removePrefix(PAID).split(":")
+                        sub.restorePayment(Paid(LocalDate.parse(p[0]), Money.parsePlain(p[1]), confirmed = p.getOrNull(2) != "assumed"))
+                    }
                     part.startsWith(PRICE) -> {
                         val price = part.removePrefix(PRICE).split(":")
                         val oldCycle = if (price.size > 3) BillingCycle.valueOf(price[3]) else sub.cycle
@@ -135,5 +147,8 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
         private const val PRICE = "PRICE="
         private const val NOTE = "NOTE="
         private const val DAY = "DAY="
+        private const val CUR = "CUR="
+        private const val PAID = "PAID="
+        private const val RATE = "RATE"
     }
 }

@@ -14,9 +14,10 @@ adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 
 # Sample data, with dates around today so the reminders and "in N days" show.
-printf 'BUDGET\t1200.00\nCURRENCY\tR\n' > /tmp/seed.txt
+printf 'BUDGET\t1600.00\nCURRENCY\tR\nRATE\tUSD\t18.25\n' > /tmp/seed.txt
 printf '1\tNetflix\t199.00\tMONTHLY\t%s\tEntertainment\tNOTE=Shared with family\tPRICE=%s:169.00:199.00\n' "$(day '+5 days')" "$(day '-6 months')" >> /tmp/seed.txt
-printf '2\tSpotify\t79.99\tMONTHLY\t%s\tMusic\n' "$(day '+1 day')" >> /tmp/seed.txt
+printf '2\tSpotify\t79.99\tMONTHLY\t%s\tMusic\tPAID=%s:79.99:assumed\tPAID=%s:84.99\n' "$(day '+1 day')" "$(day '-2 months +1 day')" "$(day '-1 month +1 day')" >> /tmp/seed.txt
+printf '9\tChatBot Plus\t20.00\tMONTHLY\t%s\tSoftware\tCUR=USD\tPAID=%s:20.00:assumed\n' "$(day '+4 days')" "$(day '-1 month +4 days')" >> /tmp/seed.txt
 printf '3\tMicrosoft 365\t1099.00\tYEARLY\t%s\tSoftware\n' "$(day '+111 days')" >> /tmp/seed.txt
 printf '4\tDisney+\t99.00\tMONTHLY\t%s\tEntertainment\tTRIAL\n' "$(day '+2 days')" >> /tmp/seed.txt
 printf '5\tGym\t450.00\tMONTHLY\t%s\tHealth\n' "$(day '+7 days')" >> /tmp/seed.txt
@@ -37,11 +38,20 @@ sleep 3
 adb exec-out screencap -p > "$OUT/notifications.png"
 adb shell cmd statusbar collapse
 
-for screen in subscriptions upcoming spending cancelled add; do
-  adb shell am start -S -W -n $PKG/.MainActivity --es screen $screen
-  sleep 6
-  adb exec-out screencap -p > "$OUT/$screen.png"
-done
+shoot() {
+  for screen in subscriptions upcoming spending cancelled add; do
+    adb shell am start -S -W -n $PKG/.MainActivity --es screen $screen
+    sleep 6
+    adb exec-out screencap -p > "$OUT/$screen$1.png"
+  done
+}
+shoot ""
+
+# The same in dark mode.
+adb shell cmd uimode night yes
+sleep 2
+shoot "-dark"
+adb shell cmd uimode night no
 
 adb logcat -d > "$OUT/logcat.txt" || true
 ls -l "$OUT"

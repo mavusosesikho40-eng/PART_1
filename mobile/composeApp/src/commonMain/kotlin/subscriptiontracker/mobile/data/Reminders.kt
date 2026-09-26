@@ -27,7 +27,7 @@ object Reminders {
                         id = "trial-${s.id}-${p.date}-$before",
                         on = on,
                         title = "${s.name} free trial ends ${if (before == 1) "tomorrow" else "in 2 days"}",
-                        text = "You'll be charged ${format.money(s.cost)} on ${Format.date(p.date)} unless you cancel.",
+                        text = "You'll be charged ${format.moneyIn(s.currency, s.cost)} on ${Format.date(p.date)} unless you cancel.",
                     )
                 }
             } else {
@@ -35,7 +35,7 @@ object Reminders {
                     id = "pay-${s.id}-${p.date}",
                     on = p.date.minus(1, DateTimeUnit.DAY),
                     title = "${s.name} is due tomorrow",
-                    text = "${format.money(s.cost)} on ${Format.date(p.date)}.",
+                    text = "${format.moneyIn(s.currency, s.cost)} on ${Format.date(p.date)}.",
                 )
             }
         }
@@ -55,7 +55,7 @@ data class Summary(val monthly: String, val next: String) {
             return Summary(
                 monthly = format.money(manager.monthlyTotal),
                 next = if (next == null) "No subscriptions yet" else
-                    "Next: ${next.name} · ${format.money(next.cost)} · ${Format.dueIn(next.nextPayment, today)}",
+                    "Next: ${next.name} · ${format.moneyIn(next.currency, next.cost)} · ${Format.dueIn(next.nextPayment, today)}",
             )
         }
     }

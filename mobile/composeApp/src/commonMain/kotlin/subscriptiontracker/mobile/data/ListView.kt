@@ -20,13 +20,16 @@ object ListView {
         return needle.isEmpty() || needle in s.name.lowercase() || needle in s.category.lowercase()
     }
 
-    /** Sorted as chosen; ties go by name, then by next payment. Costs are highest first. */
-    fun sort(list: List<Subscription>, sort: Sort): List<Subscription> {
+    /**
+     * Sorted as chosen; ties go by name, then by next payment. Costs are
+     * highest first, compared per month in your currency.
+     */
+    fun sort(list: List<Subscription>, sort: Sort, manager: SubscriptionManager? = null): List<Subscription> {
         val byName = compareBy(String.CASE_INSENSITIVE_ORDER) { s: Subscription -> s.name }
         val comparator = when (sort) {
             Sort.NEXT_PAYMENT -> compareBy<Subscription> { it.nextPayment }.then(byName)
             Sort.NAME -> byName.thenBy { it.nextPayment }
-            Sort.COST -> compareByDescending<Subscription> { it.monthlyCost }.then(byName)
+            Sort.COST -> compareByDescending<Subscription> { manager?.homeMonthly(it) ?: it.monthlyCost }.then(byName)
             Sort.CATEGORY -> compareBy(String.CASE_INSENSITIVE_ORDER) { s: Subscription -> s.category }.then(byName)
         }
         return list.sortedWith(comparator)

@@ -2,9 +2,14 @@ package subscriptiontracker.mobile.data
 
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
-/** Holds the list of subscriptions and answers questions about them. */
+/**
+ * Holds the list of subscriptions and answers questions about them. Totals
+ * are in your own currency: subscriptions billed in another currency are
+ * converted at the exchange rates in [rates].
+ */
 class SubscriptionManager {
 
     /** How the monthly total compares with the monthly budget. */
@@ -15,6 +20,41 @@ class SubscriptionManager {
 
     /** One payment on one day. A weekly subscription has several in a month. */
     data class Payment(val date: LocalDate, val subscription: Subscription)
+
+    /** A payment that was made, with the subscription it was for and its amount in your currency. */
+    data class Spent(val subscription: Subscription, val paid: Paid, val home: Long)
+
+    /** What was spent in one month (given by its first day). */
+    data class Month(val start: LocalDate, val total: Long)
+
+    private val exchangeRates = mutableMapOf<String, Long>()
+
+    /**
+     * Exchange rates in millionths of your currency per unit, by currency
+     * code: 1 USD = 18.25 is "USD" to 18250000.
+     */
+    val rates: Map<String, Long> get() = exchangeRates.toMap()
+
+    /** Sets how much one unit of [currency] is in your currency, in millionths; zero or less removes it. */
+    fun setRate(currency: String, micro: Long) {
+        val code = currency.trim().uppercase()
+        if (micro <= 0) exchangeRates.remove(code) else exchangeRates[code] = micro
+    }
+
+    /** Currencies subscriptions are billed in that have no exchange rate (they count 1 to 1). */
+    val currenciesWithoutRate: List<String>
+        get() = subscriptions.map { it.currency }.filter { it.isNotEmpty() && it !in exchangeRates }.distinct().sorted()
+
+    /** An amount in [currency] converted to your currency, to the cent. */
+    fun toHome(currency: String, cents: Long): Long {
+        if (currency.isEmpty()) return cents
+        val rate = exchangeRates[currency] ?: return cents
+        return Money.divideRounded(cents * rate, 1_000_000)
+    }
+
+    fun homeCost(s: Subscription): Long = toHome(s.currency, s.cost)
+    fun homeMonthly(s: Subscription): Long = toHome(s.currency, s.monthlyCost)
+    fun homeYearly(s: Subscription): Long = toHome(s.currency, s.yearlyCost)
 
     private val subscriptions = mutableListOf<Subscription>()
     private var nextId = 1
@@ -77,10 +117,10 @@ class SubscriptionManager {
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
     /** Total saved so far by all cancelled subscriptions. */
-    fun savedSoFar(today: LocalDate): Long = subscriptions.sumOf { it.savedSoFar(today) }
+    fun savedSoFar(today: LocalDate): Long = subscriptions.sumOf { toHome(it.currency, it.savedSoFar(today)) }
 
     /** What the cancelled subscriptions would cost per month if they were still active. */
-    val cancelledMonthlyTotal: Long get() = cancelled.sumOf { it.monthlyCost }
+    val cancelledMonthlyTotal: Long get() = cancelled.sumOf { homeMonthly(it) }
 
     /** Subscriptions due between today and today + days (inclusive). */
     fun upcoming(today: LocalDate, days: Int): List<Subscription> {
@@ -124,10 +164,29 @@ class SubscriptionManager {
      * spending on active subscriptions (negative if prices went down).
      */
     fun monthlyPriceChangeSince(since: LocalDate): Long =
-        active().sumOf { it.monthlyCost - it.monthlyCostOn(since) }
+        active().sumOf { toHome(it.currency, it.monthlyCost - it.monthlyCostOn(since)) }
 
-    val monthlyTotal: Long get() = active().sumOf { it.monthlyCost }
-    val yearlyTotal: Long get() = active().sumOf { it.yearlyCost }
+    val monthlyTotal: Long get() = active().sumOf { homeMonthly(it) }
+    val yearlyTotal: Long get() = active().sumOf { homeYearly(it) }
+
+    /** Every payment made, newest first, including those of cancelled subscriptions. */
+    val spent: List<Spent>
+        get() = subscriptions.flatMap { s -> s.payments.map { Spent(s, it, toHome(s.currency, it.amount)) } }
+            .sortedWith(compareByDescending<Spent> { it.paid.date }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.subscription.name })
+
+    /** What was spent from [from] up to and including [to], in your currency. */
+    fun spentBetween(from: LocalDate, to: LocalDate): Long =
+        spent.filter { it.paid.date >= from && it.paid.date <= to }.sumOf { it.home }
+
+    /** What was spent in each of the last [months] months, this month last. */
+    fun spentByMonth(today: LocalDate, months: Int): List<Month> {
+        val thisMonth = LocalDate(today.year, today.month, 1)
+        return (months - 1 downTo 0).map { back ->
+            val start = thisMonth.minus(back, DateTimeUnit.MONTH)
+            val end = start.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
+            Month(start, spentBetween(start, end))
+        }
+    }
 
     /**
      * Monthly cost per category, biggest first (equal ones by name).
@@ -140,7 +199,7 @@ class SubscriptionManager {
             for (s in active()) {
                 val key = s.category.lowercase()
                 names.getOrPut(key) { s.category }
-                totals[key] = (totals[key] ?: 0L) + s.monthlyCost
+                totals[key] = (totals[key] ?: 0L) + homeMonthly(s)
             }
             return totals.entries.map { names.getValue(it.key) to it.value }
                 .sortedWith(compareByDescending<Pair<String, Long>> { it.second }

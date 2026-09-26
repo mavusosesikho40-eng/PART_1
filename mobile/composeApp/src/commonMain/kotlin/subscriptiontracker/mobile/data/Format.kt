@@ -16,6 +16,20 @@ class Format(val currencySymbol: String) {
         return (if (cents < 0) "-" else "") + currencySymbol + gap + Money.plain(if (cents < 0) -cents else cents)
     }
 
+    /**
+     * An amount in the given currency: your own is shown with your symbol,
+     * others with their code, e.g. "USD 9.99".
+     */
+    fun moneyIn(currency: String, cents: Long): String =
+        if (currency.isEmpty()) money(cents) else (if (cents < 0) "-" else "") + currency + " " + Money.plain(if (cents < 0) -cents else cents)
+
+    /** An exchange rate (in millionths) with your symbol: "R 18.25". */
+    fun moneyRate(micro: Long): String {
+        val text = Money.rateToString(micro)
+        if (currencySymbol.isEmpty()) return text
+        return currencySymbol + (if (currencySymbol.last().isLetter()) " " else "") + text
+    }
+
     /** An amount with a "+" in front when it's positive. */
     fun signedMoney(cents: Long): String = (if (cents > 0) "+" else "") + money(cents)
 
@@ -24,14 +38,16 @@ class Format(val currencySymbol: String) {
      * when the billing cycle changed too, per month:
      * "199.00 a month → 2,000.00 a year (-32.33 a month, -16%)".
      */
-    fun describe(change: PriceChange): String {
+    fun describe(change: PriceChange, currency: String = ""): String {
         val percent = change.percent
         val percentText = if (percent == null) "" else ", " + (if (percent > 0) "+" else "") + percent + "%"
+        fun m(cents: Long) = moneyIn(currency, cents)
+        fun signed(cents: Long) = (if (cents > 0) "+" else "") + m(cents)
         return if (change.cycleChanged) {
-            money(change.oldCost) + " " + change.oldCycle.per + " → " + money(change.newCost) + " " +
-                change.newCycle.per + " (" + signedMoney(change.monthlyDifference) + " a month" + percentText + ")"
+            m(change.oldCost) + " " + change.oldCycle.per + " → " + m(change.newCost) + " " +
+                change.newCycle.per + " (" + signed(change.monthlyDifference) + " a month" + percentText + ")"
         } else {
-            money(change.oldCost) + " → " + money(change.newCost) + " (" + signedMoney(change.difference) + percentText + ")"
+            m(change.oldCost) + " → " + m(change.newCost) + " (" + signed(change.difference) + percentText + ")"
         }
     }
 
@@ -49,6 +65,9 @@ class Format(val currencySymbol: String) {
 
         /** "1 Oct 2026". */
         fun date(date: LocalDate): String = "${date.day} ${MONTHS[date.month.ordinal]} ${date.year}"
+
+        /** "Sep 2026". */
+        fun monthName(date: LocalDate): String = "${MONTHS[date.month.ordinal]} ${date.year}"
 
         /** "1 Oct". */
         fun shortDate(date: LocalDate): String = "${date.day} ${MONTHS[date.month.ordinal]}"
@@ -81,6 +100,9 @@ class Format(val currencySymbol: String) {
          * digits, spaces or the characters . , + - (which would read as part
          * of the amount).
          */
+        /** Whether a currency code is three letters, like USD or EUR. */
+        fun isValidCurrencyCode(code: String): Boolean = Regex("[A-Za-z]{3}").matches(code.trim())
+
         fun isValidCurrencySymbol(symbol: String): Boolean =
             symbol.isNotEmpty() && symbol.length <= 5 &&
                 symbol.none { it.isDigit() || it.isWhitespace() || it in ".,+-" }
