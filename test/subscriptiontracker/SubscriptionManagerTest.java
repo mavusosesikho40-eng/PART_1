@@ -280,6 +280,25 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void freeTrialsAreListedSoonestEndingFirst() {
+        add("Paid", "1", BillingCycle.MONTHLY, TODAY.plusDays(1), "X");
+        add("Later", "1", BillingCycle.MONTHLY, TODAY.plusDays(20), "X").setFreeTrial(true);
+        add("Sooner", "1", BillingCycle.MONTHLY, TODAY.plusDays(3), "X").setFreeTrial(true);
+
+        assertEquals(List.of("Sooner", "Later"), names(manager.getFreeTrials()));
+    }
+
+    @Test
+    public void trialsEndingWithinIncludesOnlyTrialsInTheWindow() {
+        add("Paid", "1", BillingCycle.MONTHLY, TODAY.plusDays(1), "X");
+        add("Today", "1", BillingCycle.MONTHLY, TODAY, "X").setFreeTrial(true);
+        add("Edge", "1", BillingCycle.MONTHLY, TODAY.plusDays(7), "X").setFreeTrial(true);
+        add("TooLate", "1", BillingCycle.MONTHLY, TODAY.plusDays(8), "X").setFreeTrial(true);
+
+        assertEquals(List.of("Today", "Edge"), names(manager.getTrialsEndingWithin(TODAY, 7)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

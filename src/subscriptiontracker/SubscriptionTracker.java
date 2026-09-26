@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
@@ -38,6 +39,7 @@ public class SubscriptionTracker {
         load();
         System.out.println("=== Subscription Tracker ===");
         showUpcoming(7);
+        showTrialReminders(7);
         showBudgetWarning();
 
         while (true) {
@@ -57,6 +59,7 @@ public class SubscriptionTracker {
                 case "8" -> exportToCsv();
                 case "9" -> sortSubscriptions();
                 case "10" -> monthlyBudget();
+                case "11" -> listFreeTrials();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -78,6 +81,7 @@ public class SubscriptionTracker {
         System.out.println("8. Export to CSV");
         System.out.println("9. Sort subscriptions");
         System.out.println("10. Monthly budget");
+        System.out.println("11. Free trials");
         System.out.println("0. Exit");
     }
 
@@ -105,16 +109,24 @@ public class SubscriptionTracker {
         if (cycle == null) {
             return;
         }
-        LocalDate next = readDate("Next payment date (YYYY-MM-DD)", null);
+        boolean trial = readYesNo("Free trial? (y/n)", false);
+        LocalDate next = readDate(dateLabel(trial), null);
         if (next == null) {
             return;
         }
         String category = readText("Category (e.g. Streaming, Music, Software)", "Other");
 
         Subscription sub = manager.add(name, cost, cycle, next, category);
+        sub.setFreeTrial(trial);
         sub.rollForward(LocalDate.now());
         save();
         System.out.println("Added \"" + name + "\" (#" + sub.getId() + ").");
+        if (sub.isFreeTrial()) {
+            boolean withinAWeek = sub.getNextPayment().isBefore(LocalDate.now().plusDays(8));
+            System.out.println("Its free trial ends " + sub.getNextPayment() + " (" + dueIn(sub.getNextPayment())
+                    + "). " + (withinAWeek ? "Cancel before then if you don't want to be charged."
+                            : "You'll be reminded when it's a week away."));
+        }
         showBudgetWarning();
     }
 
@@ -128,7 +140,8 @@ public class SubscriptionTracker {
         sub.setName(readText("Name", sub.getName()));
         sub.setCost(readCost("Cost per payment", sub.getCost()));
         sub.setCycle(readCycle(sub.getCycle()));
-        sub.setNextPayment(readDate("Next payment date (YYYY-MM-DD)", sub.getNextPayment()));
+        sub.setFreeTrial(readYesNo("Free trial? (y/n)", sub.isFreeTrial()));
+        sub.setNextPayment(readDate(dateLabel(sub.isFreeTrial()), sub.getNextPayment()));
         sub.setCategory(readText("Category", sub.getCategory()));
         sub.rollForward(LocalDate.now());
         save();
@@ -270,7 +283,7 @@ public class SubscriptionTracker {
         System.out.printf(format, "ID", "Name", "Cost", "Cycle", "Per month", "Category");
         System.out.println("-".repeat(80));
         for (Subscription s : sorted) {
-            System.out.printf(format, s.getId(), shorten(s.getName(), 20), money(s.getCost()),
+            System.out.printf(format, s.getId(), shorten(displayName(s), 20), money(s.getCost()),
                     s.getCycle().getLabel(), money(s.getMonthlyCost()), shorten(s.getCategory(), 15));
         }
         System.out.println("Sorted by cost per month, " + (highestFirst ? "most expensive" : "cheapest") + " first.");
@@ -290,7 +303,7 @@ public class SubscriptionTracker {
         System.out.printf(format, "ID", "Name", "Cost", "Cycle", "Next due", "Due in");
         System.out.println("-".repeat(78));
         for (Subscription s : sorted) {
-            System.out.printf(format, s.getId(), shorten(s.getName(), 20), money(s.getCost()),
+            System.out.printf(format, s.getId(), shorten(displayName(s), 20), money(s.getCost()),
                     s.getCycle().getLabel(), s.getNextPayment(), dueIn(s.getNextPayment()));
         }
         System.out.println("Sorted by next payment date, " + (soonestFirst ? "soonest" : "latest") + " first.");
@@ -366,7 +379,42 @@ public class SubscriptionTracker {
         }
     }
 
+    private void listFreeTrials() {
+        List<Subscription> trials = manager.getFreeTrials();
+        if (trials.isEmpty()) {
+            System.out.println("You have no free trials. Answer \"y\" to \"Free trial?\" when adding "
+                    + "or editing a subscription to track one.");
+            return;
+        }
+        String format = "%-4s %-20s %-12s %-14s %12s  %-10s%n";
+        System.out.printf(format, "ID", "Name", "Trial ends", "Ends", "Then costs", "Cycle");
+        System.out.println("-".repeat(78));
+        for (Subscription s : trials) {
+            System.out.printf(format, s.getId(), shorten(s.getName(), 20), s.getNextPayment(),
+                    dueIn(s.getNextPayment()), money(s.getCost()), s.getCycle().getLabel());
+        }
+        System.out.println("Cancel before the end date if you don't want to be charged.");
+    }
+
     // ---- Display helpers ----
+
+    /** Reminds about free trials that end soon, before they start charging. */
+    private void showTrialReminders(int days) {
+        for (Subscription s : manager.getTrialsEndingWithin(LocalDate.now(), days)) {
+            System.out.println("Reminder: your " + s.getName() + " free trial ends " + dueIn(s.getNextPayment())
+                    + " (" + s.getNextPayment() + "). You'll be charged " + money(s.getCost())
+                    + " unless you cancel.");
+        }
+    }
+
+    /** The name to show in lists, marking free trials. */
+    private static String displayName(Subscription s) {
+        return s.isFreeTrial() ? s.getName() + " (trial)" : s.getName();
+    }
+
+    private static String dateLabel(boolean trial) {
+        return trial ? "Trial end / first payment date (YYYY-MM-DD)" : "Next payment date (YYYY-MM-DD)";
+    }
 
     /** Warns when monthly spending is over the budget or close to it. */
     private void showBudgetWarning() {
@@ -405,7 +453,7 @@ public class SubscriptionTracker {
         BigDecimal total = BigDecimal.ZERO;
         for (Subscription s : due) {
             System.out.printf("  %-20s %12s  %s (%s)%n",
-                    s.getName(), money(s.getCost()), s.getNextPayment(), dueIn(s.getNextPayment()));
+                    displayName(s), money(s.getCost()), s.getNextPayment(), dueIn(s.getNextPayment()));
             total = total.add(s.getCost());
         }
         System.out.println("  Total due: " + money(total));
@@ -416,7 +464,7 @@ public class SubscriptionTracker {
         System.out.printf(format, "ID", "Name", "Cost", "Cycle", "Next due", "Category");
         System.out.println("-".repeat(78));
         for (Subscription s : subs) {
-            System.out.printf(format, s.getId(), shorten(s.getName(), 20), money(s.getCost()),
+            System.out.printf(format, s.getId(), shorten(displayName(s), 20), money(s.getCost()),
                     s.getCycle().getLabel(), s.getNextPayment(), shorten(s.getCategory(), 15));
         }
     }
@@ -458,6 +506,25 @@ public class SubscriptionTracker {
             return current;
         }
         return input.replace("\t", " ");
+    }
+
+    /** Reads a yes/no answer; blank keeps the current answer. */
+    private boolean readYesNo(String label, boolean current) {
+        while (true) {
+            String input = prompt(label + " [" + (current ? "y" : "n") + "]");
+            if (input == null || input.isEmpty()) {
+                return current;
+            }
+            switch (input.toLowerCase(Locale.ROOT)) {
+                case "y", "yes" -> {
+                    return true;
+                }
+                case "n", "no" -> {
+                    return false;
+                }
+                default -> System.out.println("Please answer y or n.");
+            }
+        }
     }
 
     private BigDecimal readCost(String label, BigDecimal current) {

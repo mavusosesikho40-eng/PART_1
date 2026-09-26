@@ -12,7 +12,7 @@ import java.util.List;
 public class CsvExporter {
 
     private static final String HEADER =
-            "ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost";
+            "ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial";
 
     private CsvExporter() {
     }
@@ -33,7 +33,8 @@ public class CsvExporter {
                     s.getCycle().getLabel(),
                     s.getNextPayment().toString(),
                     s.getMonthlyCost().toPlainString(),
-                    s.getYearlyCost().toPlainString()))
+                    s.getYearlyCost().toPlainString(),
+                    s.isFreeTrial() ? "Yes" : "No"))
                     .append("\r\n");
         }
         return csv.toString();

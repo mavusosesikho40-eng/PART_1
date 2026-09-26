@@ -192,6 +192,16 @@ public class SubscriptionManager {
         return sorted;
     }
 
+    /** Free trials, soonest ending first. */
+    public List<Subscription> getFreeTrials() {
+        return getAll().stream().filter(Subscription::isFreeTrial).toList();
+    }
+
+    /** Free trials ending between today and today + days (inclusive), soonest first. */
+    public List<Subscription> getTrialsEndingWithin(LocalDate today, int days) {
+        return getUpcoming(today, days).stream().filter(Subscription::isFreeTrial).toList();
+    }
+
     public BigDecimal getMonthlyTotal() {
         return subscriptions.stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

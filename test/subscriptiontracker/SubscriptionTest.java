@@ -50,6 +50,31 @@ public class SubscriptionTest {
     }
 
     @Test
+    public void freeTrialEndsOnceItsEndDateHasPassed() {
+        Subscription sub = monthly(TODAY.minusDays(1));
+        sub.setFreeTrial(true);
+
+        sub.rollForward(TODAY);
+
+        assertFalse(sub.isFreeTrial());
+        assertEquals(TODAY.minusDays(1).plusMonths(1), sub.getNextPayment());
+    }
+
+    @Test
+    public void freeTrialEndingTodayOrLaterIsStillATrial() {
+        Subscription today = monthly(TODAY);
+        today.setFreeTrial(true);
+        Subscription later = monthly(TODAY.plusDays(5));
+        later.setFreeTrial(true);
+
+        today.rollForward(TODAY);
+        later.rollForward(TODAY);
+
+        assertTrue(today.isFreeTrial());
+        assertTrue(later.isFreeTrial());
+    }
+
+    @Test
     public void monthlyAndYearlyCostsFollowBillingCycle() {
         Subscription sub = new Subscription(1, "Adobe", new BigDecimal("2400.00"),
                 BillingCycle.YEARLY, TODAY, "Software");
