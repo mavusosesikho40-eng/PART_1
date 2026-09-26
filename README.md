@@ -41,7 +41,7 @@ Options 3 to 7 open a short sub-menu; press Enter on a blank line to go back.
 | **6. Spending, budget and savings** → Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
 | &nbsp;&nbsp;&nbsp;→ Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
 | &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
-| &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
+| &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`, or per month if the billing cycle changed too: `199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
 | &nbsp;&nbsp;&nbsp;→ Currency symbol | Show every amount with a symbol, e.g. `R 199.00` or `$199.00` (symbols ending in a letter get a space). Enter `-` to remove it. The CSV export always uses plain numbers. |
 | **7. Import or export CSV** → Export | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 | &nbsp;&nbsp;&nbsp;→ Import | Adds subscriptions from a CSV file: one exported by the app, or a spreadsheet saved as CSV. See [Importing from a spreadsheet](#importing-from-a-spreadsheet). |
@@ -124,7 +124,8 @@ ID    Name    Cost    Cycle    Next payment    Category
 
 Free trials have `TRIAL` as an extra column at the end of the line, cancelled subscriptions
 have `CANCELLED=` followed by the date they were cancelled, and each recorded price change adds a
-`PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00`. A note is saved as a
+`PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00` (with the old and new billing
+cycle added, e.g. `:MONTHLY:YEARLY`, if the plan changed at the same time). A note is saved as a
 `NOTE=` column, and a `DAY=31` column remembers the billing day while a short month has moved
 the date earlier. If you've set a monthly
 budget, it's saved on the first line as `BUDGET` followed by the amount, and a currency symbol is

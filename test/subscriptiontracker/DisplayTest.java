@@ -56,8 +56,16 @@ public class DisplayTest {
     public void priceChangeDescriptionUsesTheSymbol() {
         Display.setCurrency("R");
         PriceChange change = new PriceChange(java.time.LocalDate.of(2026, 9, 1),
-                new BigDecimal("169.00"), new BigDecimal("199.00"));
+                new BigDecimal("169.00"), new BigDecimal("199.00"), BillingCycle.MONTHLY);
 
         assertEquals("R 169.00 -> R 199.00 (+R 30.00, +18%)", Display.describe(change));
+    }
+
+    @Test
+    public void priceChangeWithANewBillingCycleIsDescribedPerMonth() {
+        PriceChange change = new PriceChange(java.time.LocalDate.of(2026, 9, 1),
+                new BigDecimal("199.00"), new BigDecimal("2000.00"), BillingCycle.MONTHLY, BillingCycle.YEARLY);
+
+        assertEquals("199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)", Display.describe(change));
     }
 }

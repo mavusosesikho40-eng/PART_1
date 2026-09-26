@@ -19,7 +19,8 @@ import java.util.List;
  * Each line holds: id, name, cost, cycle, next payment date, category,
  * followed by optional flags: "TRIAL" for a free trial and
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription, and one
- * "PRICE=yyyy-mm-dd:old:new" for each recorded price change, and
+ * "PRICE=yyyy-mm-dd:old:new" for each recorded price change (with
+ * ":OLDCYCLE:NEWCYCLE" added if the billing cycle changed too), and
  * "NOTE=text" for a note, and "DAY=n" when the billing day differs from the
  * next payment's day (e.g. billed on the 31st, next payment 28 Feb).
  * If a monthly budget is set, the first line is "BUDGET" and the amount; a
@@ -102,6 +103,9 @@ public class SubscriptionStorage {
             for (PriceChange change : s.getPriceChanges()) {
                 line += SEPARATOR + PRICE + change.date() + ":" + change.oldCost().toPlainString()
                         + ":" + change.newCost().toPlainString();
+                if (change.cycleChanged()) {
+                    line += ":" + change.oldCycle().name() + ":" + change.newCycle().name();
+                }
             }
             lines.add(line);
         }
@@ -179,8 +183,10 @@ public class SubscriptionStorage {
                         sub.setNote(parts[i].substring(NOTE.length()));
                     } else if (parts[i].startsWith(PRICE)) {
                         String[] price = parts[i].substring(PRICE.length()).split(":", -1);
+                        BillingCycle oldCycle = price.length > 3 ? BillingCycle.valueOf(price[3]) : sub.getCycle();
+                        BillingCycle newCycle = price.length > 4 ? BillingCycle.valueOf(price[4]) : sub.getCycle();
                         sub.restorePriceChange(new PriceChange(LocalDate.parse(price[0]),
-                                new BigDecimal(price[1]), new BigDecimal(price[2])));
+                                new BigDecimal(price[1]), new BigDecimal(price[2]), oldCycle, newCycle));
                     }
                 }
                 manager.restore(sub);

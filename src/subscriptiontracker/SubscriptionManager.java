@@ -275,8 +275,7 @@ public class SubscriptionManager {
     public BigDecimal getMonthlyPriceChangeSince(LocalDate since) {
         BigDecimal total = BigDecimal.ZERO;
         for (Subscription s : active()) {
-            BigDecimal then = s.getCycle().toMonthly(s.getCostOn(since));
-            total = total.add(s.getMonthlyCost().subtract(then));
+            total = total.add(s.getMonthlyCost().subtract(s.getMonthlyCostOn(since)));
         }
         return total;
     }

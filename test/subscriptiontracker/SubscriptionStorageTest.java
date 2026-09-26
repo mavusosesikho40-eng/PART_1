@@ -349,6 +349,19 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void priceChangeWithABillingCycleChangeIsSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.add("Netflix", new BigDecimal("199.00"), BillingCycle.MONTHLY, LocalDate.of(2026, 10, 1), "Streaming")
+                .changePrice(new BigDecimal("2000.00"), BillingCycle.YEARLY, LocalDate.of(2026, 9, 1));
+        storage.save(original);
+
+        assertTrue(Files.readString(file).contains("PRICE=2026-09-01:199.00:2000.00:MONTHLY:YEARLY"));
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertEquals(original.find(1).orElseThrow().getPriceChanges(), loaded.find(1).orElseThrow().getPriceChanges());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

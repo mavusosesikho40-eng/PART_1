@@ -56,10 +56,19 @@ final class Display {
         return (amount.signum() > 0 ? "+" : "") + money(amount);
     }
 
-    /** Describes a price change, e.g. "169.00 -> 199.00 (+30.00, +18%)". */
+    /**
+     * Describes a price change, e.g. "169.00 -> 199.00 (+30.00, +18%)", or,
+     * when the billing cycle changed too, per month:
+     * "199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)".
+     */
     static String describe(PriceChange change) {
         BigDecimal percent = change.percent();
         String percentText = percent == null ? "" : ", " + (percent.signum() > 0 ? "+" : "") + percent + "%";
+        if (change.cycleChanged()) {
+            return money(change.oldCost()) + " " + change.oldCycle().per() + " -> "
+                    + money(change.newCost()) + " " + change.newCycle().per()
+                    + " (" + signedMoney(change.monthlyDifference()) + " a month" + percentText + ")";
+        }
         return money(change.oldCost()) + " -> " + money(change.newCost())
                 + " (" + signedMoney(change.difference()) + percentText + ")";
     }

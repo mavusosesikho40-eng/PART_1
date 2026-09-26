@@ -937,6 +937,17 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void switchingToAYearlyPlanAtANewPriceIsRecordedPerMonth() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("3", "1", "1", "", "2000", "", "4", "", "", "", "", "6", "4", "0");
+
+        assertTrue(out.contains("Price change recorded: 199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)."));
+        assertTrue(out.contains("Price changes in the last 12 months: -32.33 a month (-387.96 a year)."));
+        assertEquals(BillingCycle.YEARLY, saved().find(1).orElseThrow().getCycle());
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

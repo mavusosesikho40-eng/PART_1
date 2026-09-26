@@ -25,6 +25,16 @@ public enum BillingCycle {
         return label;
     }
 
+    /** How often, as used after an amount: "a week", "a month", "a quarter" or "a year". */
+    public String per() {
+        return switch (this) {
+            case WEEKLY -> "a week";
+            case MONTHLY -> "a month";
+            case QUARTERLY -> "a quarter";
+            case YEARLY -> "a year";
+        };
+    }
+
     /** Converts a cost per cycle into the equivalent yearly cost. */
     public BigDecimal toYearly(BigDecimal cost) {
         return cost.multiply(BigDecimal.valueOf(paymentsPerYear));

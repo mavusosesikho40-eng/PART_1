@@ -107,8 +107,7 @@ class ManageScreen {
         Subscription sub = found.get();
         System.out.println("-- Press Enter to keep the current value --");
         sub.setName(console.readText("Name", sub.getName()));
-        PriceChange priceChange = readPriceChange(sub);
-        sub.setCycle(console.readCycle(sub.getCycle()));
+        PriceChange priceChange = readCostAndCycle(sub);
         sub.setFreeTrial(console.readYesNo("Free trial? (y/n)", sub.isFreeTrial()));
         sub.setNextPayment(console.readDate(dateLabel(sub.isFreeTrial()), sub.getNextPayment()));
         sub.setCategory(console.readText("Category", sub.getCategory()));
@@ -123,22 +122,26 @@ class ManageScreen {
     }
 
     /**
-     * Asks for a new cost. If it's different, asks whether the price really
-     * changed (recorded in the price history) or a mistake is being fixed.
+     * Asks for the cost and billing cycle. If the cost is different, asks
+     * whether the price really changed (recorded in the price history,
+     * together with any change of billing cycle) or a mistake is being fixed.
      *
      * @return the recorded price change, or null if none was recorded
      */
-    private PriceChange readPriceChange(Subscription sub) {
+    private PriceChange readCostAndCycle(Subscription sub) {
         BigDecimal newCost = console.readCost("Cost per payment", sub.getCost());
-        if (newCost.compareTo(sub.getCost()) == 0) {
-            return null;
+        boolean record = false;
+        if (newCost.compareTo(sub.getCost()) != 0) {
+            System.out.println("  Answer n if you're only correcting a mistake.");
+            record = console.readYesNo("Record this as a price change? (y/n)", true);
         }
-        System.out.println("  Answer n if you're only correcting a mistake.");
-        if (!console.readYesNo("Record this as a price change? (y/n)", true)) {
+        BillingCycle newCycle = console.readCycle(sub.getCycle());
+        if (!record) {
             sub.setCost(newCost);
+            sub.setCycle(newCycle);
             return null;
         }
-        sub.changePrice(newCost, LocalDate.now());
+        sub.changePrice(newCost, newCycle, LocalDate.now());
         List<PriceChange> changes = sub.getPriceChanges();
         return changes.get(changes.size() - 1);
     }
