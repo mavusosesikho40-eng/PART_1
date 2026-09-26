@@ -70,6 +70,20 @@ public class SubscriptionManager {
                 .toList();
     }
 
+    /**
+     * All subscriptions ordered by what they cost per month, so different
+     * billing cycles compare fairly. Equal costs are ordered by name.
+     */
+    public List<Subscription> getSortedByCost(boolean highestFirst) {
+        Comparator<Subscription> byCost = Comparator.comparing(Subscription::getMonthlyCost);
+        if (highestFirst) {
+            byCost = byCost.reversed();
+        }
+        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        sorted.sort(byCost.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
+        return sorted;
+    }
+
     public BigDecimal getMonthlyTotal() {
         return subscriptions.stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

@@ -54,6 +54,7 @@ public class SubscriptionTracker {
                 case "6" -> spendingSummary();
                 case "7" -> searchByCategory();
                 case "8" -> exportToCsv();
+                case "9" -> sortByCost();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -73,6 +74,7 @@ public class SubscriptionTracker {
         System.out.println("6. Spending summary");
         System.out.println("7. Search by category");
         System.out.println("8. Export to CSV");
+        System.out.println("9. Sort by cost");
         System.out.println("0. Exit");
     }
 
@@ -217,6 +219,30 @@ public class SubscriptionTracker {
         } catch (IOException | RuntimeException e) {
             System.out.println("Could not export to " + name + ": " + e.getMessage());
         }
+    }
+
+    private void sortByCost() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("  1. Most expensive first");
+        System.out.println("  2. Cheapest first");
+        String choice = prompt("Order [1]");
+        if (choice == null) {
+            return;
+        }
+        boolean highestFirst = !choice.equals("2");
+        List<Subscription> sorted = manager.getSortedByCost(highestFirst);
+
+        String format = "%-4s %-20s %12s %-10s %12s  %-15s%n";
+        System.out.printf(format, "ID", "Name", "Cost", "Cycle", "Per month", "Category");
+        System.out.println("-".repeat(80));
+        for (Subscription s : sorted) {
+            System.out.printf(format, s.getId(), shorten(s.getName(), 20), money(s.getCost()),
+                    s.getCycle().getLabel(), money(s.getMonthlyCost()), shorten(s.getCategory(), 15));
+        }
+        System.out.println("Sorted by cost per month, " + (highestFirst ? "most expensive" : "cheapest") + " first.");
     }
 
     // ---- Display helpers ----

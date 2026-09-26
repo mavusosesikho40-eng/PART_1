@@ -228,6 +228,32 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void sortByCostShowsMostExpensiveFirstByDefault() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
+                "3\tGym\t250.00\tMONTHLY\t" + due + "\tHealth");
+
+        String out = run("9", "", "0");
+
+        assertTrue(out.indexOf("Gym") < out.indexOf("Adobe"));
+        assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
+        assertTrue(out.contains("Sorted by cost per month, most expensive first."));
+    }
+
+    @Test
+    public void sortByCostCanShowCheapestFirst() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
+
+        String out = run("9", "2", "0");
+
+        assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
+        assertTrue(out.contains("Sorted by cost per month, cheapest first."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 
