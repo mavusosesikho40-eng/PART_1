@@ -10,6 +10,20 @@
 <project name="SubscriptionTracker" default="default" basedir=".">
     <description>Builds, tests, and runs the project SubscriptionTracker.</description>
     <import file="nbproject/build-impl.xml"/>
+
+    <!--
+    NetBeans copies FlatLaf into dist/lib and points the jar at it. A build
+    outside NetBeans (e.g. on GitHub) can't, so this does the same there,
+    so that "java -jar dist/SubscriptionTracker.jar" opens the window.
+    -->
+    <target name="-post-jar" if="do.archive" unless="do.mkdist">
+        <copy file="${file.reference.flatlaf-3.7.2.jar}" todir="${dist.dir}/lib"/>
+        <jar destfile="${dist.jar}" update="true">
+            <manifest>
+                <attribute name="Class-Path" value="lib/flatlaf-3.7.2.jar"/>
+            </manifest>
+        </jar>
+    </target>
     <!--
 
     There exist several targets which are by default empty and which can be 

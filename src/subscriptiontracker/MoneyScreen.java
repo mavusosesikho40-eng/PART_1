@@ -192,8 +192,7 @@ class MoneyScreen {
                 System.out.println("Currency symbol removed. Amounts will look like " + money(EXAMPLE_AMOUNT) + ".");
                 return;
             }
-            if (input.length() <= 5 && input.chars().noneMatch(c -> Character.isDigit(c)
-                    || Character.isWhitespace(c) || ".,+-".indexOf(c) >= 0)) {
+            if (Display.isValidCurrencySymbol(input)) {
                 setCurrency(input);
                 System.out.println("Amounts will now look like " + money(EXAMPLE_AMOUNT) + ".");
                 return;

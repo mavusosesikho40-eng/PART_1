@@ -14,8 +14,8 @@ public class SubscriptionTracker {
 
     private static final String DATA_FILE = "subscriptions.txt";
 
-    private final SubscriptionManager manager = new SubscriptionManager();
-    private final SubscriptionStorage storage;
+    private final DataFile data;
+    private final SubscriptionManager manager;
     private final Console console;
     private final MoneyScreen money;
     private final ManageScreen manage;
@@ -23,15 +23,9 @@ public class SubscriptionTracker {
     private final FindScreen find;
     private final CsvScreen csv;
 
-    /**
-     * Set when the data file exists but couldn't be read. Saving is then
-     * refused, so the file is never replaced by the empty list the app
-     * started with.
-     */
-    private boolean dataFileUnreadable;
-
     public SubscriptionTracker(SubscriptionStorage storage, Scanner in) {
-        this.storage = storage;
+        this.data = new DataFile(storage);
+        this.manager = data.manager();
         this.console = new Console(in);
         this.money = new MoneyScreen(manager, console, this::save);
         this.manage = new ManageScreen(manager, console, this::save, money);
@@ -91,42 +85,37 @@ public class SubscriptionTracker {
     // ---- Persistence ----
 
     private void load() {
-        try {
-            int skipped = storage.load(manager);
-            if (skipped > 0) {
-                System.out.println("Warning: skipped " + skipped + " unreadable line(s) in " + storage.getFile());
-                keepUnreadableCopy();
-            }
-            if (manager.rollForwardAll(LocalDate.now()) > 0) {
-                save();
-            }
-        } catch (IOException e) {
-            dataFileUnreadable = true;
-            System.out.println("Could not read " + storage.getFile() + ": " + e.getMessage());
+        DataFile.LoadResult result = data.load();
+        if (result.readError() != null) {
+            System.out.println("Could not read " + data.file() + ": " + result.readError());
             System.out.println("To keep it safe, your changes won't be saved until the app is restarted "
                     + "with a file it can read.");
+            return;
         }
-    }
-
-    private void keepUnreadableCopy() {
-        try {
-            Path copy = storage.keepUnreadableCopy();
-            System.out.println("The file as it was has been copied to " + copy + ", so those lines aren't lost.");
-        } catch (IOException e) {
-            System.out.println("Could not copy " + storage.getFile() + ": " + e.getMessage());
+        if (result.skippedLines() > 0) {
+            System.out.println("Warning: skipped " + result.skippedLines() + " unreadable line(s) in " + data.file());
+            if (result.unreadableCopy() != null) {
+                System.out.println("The file as it was has been copied to " + result.unreadableCopy()
+                        + ", so those lines aren't lost.");
+            } else {
+                System.out.println("Could not copy " + data.file() + ": " + result.copyError());
+            }
+        }
+        if (result.saveError() != null) {
+            System.out.println("Could not save to " + data.file() + ": " + result.saveError());
         }
     }
 
     private void save() {
-        if (dataFileUnreadable) {
-            System.out.println("Not saved: " + storage.getFile() + " couldn't be read when the app started, "
+        if (data.isUnreadable()) {
+            System.out.println("Not saved: " + data.file() + " couldn't be read when the app started, "
                     + "so it hasn't been overwritten.");
             return;
         }
         try {
-            storage.save(manager);
+            data.save();
         } catch (IOException e) {
-            System.out.println("Could not save to " + storage.getFile() + ": " + e.getMessage());
+            System.out.println("Could not save to " + data.file() + ": " + e.getMessage());
         }
     }
 }

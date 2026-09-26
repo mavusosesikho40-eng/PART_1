@@ -133,7 +133,7 @@ public final class CsvImporter {
      * the decimal point; a lone comma followed by one or two digits at the
      * end is a decimal comma; any other comma separates thousands.
      */
-    static BigDecimal parseAmount(String text) {
+    public static BigDecimal parseAmount(String text) {
         String digits = text.replaceAll("[^0-9.,\\-]", "");
         int lastComma = digits.lastIndexOf(',');
         int lastDot = digits.lastIndexOf('.');
@@ -169,7 +169,7 @@ public final class CsvImporter {
     }
 
     /** Reads a date written as 2026-10-01, 2026/10/01 or 01/10/2026 (day first). */
-    static LocalDate parseDate(String text) {
+    public static LocalDate parseDate(String text) {
         for (DateTimeFormatter format : List.of(DateTimeFormatter.ISO_LOCAL_DATE, YEAR_FIRST_SLASHES, DAY_FIRST)) {
             try {
                 return LocalDate.parse(text, format);

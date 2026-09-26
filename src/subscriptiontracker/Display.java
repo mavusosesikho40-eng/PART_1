@@ -6,10 +6,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Formatting shared by the menu screens: amounts, dates, names and the
- * standard subscription table.
+ * Formatting shared by the console screens and the window: amounts, dates,
+ * names and the console's standard subscription table.
  */
-final class Display {
+public final class Display {
 
     private static String currency = "";
 
@@ -20,7 +20,7 @@ final class Display {
      * Sets the currency symbol every amount is shown with; empty for none.
      * The app sets this from the data file when it starts.
      */
-    static void setCurrency(String symbol) {
+    public static void setCurrency(String symbol) {
         currency = symbol == null ? "" : symbol;
     }
 
@@ -28,7 +28,7 @@ final class Display {
      * Formats an amount with the currency symbol, e.g. "R 1,234.50",
      * "$1,234.50" or "-R 30.00". Symbols ending in a letter get a space.
      */
-    static String money(BigDecimal amount) {
+    public static String money(BigDecimal amount) {
         if (currency.isEmpty()) {
             return String.format("%,.2f", amount);
         }
@@ -36,23 +36,23 @@ final class Display {
         return (amount.signum() < 0 ? "-" : "") + currency + gap + String.format("%,.2f", amount.abs());
     }
 
-    static String shorten(String text, int max) {
+    public static String shorten(String text, int max) {
         return text.length() <= max ? text : text.substring(0, max - 1) + "…";
     }
 
     /** Describes how far away a date is, e.g. "today", "tomorrow" or "in 5 days". */
-    static String dueIn(LocalDate date) {
+    public static String dueIn(LocalDate date) {
         long days = ChronoUnit.DAYS.between(LocalDate.now(), date);
         return days == 0 ? "today" : days == 1 ? "tomorrow" : "in " + days + " days";
     }
 
     /** The name to show in lists, marking free trials. */
-    static String displayName(Subscription s) {
+    public static String displayName(Subscription s) {
         return s.isFreeTrial() ? s.getName() + " (trial)" : s.getName();
     }
 
     /** An amount with a "+" in front when it's positive, e.g. "+30.00" or "-5.00". */
-    static String signedMoney(BigDecimal amount) {
+    public static String signedMoney(BigDecimal amount) {
         return (amount.signum() > 0 ? "+" : "") + money(amount);
     }
 
@@ -61,7 +61,7 @@ final class Display {
      * when the billing cycle changed too, per month:
      * "199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)".
      */
-    static String describe(PriceChange change) {
+    public static String describe(PriceChange change) {
         BigDecimal percent = change.percent();
         String percentText = percent == null ? "" : ", " + (percent.signum() > 0 ? "+" : "") + percent + "%";
         if (change.cycleChanged()) {
@@ -71,6 +71,16 @@ final class Display {
         }
         return money(change.oldCost()) + " -> " + money(change.newCost())
                 + " (" + signedMoney(change.difference()) + percentText + ")";
+    }
+
+    /**
+     * Whether a currency symbol can be used: up to 5 characters, with no
+     * digits, spaces or the characters . , + - (which would read as part of
+     * the amount).
+     */
+    public static boolean isValidCurrencySymbol(String symbol) {
+        return !symbol.isEmpty() && symbol.length() <= 5 && symbol.chars().noneMatch(c -> Character.isDigit(c)
+                || Character.isWhitespace(c) || ".,+-".indexOf(c) >= 0);
     }
 
     static void printTable(List<Subscription> subs) {
