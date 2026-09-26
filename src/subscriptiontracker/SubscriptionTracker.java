@@ -55,6 +55,7 @@ public class SubscriptionTracker {
                 case "7" -> searchByCategory();
                 case "8" -> exportToCsv();
                 case "9" -> sortByCost();
+                case "10" -> sortByNextPayment();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -75,6 +76,7 @@ public class SubscriptionTracker {
         System.out.println("7. Search by category");
         System.out.println("8. Export to CSV");
         System.out.println("9. Sort by cost");
+        System.out.println("10. Sort by next payment date");
         System.out.println("0. Exit");
     }
 
@@ -245,6 +247,30 @@ public class SubscriptionTracker {
         System.out.println("Sorted by cost per month, " + (highestFirst ? "most expensive" : "cheapest") + " first.");
     }
 
+    private void sortByNextPayment() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("  1. Soonest first");
+        System.out.println("  2. Latest first");
+        String choice = prompt("Order [1]");
+        if (choice == null) {
+            return;
+        }
+        boolean soonestFirst = !choice.equals("2");
+        List<Subscription> sorted = manager.getSortedByNextPayment(soonestFirst);
+
+        String format = "%-4s %-20s %12s %-10s %-12s %-14s%n";
+        System.out.printf(format, "ID", "Name", "Cost", "Cycle", "Next due", "Due in");
+        System.out.println("-".repeat(78));
+        for (Subscription s : sorted) {
+            System.out.printf(format, s.getId(), shorten(s.getName(), 20), money(s.getCost()),
+                    s.getCycle().getLabel(), s.getNextPayment(), dueIn(s.getNextPayment()));
+        }
+        System.out.println("Sorted by next payment date, " + (soonestFirst ? "soonest" : "latest") + " first.");
+    }
+
     // ---- Display helpers ----
 
     private void showUpcoming(int days) {
@@ -258,10 +284,8 @@ public class SubscriptionTracker {
         System.out.println("Payments due in the next " + days + " days:");
         BigDecimal total = BigDecimal.ZERO;
         for (Subscription s : due) {
-            long inDays = ChronoUnit.DAYS.between(LocalDate.now(), s.getNextPayment());
-            String when = inDays == 0 ? "today" : inDays == 1 ? "tomorrow" : "in " + inDays + " days";
             System.out.printf("  %-20s %12s  %s (%s)%n",
-                    s.getName(), money(s.getCost()), s.getNextPayment(), when);
+                    s.getName(), money(s.getCost()), s.getNextPayment(), dueIn(s.getNextPayment()));
             total = total.add(s.getCost());
         }
         System.out.println("  Total due: " + money(total));
@@ -275,6 +299,12 @@ public class SubscriptionTracker {
             System.out.printf(format, s.getId(), shorten(s.getName(), 20), money(s.getCost()),
                     s.getCycle().getLabel(), s.getNextPayment(), shorten(s.getCategory(), 15));
         }
+    }
+
+    /** Describes how far away a date is, e.g. "today", "tomorrow" or "in 5 days". */
+    private static String dueIn(LocalDate date) {
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), date);
+        return days == 0 ? "today" : days == 1 ? "tomorrow" : "in " + days + " days";
     }
 
     private static String money(BigDecimal amount) {

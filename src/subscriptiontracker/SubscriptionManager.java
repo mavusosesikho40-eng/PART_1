@@ -45,9 +45,20 @@ public class SubscriptionManager {
 
     /** All subscriptions, soonest payment first. */
     public List<Subscription> getAll() {
+        return getSortedByNextPayment(true);
+    }
+
+    /**
+     * All subscriptions ordered by next payment date, soonest or latest
+     * first. Payments on the same day are ordered by name.
+     */
+    public List<Subscription> getSortedByNextPayment(boolean soonestFirst) {
+        Comparator<Subscription> byDate = Comparator.comparing(Subscription::getNextPayment);
+        if (!soonestFirst) {
+            byDate = byDate.reversed();
+        }
         List<Subscription> sorted = new ArrayList<>(subscriptions);
-        sorted.sort(Comparator.comparing(Subscription::getNextPayment)
-                .thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
+        sorted.sort(byDate.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
         return sorted;
     }
 
