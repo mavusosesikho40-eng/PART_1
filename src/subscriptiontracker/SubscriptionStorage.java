@@ -19,8 +19,10 @@ import java.util.List;
  * Each line holds: id, name, cost, cycle, next payment date, category,
  * followed by optional flags: "TRIAL" for a free trial and
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription, and one
- * "PRICE=yyyy-mm-dd:old:new" for each recorded price change.
- * If a monthly budget is set, the first line is "BUDGET" and the amount.
+ * "PRICE=yyyy-mm-dd:old:new" for each recorded price change, and
+ * "NOTE=text" for a note.
+ * If a monthly budget is set, the first line is "BUDGET" and the amount; a
+ * currency symbol is saved the same way on a "CURRENCY" line.
  *
  * <p>Saving never leaves a half-written file behind: the new contents are
  * written to a temporary file and flushed to disk, the previous file is kept
@@ -30,9 +32,11 @@ public class SubscriptionStorage {
 
     private static final String SEPARATOR = "\t";
     private static final String BUDGET = "BUDGET";
+    private static final String CURRENCY = "CURRENCY";
     private static final String TRIAL = "TRIAL";
     private static final String CANCELLED = "CANCELLED=";
     private static final String PRICE = "PRICE=";
+    private static final String NOTE = "NOTE=";
 
     private final Path file;
 
@@ -70,6 +74,9 @@ public class SubscriptionStorage {
         List<String> lines = new ArrayList<>();
         manager.getMonthlyBudget().ifPresent(budget ->
                 lines.add(BUDGET + SEPARATOR + budget.toPlainString()));
+        if (!manager.getCurrencySymbol().isEmpty()) {
+            lines.add(CURRENCY + SEPARATOR + manager.getCurrencySymbol());
+        }
         for (Subscription s : manager.getAllIncludingCancelled()) {
             String line = String.join(SEPARATOR,
                     String.valueOf(s.getId()),
@@ -83,6 +90,9 @@ public class SubscriptionStorage {
             }
             if (s.isCancelled()) {
                 line += SEPARATOR + CANCELLED + s.getCancelledOn();
+            }
+            if (s.hasNote()) {
+                line += SEPARATOR + NOTE + s.getNote();
             }
             for (PriceChange change : s.getPriceChanges()) {
                 line += SEPARATOR + PRICE + change.date() + ":" + change.oldCost().toPlainString()
@@ -141,6 +151,10 @@ public class SubscriptionStorage {
                     manager.setMonthlyBudget(new BigDecimal(parts[1]));
                     continue;
                 }
+                if (parts[0].equals(CURRENCY)) {
+                    manager.setCurrencySymbol(parts[1]);
+                    continue;
+                }
                 Subscription sub = new Subscription(
                         Integer.parseInt(parts[0]),
                         parts[1],
@@ -153,6 +167,8 @@ public class SubscriptionStorage {
                         sub.setFreeTrial(true);
                     } else if (parts[i].startsWith(CANCELLED)) {
                         sub.cancel(LocalDate.parse(parts[i].substring(CANCELLED.length())));
+                    } else if (parts[i].startsWith(NOTE)) {
+                        sub.setNote(parts[i].substring(NOTE.length()));
                     } else if (parts[i].startsWith(PRICE)) {
                         String[] price = parts[i].substring(PRICE.length()).split(":", -1);
                         sub.restorePriceChange(new PriceChange(LocalDate.parse(price[0]),

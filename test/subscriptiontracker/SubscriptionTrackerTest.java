@@ -69,7 +69,7 @@ public class SubscriptionTrackerTest {
     public void addingASubscriptionSavesIt() throws IOException {
         LocalDate due = LocalDate.now().plusDays(10);
 
-        String out = run("2", "Netflix", "199", "2", "", due.toString(), "Streaming", "0");
+        String out = run("2", "Netflix", "199", "2", "", due.toString(), "Streaming", "", "0");
 
         assertTrue(out.contains("Added \"Netflix\" (#1)."));
         Subscription sub = saved().find(1).orElseThrow();
@@ -84,7 +84,7 @@ public class SubscriptionTrackerTest {
     public void invalidAnswersAreAskedAgain() throws IOException {
         LocalDate due = LocalDate.now().plusDays(10);
 
-        String out = run("2", "Adobe", "abc", "-5", "2400", "9", "4", "", "15/01/2027", due.toString(), "", "0");
+        String out = run("2", "Adobe", "abc", "-5", "2400", "9", "4", "", "15/01/2027", due.toString(), "", "", "0");
 
         assertTrue(out.contains("Please enter a positive amount"));
         assertTrue(out.contains("Please choose 1-4."));
@@ -104,7 +104,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void addingWithAPastDateRollsItForward() throws IOException {
-        run("2", "Gym", "50", "1", "", LocalDate.now().minusDays(20).toString(), "Health", "0");
+        run("2", "Gym", "50", "1", "", LocalDate.now().minusDays(20).toString(), "Health", "", "0");
 
         LocalDate next = saved().find(1).orElseThrow().getNextPayment();
         assertTrue(!next.isBefore(LocalDate.now()) && next.isBefore(LocalDate.now().plusWeeks(1)));
@@ -116,7 +116,7 @@ public class SubscriptionTrackerTest {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
         // The blank answer after "69.99" accepts recording it as a price change.
-        String out = run("3", "1", "1", "", "69.99", "", "", "", "", "", "0");
+        String out = run("3", "1", "1", "", "69.99", "", "", "", "", "", "", "0");
 
         Subscription sub = saved().find(1).orElseThrow();
         assertEquals("Spotify", sub.getName());
@@ -132,7 +132,7 @@ public class SubscriptionTrackerTest {
     public void fixingATypoInTheCostIsNotRecordedAsAPriceChange() throws IOException {
         seed("1\tSpotify\t599.90\tMONTHLY\t" + LocalDate.now().plusDays(5) + "\tMusic");
 
-        String out = run("3", "1", "1", "", "59.99", "n", "", "", "", "", "0");
+        String out = run("3", "1", "1", "", "59.99", "n", "", "", "", "", "", "0");
 
         assertTrue(!out.contains("Price change recorded"));
         Subscription sub = saved().find(1).orElseThrow();
@@ -144,7 +144,7 @@ public class SubscriptionTrackerTest {
     public void unchangedCostDoesNotAskAboutPriceChanges() throws IOException {
         seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(5) + "\tMusic");
 
-        String out = run("3", "1", "1", "Spotify Premium", "", "", "", "", "", "0");
+        String out = run("3", "1", "1", "Spotify Premium", "", "", "", "", "", "", "0");
 
         assertTrue(!out.contains("Record this as a price change?"));
         assertEquals("Spotify Premium", saved().find(1).orElseThrow().getName());
@@ -262,17 +262,17 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming");
         Path csv = folder.getRoot().toPath().resolve("export.csv");
 
-        String out = run("7", csv.toString(), "0");
+        String out = run("7", "1", csv.toString(), "0");
 
         assertTrue(out.contains("Exported 1 subscription(s) to"));
         List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
         assertEquals(2, lines.size());
-        assertEquals("1,Netflix,Streaming,199.00,Monthly," + due + ",199.00,2388.00,No", lines.get(1));
+        assertEquals("1,Netflix,Streaming,199.00,Monthly," + due + ",199.00,2388.00,No,", lines.get(1));
     }
 
     @Test
     public void exportWithNoSubscriptionsWritesNothing() {
-        String out = run("7", "0");
+        String out = run("7", "1", "0");
 
         assertTrue(out.contains("You have no subscriptions to export."));
     }
@@ -497,7 +497,7 @@ public class SubscriptionTrackerTest {
         seed("BUDGET\t250.00",
                 "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("2", "Spotify", "59.99", "2", "", LocalDate.now().plusDays(20).toString(), "Music", "0");
+        String out = run("2", "Spotify", "59.99", "2", "", LocalDate.now().plusDays(20).toString(), "Music", "", "0");
 
         assertTrue(out.contains("Added \"Spotify\" (#2)."));
         assertTrue(out.contains("Warning: you're over your monthly budget. "
@@ -531,7 +531,7 @@ public class SubscriptionTrackerTest {
     public void addingAFreeTrialSavesItAndConfirmsTheEndDate() throws IOException {
         LocalDate ends = LocalDate.now().plusDays(14);
 
-        String out = run("2", "Netflix", "199", "2", "y", ends.toString(), "Streaming", "0");
+        String out = run("2", "Netflix", "199", "2", "y", ends.toString(), "Streaming", "", "0");
 
         assertTrue(out.contains("Trial end / first payment date (YYYY-MM-DD)"));
         assertTrue(out.contains("Its free trial ends " + ends + " (in 14 days). "
@@ -543,7 +543,7 @@ public class SubscriptionTrackerTest {
     public void addingATrialEndingThisWeekSaysToCancelInTime() {
         LocalDate ends = LocalDate.now().plusDays(7);
 
-        String out = run("2", "Netflix", "199", "2", "y", ends.toString(), "Streaming", "0");
+        String out = run("2", "Netflix", "199", "2", "y", ends.toString(), "Streaming", "", "0");
 
         assertTrue(out.contains("Its free trial ends " + ends + " (in 7 days). "
                 + "Cancel before then if you don't want to be charged."));
@@ -551,7 +551,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void freeTrialQuestionRejectsOtherAnswers() throws IOException {
-        run("2", "Netflix", "199", "2", "maybe", "yes", LocalDate.now().plusDays(14).toString(), "", "0");
+        run("2", "Netflix", "199", "2", "maybe", "yes", LocalDate.now().plusDays(14).toString(), "", "", "0");
 
         assertTrue(output.toString(StandardCharsets.UTF_8).contains("Please answer y or n."));
         assertTrue(saved().find(1).orElseThrow().isFreeTrial());
@@ -604,7 +604,7 @@ public class SubscriptionTrackerTest {
     public void editingCanTurnATrialIntoAPaidSubscription() throws IOException {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tTRIAL");
 
-        String out = run("3", "1", "1", "", "", "", "n", "", "", "0");
+        String out = run("3", "1", "1", "", "", "", "n", "", "", "", "0");
 
         assertTrue(out.contains("Free trial? (y/n) [y]"));
         assertTrue(!saved().find(1).orElseThrow().isFreeTrial());
@@ -716,8 +716,8 @@ public class SubscriptionTrackerTest {
         seed("this line is broken",
                 "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("2", "Spotify", "59.99", "2", "", LocalDate.now().plusDays(20).toString(), "Music",
-                "2", "Gym", "250", "2", "", LocalDate.now().plusDays(20).toString(), "Health", "0");
+        String out = run("2", "Spotify", "59.99", "2", "", LocalDate.now().plusDays(20).toString(), "Music", "",
+                "2", "Gym", "250", "2", "", LocalDate.now().plusDays(20).toString(), "Health", "", "0");
 
         assertTrue(out.contains("Warning: skipped 1 unreadable line(s)"));
         assertTrue(out.contains("so those lines aren't lost."));
@@ -734,7 +734,7 @@ public class SubscriptionTrackerTest {
         assertTrue(out.contains("4. Upcoming payments and free trials"));
         assertTrue(out.contains("5. Search, filter and sort"));
         assertTrue(out.contains("6. Spending, budget and savings"));
-        assertTrue(out.contains("7. Export to CSV"));
+        assertTrue(out.contains("7. Import or export CSV"));
         assertTrue(!out.contains("8. "));
     }
 
@@ -767,6 +767,134 @@ public class SubscriptionTrackerTest {
         assertTrue(out.contains("Payments due in the next 14 days:"));
         assertTrue(out.contains("Total due: 199.00"));
         assertTrue(!out.contains("Adobe"));
+    }
+
+    @Test
+    public void addingANoteSavesItAndShowsItUnderTheTable() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+
+        String out = run("2", "Netflix", "199", "2", "", due.toString(), "Streaming", "Family plan", "1", "0");
+
+        assertEquals("Family plan", saved().find(1).orElseThrow().getNote());
+        assertTrue(out.contains("Notes:"));
+        assertTrue(out.contains("  #1 Netflix: Family plan"));
+    }
+
+    @Test
+    public void noNotesMeansNoNotesSection() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("1", "0");
+
+        assertTrue(!out.contains("Notes:"));
+    }
+
+    @Test
+    public void editingKeepsTheNoteOnBlankAndRemovesItWithADash() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tNOTE=Family plan");
+
+        String out = run("3", "1", "1", "", "", "", "", "", "", "", "0");
+        assertTrue(out.contains("Note (- to remove) [Family plan]"));
+        assertEquals("Family plan", saved().find(1).orElseThrow().getNote());
+
+        run("3", "1", "1", "", "", "", "", "", "", "-", "0");
+        assertTrue(!saved().find(1).orElseThrow().hasNote());
+    }
+
+    @Test
+    public void settingACurrencySymbolShowsItOnAmountsAndIsSaved() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "5", "R", "6", "1", "0");
+
+        assertTrue(out.contains("Amounts will now look like R 1,234.50."));
+        assertTrue(out.contains("Monthly total: R 199.00"));
+        assertEquals("R", saved().getCurrencySymbol());
+    }
+
+    @Test
+    public void savedCurrencySymbolIsUsedOnStartup() throws IOException {
+        seed("CURRENCY\t$", "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(2) + "\tStreaming");
+
+        String out = run("0");
+
+        assertTrue(out.contains("Total due: $199.00"));
+    }
+
+    @Test
+    public void currencySymbolRejectsNumbersAndCanBeRemoved() throws IOException {
+        seed("CURRENCY\tR", "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "5", "12", "-", "6", "1", "0");
+
+        assertTrue(out.contains("Amounts are shown like R 1,234.50."));
+        assertTrue(out.contains("Please use up to 5 letters or symbols, e.g. R or $."));
+        assertTrue(out.contains("Currency symbol removed."));
+        assertTrue(out.contains("Monthly total: 199.00"));
+        assertEquals("", saved().getCurrencySymbol());
+    }
+
+    @Test
+    public void blankKeepsTheCurrencySymbol() throws IOException {
+        seed("CURRENCY\tR", "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "5", "", "0");
+
+        assertTrue(out.contains("Currency symbol unchanged."));
+        assertEquals("R", saved().getCurrencySymbol());
+    }
+
+    @Test
+    public void importAddsSubscriptionsFromACsvFileAndReportsSkippedRows() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+        Path csv = folder.getRoot().toPath().resolve("import.csv");
+        LocalDate due = LocalDate.now().plusDays(10);
+        Files.writeString(csv, "Name,Cost,Billing Cycle,Next Payment,Category\n"
+                + "Spotify,59.99,Monthly," + due + ",Music\n"
+                + "Netflix,199.00,Monthly," + due + ",Streaming\n"
+                + "Gym,lots,Monthly," + due + ",Health\n");
+
+        String out = run("7", "2", csv.toString(), "0");
+
+        assertTrue(out.contains("Imported 1 subscription(s)."));
+        assertTrue(out.contains("Skipped 2 row(s):"));
+        assertTrue(out.contains("Row 3: \"Netflix\" is already in your list."));
+        assertTrue(out.contains("Row 4: the cost \"lots\" isn't an amount."));
+        Subscription spotify = saved().find(2).orElseThrow();
+        assertEquals("Spotify", spotify.getName());
+        assertEquals(due, spotify.getNextPayment());
+    }
+
+    @Test
+    public void exportThenImportGivesTheSameSubscriptions() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\tTRIAL\tNOTE=Family, shared",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due.plusDays(1) + "\tSoftware");
+        Path csv = folder.getRoot().toPath().resolve("round-trip.csv");
+        run("7", "1", csv.toString(), "0");
+
+        Path other = folder.getRoot().toPath().resolve("other.txt");
+        new SubscriptionTracker(new SubscriptionStorage(other),
+                new Scanner("7\n2\n" + csv + "\n0\n")).run();
+
+        SubscriptionManager imported = new SubscriptionManager();
+        new SubscriptionStorage(other).load(imported);
+        Subscription netflix = imported.getAll().get(0);
+        assertEquals("Netflix", netflix.getName());
+        assertEquals(new BigDecimal("199.00"), netflix.getCost());
+        assertEquals(due, netflix.getNextPayment());
+        assertTrue(netflix.isFreeTrial());
+        assertEquals("Family, shared", netflix.getNote());
+        Subscription adobe = imported.getAll().get(1);
+        assertEquals(BillingCycle.YEARLY, adobe.getCycle());
+        assertEquals("Software", adobe.getCategory());
+    }
+
+    @Test
+    public void importFromAMissingFileSaysSo() {
+        String out = run("7", "2", folder.getRoot().toPath().resolve("nope.csv").toString(), "0");
+
+        assertTrue(out.contains("There's no file called"));
     }
 
     @Test

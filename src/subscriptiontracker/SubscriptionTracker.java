@@ -13,7 +13,6 @@ import java.util.Scanner;
 public class SubscriptionTracker {
 
     private static final String DATA_FILE = "subscriptions.txt";
-    private static final String CSV_FILE = "subscriptions.csv";
 
     private final SubscriptionManager manager = new SubscriptionManager();
     private final SubscriptionStorage storage;
@@ -22,6 +21,7 @@ public class SubscriptionTracker {
     private final ManageScreen manage;
     private final UpcomingScreen upcoming;
     private final FindScreen find;
+    private final CsvScreen csv;
 
     public SubscriptionTracker(SubscriptionStorage storage, Scanner in) {
         this.storage = storage;
@@ -30,6 +30,7 @@ public class SubscriptionTracker {
         this.manage = new ManageScreen(manager, console, this::save, money);
         this.upcoming = new UpcomingScreen(manager, console);
         this.find = new FindScreen(manager, console);
+        this.csv = new CsvScreen(manager, console, this::save, money);
     }
 
     public static void main(String[] args) {
@@ -39,6 +40,7 @@ public class SubscriptionTracker {
 
     public void run() {
         load();
+        Display.setCurrency(manager.getCurrencySymbol());
         System.out.println("=== Subscription Tracker ===");
         upcoming.showUpcoming(7);
         upcoming.showTrialReminders(7);
@@ -57,7 +59,7 @@ public class SubscriptionTracker {
                 case "4" -> upcoming.menu();
                 case "5" -> find.menu();
                 case "6" -> money.menu();
-                case "7" -> exportToCsv();
+                case "7" -> csv.menu();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -75,24 +77,8 @@ public class SubscriptionTracker {
         System.out.println("4. Upcoming payments and free trials");
         System.out.println("5. Search, filter and sort");
         System.out.println("6. Spending, budget and savings");
-        System.out.println("7. Export to CSV");
+        System.out.println("7. Import or export CSV");
         System.out.println("0. Exit");
-    }
-
-    private void exportToCsv() {
-        if (manager.isEmpty()) {
-            System.out.println("You have no subscriptions to export.");
-            return;
-        }
-        String name = console.readText("File to export to", CSV_FILE);
-        try {
-            Path file = Path.of(name);
-            CsvExporter.export(manager.getAll(), file);
-            System.out.println("Exported " + manager.getAll().size() + " subscription(s) to "
-                    + file.toAbsolutePath());
-        } catch (IOException | RuntimeException e) {
-            System.out.println("Could not export to " + name + ": " + e.getMessage());
-        }
     }
 
     // ---- Persistence ----

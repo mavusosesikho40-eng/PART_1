@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 public class CsvExporterTest {
 
     private static final String HEADER =
-            "ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial";
+            "ID,Name,Category,Cost,Billing Cycle,Next Payment,Monthly Cost,Yearly Cost,Free Trial,Note";
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -36,8 +36,8 @@ public class CsvExporterTest {
                 sub(2, "Adobe", "2400.00", BillingCycle.YEARLY, "Software")));
 
         assertEquals(HEADER + "\r\n"
-                + "1,Netflix,Streaming,199.00,Monthly,2026-10-01,199.00,2388.00,No\r\n"
-                + "2,Adobe,Software,2400.00,Yearly,2026-10-01,200.00,2400.00,No\r\n", csv);
+                + "1,Netflix,Streaming,199.00,Monthly,2026-10-01,199.00,2388.00,No,\r\n"
+                + "2,Adobe,Software,2400.00,Yearly,2026-10-01,200.00,2400.00,No,\r\n", csv);
     }
 
     @Test
@@ -45,7 +45,7 @@ public class CsvExporterTest {
         String csv = CsvExporter.toCsv(List.of(
                 sub(1, "Disney+, Hulu", "10", BillingCycle.MONTHLY, "The \"Best\" Shows")));
 
-        assertEquals("1,\"Disney+, Hulu\",\"The \"\"Best\"\" Shows\",10,Monthly,2026-10-01,10.00,120,No",
+        assertEquals("1,\"Disney+, Hulu\",\"The \"\"Best\"\" Shows\",10,Monthly,2026-10-01,10.00,120,No,",
                 csv.split("\r\n")[1]);
     }
 
@@ -54,8 +54,17 @@ public class CsvExporterTest {
         Subscription trial = sub(1, "Netflix", "199.00", BillingCycle.MONTHLY, "Streaming");
         trial.setFreeTrial(true);
 
-        assertEquals("1,Netflix,Streaming,199.00,Monthly,2026-10-01,199.00,2388.00,Yes",
+        assertEquals("1,Netflix,Streaming,199.00,Monthly,2026-10-01,199.00,2388.00,Yes,",
                 CsvExporter.toCsv(List.of(trial)).split("\r\n")[1]);
+    }
+
+    @Test
+    public void includesTheNoteQuotedWhenNeeded() {
+        Subscription sub = sub(1, "Netflix", "199.00", BillingCycle.MONTHLY, "Streaming");
+        sub.setNote("family plan, shared");
+
+        assertEquals("1,Netflix,Streaming,199.00,Monthly,2026-10-01,199.00,2388.00,No,\"family plan, shared\"",
+                CsvExporter.toCsv(List.of(sub)).split("\r\n")[1]);
     }
 
     @Test

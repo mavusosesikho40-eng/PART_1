@@ -279,6 +279,36 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void noteIsSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.add("Netflix", new BigDecimal("199.00"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 10, 1), "Streaming").setNote("Card: Capitec, ends 4321; login=me@home");
+        storage.save(original);
+
+        assertEquals(List.of("1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming"
+                + "\tNOTE=Card: Capitec, ends 4321; login=me@home"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertEquals("Card: Capitec, ends 4321; login=me@home", loaded.find(1).orElseThrow().getNote());
+    }
+
+    @Test
+    public void currencySymbolIsSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.setMonthlyBudget(new BigDecimal("500"));
+        original.setCurrencySymbol("R");
+        storage.save(original);
+
+        assertEquals(List.of("BUDGET\t500", "CURRENCY\tR"), Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertEquals("R", loaded.getCurrencySymbol());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,
