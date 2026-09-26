@@ -180,6 +180,27 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void sortByCategoryIgnoresCaseInEitherDirection() {
+        add("Spotify", "1", BillingCycle.MONTHLY, TODAY, "Music");
+        add("Adobe", "1", BillingCycle.MONTHLY, TODAY, "software");
+        add("Gym", "1", BillingCycle.MONTHLY, TODAY, "Health");
+
+        assertEquals(List.of("Gym", "Spotify", "Adobe"), names(manager.getSortedByCategory(true)));
+        assertEquals(List.of("Adobe", "Spotify", "Gym"), names(manager.getSortedByCategory(false)));
+    }
+
+    @Test
+    public void sortByCategoryOrdersByNameWithinACategory() {
+        add("Showmax", "1", BillingCycle.MONTHLY, TODAY, "Streaming");
+        add("apple TV", "1", BillingCycle.MONTHLY, TODAY, "streaming");
+        add("Netflix", "1", BillingCycle.MONTHLY, TODAY, "Streaming");
+        add("Spotify", "1", BillingCycle.MONTHLY, TODAY, "Music");
+
+        assertEquals(List.of("Spotify", "apple TV", "Netflix", "Showmax"), names(manager.getSortedByCategory(true)));
+        assertEquals(List.of("apple TV", "Netflix", "Showmax", "Spotify"), names(manager.getSortedByCategory(false)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

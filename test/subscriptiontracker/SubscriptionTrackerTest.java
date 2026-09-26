@@ -304,6 +304,32 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void sortByCategoryShowsAToZByDefault() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
+                "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
+                "3\tGym\t250.00\tMONTHLY\t" + due + "\tHealth");
+
+        String out = run("12", "", "0");
+
+        assertTrue(out.indexOf("Gym") < out.indexOf("Spotify"));
+        assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
+        assertTrue(out.contains("Sorted by category, A to Z."));
+    }
+
+    @Test
+    public void sortByCategoryCanShowZToA() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tGym\t250.00\tMONTHLY\t" + due + "\tHealth",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
+
+        String out = run("12", "2", "0");
+
+        assertTrue(out.indexOf("Adobe") < out.indexOf("Gym"));
+        assertTrue(out.contains("Sorted by category, Z to A."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 
