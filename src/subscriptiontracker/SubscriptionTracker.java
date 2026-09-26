@@ -701,12 +701,22 @@ public class SubscriptionTracker {
             int skipped = storage.load(manager);
             if (skipped > 0) {
                 System.out.println("Warning: skipped " + skipped + " unreadable line(s) in " + storage.getFile());
+                keepUnreadableCopy();
             }
             if (manager.rollForwardAll(LocalDate.now()) > 0) {
                 save();
             }
         } catch (IOException e) {
             System.out.println("Could not read " + storage.getFile() + ": " + e.getMessage());
+        }
+    }
+
+    private void keepUnreadableCopy() {
+        try {
+            Path copy = storage.keepUnreadableCopy();
+            System.out.println("The file as it was has been copied to " + copy + ", so those lines aren't lost.");
+        } catch (IOException e) {
+            System.out.println("Could not copy " + storage.getFile() + ": " + e.getMessage());
         }
     }
 
