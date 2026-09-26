@@ -2,8 +2,41 @@
 
 [![Tests](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/tests.yml/badge.svg)](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/tests.yml)
 
-A Java console app for keeping track of your subscriptions — what they cost,
+A Java desktop app for keeping track of your subscriptions — what they cost,
 how often you pay, and when the next payment is due.
+
+![The Subscriptions screen](docs/window.png)
+
+There's also a phone version for **Android and iPhone** in [`mobile/`](mobile/README.md), with the
+same features laid out for a phone. Move your subscriptions to it with **Export CSV…** here and
+**Import CSV…** there.
+
+## The window
+
+The sidebar switches between four screens. Every change is saved straight away.
+
+| Screen | What it shows |
+| --- | --- |
+| **Subscriptions** | A reminder for any free trial ending this week (cancel it or dismiss the reminder), cards with your monthly spending against your budget, what's due in the next 7 days and your yearly total, then the table. Type in the search box to find a name or category, choose a billing cycle to filter, and click a column heading to sort. **+ Add subscription** opens the form; double-click a row (or select it and press Enter) to edit it. **Cancel subscription** moves it to your cancelled list; **Remove** deletes it for good. |
+| **Upcoming & trials** | Every payment due in the next 7, 14, 30 or 90 days with the total (a weekly subscription shows once for each week), and your free trials with when each one ends. **Keep it (I'll pay)** stops the reminders for a trial you're keeping; **Cancel trial** cancels it. |
+| **Spending & budget** | Monthly and yearly totals, your monthly budget (**Change** to set it; leave it empty to remove it), how much price changes in the last 12 months have added, spending per category, and the price history. |
+| **Cancelled & savings** | What cancelling has saved you so far and per month and year, and your cancelled subscriptions. **Restore** one if you sign up again, or **Remove** it for good. |
+
+In the add/edit form, dates can be typed as `2026-10-01`, `2026/10/01` or `01/10/2026`, and the
+form tells you when payments will fall (e.g. "Billed on the 1st of each month · in 5 days").
+When you change the cost of a subscription, **Record this as a price change** is ticked, so the
+change goes into your price history; untick it if you're just fixing a typo.
+
+Down the side, **Import CSV…** and **Export CSV…** work as described
+[below](#importing-from-a-spreadsheet), and **Settings (currency)** sets the symbol shown on amounts.
+
+The window uses the [FlatLaf](https://www.formdev.com/flatlaf/) look and feel (Apache 2.0
+licence), included as `lib/flatlaf-3.7.2.jar`.
+
+## The console version
+
+The original console version is still there, uses the same data file, and does everything the
+window does:
 
 ```
 === Subscription Tracker ===
@@ -24,7 +57,7 @@ Payments due in the next 7 days:
 
 Options 3 to 7 open a short sub-menu; press Enter on a blank line to go back.
 
-## Features
+### Console menu
 
 | Menu | What it does |
 | --- | --- |
@@ -46,9 +79,10 @@ Options 3 to 7 open a short sub-menu; press Enter on a blank line to go back.
 | **7. Import or export CSV** → Export | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 | &nbsp;&nbsp;&nbsp;→ Import | Adds subscriptions from a CSV file: one exported by the app, or a spreadsheet saved as CSV. See [Importing from a spreadsheet](#importing-from-a-spreadsheet). |
 
-A few things happen automatically:
+A few things happen automatically, in both versions:
 
-- **Reminders on startup** — payments due in the next 7 days are shown when the app opens.
+- **Reminders on startup** — payments due in the next 7 days are shown when the app opens (in the
+  window, on the Subscriptions screen).
 - **Payment dates roll forward** — once a payment date has passed, it moves to the next one
   (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01). Subscriptions billed late in the
   month keep their day: one billed on the 31st is due 28 Feb, then 31 Mar again.
@@ -66,8 +100,8 @@ A few things happen automatically:
 
 ## Importing from a spreadsheet
 
-Save your spreadsheet as CSV, then choose **7. Import or export CSV → Import** and type the file's
-name. The first row must name the columns; they can be in any order, and other columns are
+Save your spreadsheet as CSV, then click **Import CSV…** in the window's sidebar and pick the
+file (in the console version: **7. Import or export CSV → Import** and type the file's name). The first row must name the columns; they can be in any order, and other columns are
 ignored.
 
 | Column | Needed? | Also recognised as | Notes |
@@ -87,7 +121,7 @@ tells you which rows and why; everything else is imported.
 
 ## Requirements
 
-- Java 21 or newer
+- Java 21 or newer (FlatLaf, the look and feel, is included in `lib/`)
 - [Apache NetBeans](https://netbeans.apache.org/) (or Apache Ant) to build the project
 
 ## Running the app
@@ -95,16 +129,25 @@ tells you which rows and why; everything else is imported.
 ### In NetBeans
 
 1. **File → Open Project** and choose this folder.
-2. Press **Run** (F6).
+2. Press **Run** (F6). The window opens.
 
-The app runs in NetBeans' Output window; type your answers there.
+For the console version, right-click `SubscriptionTracker.java` (in `Source Packages →
+subscriptiontracker`) and choose **Run File** (Shift+F6); it runs in NetBeans' Output window, so
+type your answers there.
 
 ### From the command line
 
-Build the jar with **Clean and Build** in NetBeans (or `ant jar`), then:
+Build the jar with **Clean and Build** in NetBeans (or `ant jar`). The build puts FlatLaf in
+`dist/lib/` next to the jar, so keep the two together if you move them. Then:
 
 ```sh
 java -jar dist/SubscriptionTracker.jar
+```
+
+For the console version:
+
+```sh
+java -cp dist/SubscriptionTracker.jar subscriptiontracker.SubscriptionTracker
 ```
 
 ## Where your data is saved
@@ -151,7 +194,9 @@ personal data is never committed.
 
 ## Running the tests
 
-The tests are JUnit 4 tests in `test/subscriptiontracker/`.
+The tests are JUnit 4 tests in `test/subscriptiontracker/`. The window's logic (the add/edit
+form, search and filtering, the upcoming-payments list) is tested in
+`test/subscriptiontracker/gui/` without opening a window.
 
 They also run automatically on GitHub for every pull request and every push to `master`
 (see `.github/workflows/tests.yml`); the result shows as a check on the pull request.
@@ -164,8 +209,23 @@ They also run automatically on GitHub for every pull request and every push to `
 ## Project layout
 
 ```
+src/subscriptiontracker/gui/
+  TrackerApp.java            main() for the window: sets up FlatLaf and loads the data file
+  TrackerWindow.java         The window: sidebar, screens, status line; saves after every change
+  SubscriptionsPanel.java    The Subscriptions screen: trial reminder, cards, search, filter, table
+  SubscriptionDialog.java    The add/edit form
+  SubscriptionForm.java      What's typed into the form: checking it and saving it (no Swing)
+  SubscriptionTableModel.java  The main table's rows, and the search/filter rule
+  UpcomingPanel.java         The Upcoming & trials screen
+  SpendingPanel.java         The Spending & budget screen
+  CancelledPanel.java        The Cancelled & savings screen
+  SummaryCard.java           The cards at the top of each screen
+  ListTableModel.java        A simple read-only table model for the smaller tables
+  Renderers.java             How table cells show amounts, dates and text
+  Theme.java                 Colours, fonts and shared components
 src/subscriptiontracker/
-  SubscriptionTracker.java   main() and the main menu; loads and saves the data file
+  SubscriptionTracker.java   main() for the console version and the main menu
+  DataFile.java              Loading and saving the data file, shared by the window and the console
   ManageScreen.java          View, add, edit, cancel and remove subscriptions
   UpcomingScreen.java        Upcoming payments, free trials and the startup reminders
   FindScreen.java            Search, filter and sort
@@ -181,4 +241,5 @@ src/subscriptiontracker/
   CsvExporter.java           CSV export
   CsvImporter.java           CSV import: column names, amounts, dates, quoted cells
 test/subscriptiontracker/    JUnit tests
+lib/flatlaf-3.7.2.jar        The FlatLaf look and feel
 ```
