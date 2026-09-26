@@ -1,108 +1,81 @@
 # Subscription Tracker
 
-[![Tests](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/tests.yml/badge.svg)](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/tests.yml)
+[![Build](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/build.yml/badge.svg)](https://github.com/mavusosesikho40-eng/PART_1/actions/workflows/build.yml)
 
-A Java desktop app for keeping track of your subscriptions — what they cost,
-how often you pay, and when the next payment is due.
+Keep track of your subscriptions: what they cost, how often you pay, when the next payment is
+due, and what you actually spend. One app for **Android**, **iPhone** and the **desktop**
+(Windows, macOS, Linux), written once in Kotlin with
+[Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/).
 
-![The Subscriptions screen](docs/window.png)
+## Getting the app
 
-There's also a phone version for **Android and iPhone** in [`mobile/`](mobile/README.md), with the
-same features laid out for a phone. Move your subscriptions to it with **Export CSV…** here and
-**Import CSV…** there.
+Every change that reaches `master` and passes its checks is published on the
+[**Releases**](https://github.com/mavusosesikho40-eng/PART_1/releases) page as `v1.0.<number>`:
 
-## The window
+- **Android:** on your phone, open the latest release and tap `SubscriptionTracker-….apk`.
+  Android asks you to allow installing apps from your browser the first time. Each new release
+  installs over the last one and keeps your data (see [Updates that keep your data](#updates-that-keep-your-data)).
+- **Windows:** download `SubscriptionTracker-….msi` and run it. It adds Subscription Tracker to
+  the Start menu; a newer installer updates it.
+- **iPhone:** needs a Mac with Xcode; see [Building it yourself](#building-it-yourself).
 
-The sidebar switches between four screens. Every change is saved straight away.
+## What it does
 
-| Screen | What it shows |
+Four tabs (along the bottom on a phone, down the side in a wide window):
+
+| Tab | What it shows |
 | --- | --- |
-| **Subscriptions** | A reminder for any free trial ending this week (cancel it or dismiss the reminder), cards with your monthly spending against your budget, what's due in the next 7 days and your yearly total, then the table. Type in the search box to find a name or category, choose a billing cycle to filter, and click a column heading to sort. **+ Add subscription** opens the form; double-click a row (or select it and press Enter) to edit it. **Cancel subscription** moves it to your cancelled list; **Remove** deletes it for good. |
-| **Upcoming & trials** | Every payment due in the next 7, 14, 30 or 90 days with the total (a weekly subscription shows once for each week), and your free trials with when each one ends. **Keep it (I'll pay)** stops the reminders for a trial you're keeping; **Cancel trial** cancels it. |
-| **Spending & budget** | Monthly and yearly totals, your monthly budget (**Change** to set it; leave it empty to remove it), how much price changes in the last 12 months have added, spending per category, and the price history. |
-| **Cancelled & savings** | What cancelling has saved you so far and per month and year, and your cancelled subscriptions. **Restore** one if you sign up again, or **Remove** it for good. |
+| **Subscriptions** | A reminder when a free trial ends this week, your monthly spending against your budget, what's due in the next 7 days and your yearly total. Then every subscription, with search, a billing-cycle filter and sorting (next payment, name, cost per month, category). Tap one to edit, cancel or remove it; **Add** puts in a new one. |
+| **Upcoming** | Every payment due in the next 7, 14, 30 or 90 days with the total, and your free trials, which you can keep or cancel. **Paid…** records what you actually paid for a payment due this week. |
+| **Spending** | Monthly and yearly totals, the monthly budget, how much price changes in the last 12 months have added, what you actually spent in the last 12 months and each of the last 6, your recent payments, spending per category, exchange rates and the price history. |
+| **Cancelled** | What cancelling has saved you, and your cancelled subscriptions, which you can restore or remove. |
 
-In the add/edit form, dates can be typed as `2026-10-01`, `2026/10/01` or `01/10/2026`, and the
-form tells you when payments will fall (e.g. "Billed on the 1st of each month · in 5 days").
-When you change the cost of a subscription, **Record this as a price change** is ticked, so the
-change goes into your price history; untick it if you're just fixing a typo.
+The menu at the top right has **Import CSV…**, **Export CSV…**, **Back up all data…**,
+**Restore from backup…** and **Currency symbol…**.
 
-Down the side, **Import CSV…** and **Export CSV…** work as described
-[below](#importing-from-a-spreadsheet), and **Settings (currency)** sets the symbol shown on amounts.
+- **Billing dates move on by themselves.** Once a payment date passes it moves to the next one
+  (a monthly subscription due 1 Sep becomes 1 Oct), and one billed on the 31st goes back to the
+  31st after a short month. A free trial whose end date has passed becomes a paid subscription.
+- **Price changes.** Changing a subscription's cost records the change in your price history,
+  unless you turn that off because you're just fixing a typo.
+- **Other currencies.** Turn on *Billed in another currency* for something that charges in, say,
+  US dollars, and enter the exchange rate (1 USD = R 18.25). Its amounts show in dollars
+  ("USD 20.00"); totals, the budget, categories and savings are in your currency. Change the rate
+  now and then on the Spending tab. (Rates are entered by you; the app doesn't fetch them.)
+- **What you actually spend.** Each payment is recorded at the list price when its date passes.
+  If you paid something different, use **Paid…** on the Upcoming tab, or tap the payment under
+  *Recent payments* to correct it.
+- **Reminders** (Android and iPhone). The day before each payment ("Netflix is due tomorrow"), and
+  two days and one day before a free trial ends, at about 9 in the morning.
+- **Home-screen widget** (Android). Long-press the home screen, choose *Widgets* and add
+  *Subscriptions*: your monthly total and next payment.
+- **Saving.** Every change is saved straight away, safely: the new version is written to a
+  temporary file first, and the previous one is kept as `subscriptions.txt.bak`. If the app ever
+  finds lines it can't read, it copies the file to `subscriptions.txt.unreadable` first.
 
-The window uses the [FlatLaf](https://www.formdev.com/flatlaf/) look and feel (Apache 2.0
-licence), included as `lib/flatlaf-3.7.2.jar`.
+## Your data
 
-## The console version
+Everything is in one plain-text file, `subscriptions.txt`:
 
-The original console version is still there, uses the same data file, and does everything the
-window does:
+- **Android and iPhone:** in the app's own storage, included in the phone's backups. On iPhone you
+  can also see it in the Files app under *On My iPhone → Subscriptions*.
+- **Desktop:** in a `SubscriptionTracker` folder in your user folder. To use another file, start
+  the app with its path as an argument.
 
-```
-=== Subscription Tracker ===
-Payments due in the next 7 days:
-  Spotify                     59.99  2026-09-27 (tomorrow)
-  Netflix                    199.00  2026-10-01 (in 5 days)
-  Total due: 258.99
+**Back up all data…** saves a copy anywhere you like (e.g. Google Drive or iCloud Drive), and
+**Restore from backup…** reads it back, e.g. on a new phone. Restore also reads the file the old
+Java version of this app saved, so nothing from it is lost; the desktop app copies that file
+over by itself if you start it from the folder the old app ran in.
 
-1. View all subscriptions
-2. Add a subscription
-3. Edit, cancel or remove a subscription
-4. Upcoming payments and free trials
-5. Search, filter and sort
-6. Spending, budget and savings
-7. Import or export CSV
-0. Exit
-```
-
-Options 3 to 7 open a short sub-menu; press Enter on a blank line to go back.
-
-### Console menu
-
-| Menu | What it does |
-| --- | --- |
-| **1. View all subscriptions** | Table of every subscription, soonest payment first, with any notes listed underneath. |
-| **2. Add a subscription** | Name, cost, billing cycle (weekly, monthly, quarterly or yearly), whether it's a free trial, next payment date (`YYYY-MM-DD`), category and an optional note (e.g. which account or card it's on). For a free trial, the date is when the trial ends and the first charge is taken. Invalid answers are asked again; a blank name cancels. |
-| **3. Edit, cancel or remove** → Edit | Change any field, including whether it's a free trial; press Enter to keep the current value (for the note, `-` removes it). If you change the cost, you're asked whether the price really changed (it's added to the price history) or you're just fixing a mistake. |
-| &nbsp;&nbsp;&nbsp;→ Cancel | Moves a subscription to your cancelled list instead of deleting it, and shows what you'll save per month and per year. |
-| &nbsp;&nbsp;&nbsp;→ Remove permanently | Deletes it for good (asks for confirmation first). |
-| **4. Upcoming payments and free trials** → Upcoming payments | Payments due in the next N days (30 by default) and their total. |
-| &nbsp;&nbsp;&nbsp;→ Free trials | Lists your free trials, soonest ending first, with how long is left and what they'll cost afterwards. |
-| **5. Search, filter and sort** → Search by category | Finds subscriptions whose category contains your search text, ignoring case, with their totals. |
-| &nbsp;&nbsp;&nbsp;→ Filter by billing cycle | Shows only weekly, monthly, quarterly or yearly subscriptions, with how many there are and what they cost per month and per year. |
-| &nbsp;&nbsp;&nbsp;→ Sort | Sort by cost per month, next payment date, name, category, billing cycle or ID, in either direction. |
-| **6. Spending, budget and savings** → Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
-| &nbsp;&nbsp;&nbsp;→ Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
-| &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again, or remove it permanently. |
-| &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`, or per month if the billing cycle changed too: `199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
-| &nbsp;&nbsp;&nbsp;→ Currency symbol | Show every amount with a symbol, e.g. `R 199.00` or `$199.00` (symbols ending in a letter get a space). Enter `-` to remove it. The CSV export always uses plain numbers. |
-| **7. Import or export CSV** → Export | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
-| &nbsp;&nbsp;&nbsp;→ Import | Adds subscriptions from a CSV file: one exported by the app, or a spreadsheet saved as CSV. See [Importing from a spreadsheet](#importing-from-a-spreadsheet). |
-
-A few things happen automatically, in both versions:
-
-- **Reminders on startup** — payments due in the next 7 days are shown when the app opens (in the
-  window, on the Subscriptions screen).
-- **Payment dates roll forward** — once a payment date has passed, it moves to the next one
-  (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01). Subscriptions billed late in the
-  month keep their day: one billed on the 31st is due 28 Feb, then 31 Mar again.
-- **Free-trial reminders** — trials ending in the next 7 days are called out at startup, with what
-  you'll be charged unless you cancel. Trials are marked "(trial)" in lists, and once the end date
-  has passed a trial becomes a normal paid subscription.
-- **Cancelled subscriptions stay out of the way** — they're left out of every list, total, sort,
-  search, reminder, the budget and the CSV export, but kept in the data file for your savings.
-- **Budget warnings** — if you've set a monthly budget, you're warned at startup and after adding
-  or editing a subscription when your subscriptions cost 90% or more of it, or go over it. The
-  spending summary also shows how much of the budget you've used.
-- **Saving** — every change is saved straight away.
-- **Fair cost comparisons** — totals and the cost sort convert every subscription to a monthly
-  amount, so a 2,400 yearly plan counts as 200 a month.
+The file has one subscription per line, tab-separated: ID, name, cost, cycle, next payment date
+and category, then any of `TRIAL`, `CANCELLED=date`, `DAY=31` (billing day after a short month),
+`NOTE=text`, `CUR=USD`, `PRICE=date:old:new[:OLDCYCLE:NEWCYCLE]` and `PAID=date:amount[:assumed]`.
+`BUDGET`, `CURRENCY` and `RATE` lines hold the budget, your currency symbol and exchange rates.
 
 ## Importing from a spreadsheet
 
-Save your spreadsheet as CSV, then click **Import CSV…** in the window's sidebar and pick the
-file (in the console version: **7. Import or export CSV → Import** and type the file's name). The first row must name the columns; they can be in any order, and other columns are
-ignored.
+Save your spreadsheet as CSV, then choose **Import CSV…** and pick the file. The first row must
+name the columns; they can be in any order, and other columns are ignored.
 
 | Column | Needed? | Also recognised as | Notes |
 | --- | --- | --- | --- |
@@ -113,133 +86,67 @@ ignored.
 | Category | No (Other) | | |
 | Free Trial | No | Trial | Yes/No. |
 | Note | No | Notes | |
+| Currency | No (yours) | | A code like USD, for one billed in another currency. |
 
 Files saved as UTF-8 or in the Windows character set (Excel's "CSV (Comma delimited)") both work,
-so accents and symbols like "€" come through. Files separated by commas, semicolons (as Excel saves them with some regional settings) or tabs
-all work. Rows that can't be read, or whose name is already in your list, are skipped, and the app
-tells you which rows and why; everything else is imported.
+and so do commas, semicolons or tabs between the columns. Rows that can't be read, or whose name
+is already in your list, are skipped, and the app tells you which and why. **Export CSV…** writes
+the same columns, plus monthly and yearly costs.
 
-## Requirements
+## Building it yourself
 
-- Java 21 or newer (FlatLaf, the look and feel, is included in `lib/`)
-- [Apache NetBeans](https://netbeans.apache.org/) (or Apache Ant) to build the project
+Open this folder in [Android Studio](https://developer.android.com/studio) (with the **Kotlin
+Multiplatform** plugin) or IntelliJ IDEA, and let Gradle sync.
 
-## Running the app
+- **Android:** run the **composeApp** configuration on your phone (USB debugging on) or an
+  emulator.
+- **Desktop:** `./gradlew :composeApp:run`, or `./gradlew :composeApp:packageDistributionForCurrentOS`
+  for an installer in `composeApp/build/compose/binaries/`.
+- **iPhone:** on a Mac, open `iosApp/iosApp.xcodeproj` in Xcode, choose your team under
+  **Signing & Capabilities** (a free Apple ID works) and run it on your iPhone. With a free
+  Apple ID, apps you install yourself stop opening after 7 days until you run them from Xcode
+  again; a paid developer account ($99 a year) makes that a year.
 
-### In NetBeans
+### Updates that keep your data
 
-1. **File → Open Project** and choose this folder.
-2. Press **Run** (F6). The window opens.
+Android only installs a new version over the old one if both were signed with the same key;
+otherwise you'd have to uninstall first, which deletes your data. So releases are signed with one
+key kept in the repository's secrets (never in the code, since the repository is public). In
+GitHub, **Settings → Secrets and variables → Actions** needs:
 
-For the console version, right-click `SubscriptionTracker.java` (in `Source Packages →
-subscriptiontracker`) and choose **Run File** (Shift+F6); it runs in NetBeans' Output window, so
-type your answers there.
+- `ANDROID_KEYSTORE_BASE64`: the key file, base64-encoded
+- `ANDROID_KEYSTORE_PASSWORD`: its password (the key inside is called `subscriptions`)
 
-### From the command line
+Keep a copy of the key file somewhere safe: without it, future releases can't update the app.
+Apps you build in Android Studio use its own debug key instead, so don't mix the two on one
+phone (or back up first and restore after reinstalling).
 
-Build the jar with **Clean and Build** in NetBeans (or `ant jar`). The build puts FlatLaf in
-`dist/lib/` next to the jar, so keep the two together if you move them. Then:
+## Checks
 
-```sh
-java -jar dist/SubscriptionTracker.jar
-```
+The [Build](.github/workflows/build.yml) workflow runs on every push and pull request:
 
-For the console version:
-
-```sh
-java -cp dist/SubscriptionTracker.jar subscriptiontracker.SubscriptionTracker
-```
-
-## Where your data is saved
-
-Subscriptions are saved to `subscriptions.txt` in the folder the app is run from (the project
-folder when you run it from NetBeans). To use a different file, pass its path as an argument:
-
-```sh
-java -jar dist/SubscriptionTracker.jar my-subscriptions.txt
-```
-
-The file is plain text with one subscription per line, tab-separated:
-
-```
-ID    Name    Cost    Cycle    Next payment    Category
-```
-
-Free trials have `TRIAL` as an extra column at the end of the line, cancelled subscriptions
-have `CANCELLED=` followed by the date they were cancelled, and each recorded price change adds a
-`PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00` (with the old and new billing
-cycle added, e.g. `:MONTHLY:YEARLY`, if the plan changed at the same time). A note is saved as a
-`NOTE=` column, and a `DAY=31` column remembers the billing day while a short month has moved
-the date earlier. If you've set a monthly
-budget, it's saved on the first line as `BUDGET` followed by the amount, and a currency symbol is
-saved on a `CURRENCY` line.
-
-### Keeping your data safe
-
-Saving never leaves a half-written file behind, even if the app is closed or the computer loses
-power in the middle of a save. The new contents are written to a temporary file first, and only
-once that's safely on disk does it replace `subscriptions.txt`.
-
-- **`subscriptions.txt.bak`** — the previous version, kept every time the app saves. If something
-  goes wrong, rename it to `subscriptions.txt` to go back one save.
-- **Edited it in Notepad?** The file is normally saved as UTF-8, but if it's been saved in the Windows
-  character set (Notepad's "ANSI"), the app still reads it, accents and all, and saves it back as UTF-8.
-  If the file can't be read at all, the app warns you and won't save over it.
-- **`subscriptions.txt.unreadable`** — if the app ever finds lines it can't read when it starts, it
-  warns you and copies the file exactly as it was here before saving anything, so those lines
-  aren't lost.
-
-`subscriptions.txt`, its backup copies and `subscriptions.csv` are listed in `.gitignore`, so your
-personal data is never committed.
-
-## Running the tests
-
-The tests are JUnit 4 tests in `test/subscriptiontracker/`. The window's logic (the add/edit
-form, search and filtering, the upcoming-payments list) is tested in
-`test/subscriptiontracker/gui/` without opening a window.
-
-They also run automatically on GitHub for every pull request and every push to `master`
-(see `.github/workflows/tests.yml`); the result shows as a check on the pull request.
-
-- **NetBeans:** **Run → Test Project** (Alt+F6). If NetBeans reports a missing JUnit or Hamcrest
-  library, right-click the project and choose **Resolve Project Problems** to download it.
-- **Ant:** `ant test` (point `libs.junit_4.classpath` and `libs.hamcrest.classpath` at the
-  JUnit 4 and Hamcrest jars if NetBeans isn't installed).
+- **Android:** the tests, the app, and screenshots of every screen (light and dark) and of the
+  reminder notifications, taken on an Android emulator with sample data
+  (`scripts/screenshots.sh`). They're under the run's *Artifacts* as **android-screenshots**.
+- **iPhone:** the tests on the iPhone simulator, and the Xcode project.
+- **Desktop:** the tests on the JVM, and every screen drawn at a desktop window's size and a
+  phone's (**desktop-screenshots**).
 
 ## Project layout
 
 ```
-src/subscriptiontracker/gui/
-  TrackerApp.java            main() for the window: sets up FlatLaf and loads the data file
-  TrackerWindow.java         The window: sidebar, screens, status line; saves after every change
-  SubscriptionsPanel.java    The Subscriptions screen: trial reminder, cards, search, filter, table
-  SubscriptionDialog.java    The add/edit form
-  SubscriptionForm.java      What's typed into the form: checking it and saving it (no Swing)
-  SubscriptionTableModel.java  The main table's rows, and the search/filter rule
-  UpcomingPanel.java         The Upcoming & trials screen
-  SpendingPanel.java         The Spending & budget screen
-  CancelledPanel.java        The Cancelled & savings screen
-  SummaryCard.java           The cards at the top of each screen
-  ListTableModel.java        A simple read-only table model for the smaller tables
-  Renderers.java             How table cells show amounts, dates and text
-  Theme.java                 Colours, fonts and shared components
-src/subscriptiontracker/
-  SubscriptionTracker.java   main() for the console version and the main menu
-  DataFile.java              Loading and saving the data file, shared by the window and the console
-  ManageScreen.java          View, add, edit, cancel and remove subscriptions
-  UpcomingScreen.java        Upcoming payments, free trials and the startup reminders
-  FindScreen.java            Search, filter and sort
-  MoneyScreen.java           Spending summary, monthly budget, cancelled subscriptions and savings, price changes
-  Console.java               Reading answers: prompts, amounts, dates, yes/no and sub-menus
-  Display.java               Shared formatting: amounts, "in 3 days", the subscription table
-  SubscriptionManager.java   The list of subscriptions: add, remove, search, sort, totals, budget
-  Subscription.java          One subscription: payment-date roll-forward, trials, cancelling, price history
-  PriceChange.java           One price change: date, old and new cost
-  BillingCycle.java          Weekly / monthly / quarterly / yearly, with cost conversions
-  SubscriptionStorage.java   Saving to and loading from subscriptions.txt, safely
-  CsvScreen.java             The Import or export CSV menu
-  CsvExporter.java           CSV export
-  CsvImporter.java           CSV import: column names, amounts, dates, quoted cells
-test/subscriptiontracker/    JUnit tests
-lib/flatlaf-3.7.2.jar        The FlatLaf look and feel
+composeApp/src/
+  commonMain/kotlin/subscriptiontracker/mobile/
+    data/        The logic: subscriptions, billing dates, budget, price changes, currencies,
+                 payments, reminders, saving, CSV import and export, backups
+    ui/          The screens, shared by every platform
+  commonTest/    Tests for the logic; they run on Android, iPhone and the desktop
+  androidMain/   MainActivity, reminders (WorkManager), the widget, the manifest
+  iosMain/       MainViewController, reminders (local notifications)
+  desktopMain/   main() for the desktop app
+  desktopTest/   Draws every screen to PNG files
+iosApp/          The Xcode project that wraps it for iPhone
+scripts/         The Android emulator screenshots
 ```
+
+Amounts are kept as whole cents and rounded half up, so totals are exact.
