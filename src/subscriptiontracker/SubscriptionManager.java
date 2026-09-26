@@ -95,6 +95,20 @@ public class SubscriptionManager {
         return sorted;
     }
 
+    /**
+     * All subscriptions in alphabetical order by name, ignoring case.
+     * Subscriptions with the same name are ordered by next payment date.
+     */
+    public List<Subscription> getSortedByName(boolean aToZ) {
+        Comparator<Subscription> byName = Comparator.comparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER);
+        if (!aToZ) {
+            byName = byName.reversed();
+        }
+        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        sorted.sort(byName.thenComparing(Subscription::getNextPayment));
+        return sorted;
+    }
+
     public BigDecimal getMonthlyTotal() {
         return subscriptions.stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

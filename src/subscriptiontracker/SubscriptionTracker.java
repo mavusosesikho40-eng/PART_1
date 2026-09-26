@@ -56,6 +56,7 @@ public class SubscriptionTracker {
                 case "8" -> exportToCsv();
                 case "9" -> sortByCost();
                 case "10" -> sortByNextPayment();
+                case "11" -> sortByName();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -77,6 +78,7 @@ public class SubscriptionTracker {
         System.out.println("8. Export to CSV");
         System.out.println("9. Sort by cost");
         System.out.println("10. Sort by next payment date");
+        System.out.println("11. Sort by name");
         System.out.println("0. Exit");
     }
 
@@ -269,6 +271,22 @@ public class SubscriptionTracker {
                     s.getCycle().getLabel(), s.getNextPayment(), dueIn(s.getNextPayment()));
         }
         System.out.println("Sorted by next payment date, " + (soonestFirst ? "soonest" : "latest") + " first.");
+    }
+
+    private void sortByName() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("  1. A to Z");
+        System.out.println("  2. Z to A");
+        String choice = prompt("Order [1]");
+        if (choice == null) {
+            return;
+        }
+        boolean aToZ = !choice.equals("2");
+        printTable(manager.getSortedByName(aToZ));
+        System.out.println("Sorted by name, " + (aToZ ? "A to Z" : "Z to A") + ".");
     }
 
     // ---- Display helpers ----

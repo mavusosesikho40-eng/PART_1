@@ -160,6 +160,26 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void sortByNameIgnoresCaseInEitherDirection() {
+        add("spotify", "1", BillingCycle.MONTHLY, TODAY.plusDays(1), "X");
+        add("Adobe", "1", BillingCycle.MONTHLY, TODAY.plusDays(2), "X");
+        add("Netflix", "1", BillingCycle.MONTHLY, TODAY.plusDays(3), "X");
+        add("apple TV", "1", BillingCycle.MONTHLY, TODAY.plusDays(4), "X");
+
+        assertEquals(List.of("Adobe", "apple TV", "Netflix", "spotify"), names(manager.getSortedByName(true)));
+        assertEquals(List.of("spotify", "Netflix", "apple TV", "Adobe"), names(manager.getSortedByName(false)));
+    }
+
+    @Test
+    public void sortByNameOrdersSameNameBySoonestPayment() {
+        Subscription later = add("Gym", "1", BillingCycle.MONTHLY, TODAY.plusDays(20), "X");
+        Subscription sooner = add("gym", "1", BillingCycle.MONTHLY, TODAY.plusDays(5), "X");
+
+        assertEquals(List.of(sooner, later), manager.getSortedByName(true));
+        assertEquals(List.of(sooner, later), manager.getSortedByName(false));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");
