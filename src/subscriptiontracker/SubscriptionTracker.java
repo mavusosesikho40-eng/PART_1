@@ -62,6 +62,7 @@ public class SubscriptionTracker {
                 case "11" -> listFreeTrials();
                 case "12" -> cancelSubscription();
                 case "13" -> cancelledSubscriptions();
+                case "14" -> filterByCycle();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -86,6 +87,7 @@ public class SubscriptionTracker {
         System.out.println("11. Free trials");
         System.out.println("12. Cancel a subscription");
         System.out.println("13. Cancelled subscriptions and savings");
+        System.out.println("14. Filter by billing cycle");
         System.out.println("0. Exit");
     }
 
@@ -222,12 +224,26 @@ public class SubscriptionTracker {
             return;
         }
         printTable(matches);
-        BigDecimal monthly = matches.stream().map(Subscription::getMonthlyCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal yearly = matches.stream().map(Subscription::getYearlyCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        System.out.println(matches.size() + " found. Monthly: " + money(monthly)
-                + "  Yearly: " + money(yearly));
+        printMatchTotals(matches);
+    }
+
+    private void filterByCycle() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("Show subscriptions billed (blank to go back):");
+        BillingCycle cycle = readCycle(null);
+        if (cycle == null) {
+            return;
+        }
+        List<Subscription> matches = manager.getByCycle(cycle);
+        if (matches.isEmpty()) {
+            System.out.println("No " + cycle.getLabel().toLowerCase(Locale.ROOT) + " subscriptions.");
+            return;
+        }
+        printTable(matches);
+        printMatchTotals(matches);
     }
 
     private void exportToCsv() {
@@ -531,6 +547,16 @@ public class SubscriptionTracker {
             System.out.printf(format, s.getId(), shorten(displayName(s), 20), money(s.getCost()),
                     s.getCycle().getLabel(), s.getNextPayment(), shorten(s.getCategory(), 15));
         }
+    }
+
+    /** Prints how many subscriptions matched and what they cost together. */
+    private void printMatchTotals(List<Subscription> matches) {
+        BigDecimal monthly = matches.stream().map(Subscription::getMonthlyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal yearly = matches.stream().map(Subscription::getYearlyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        System.out.println(matches.size() + " found. Monthly: " + money(monthly)
+                + "  Yearly: " + money(yearly));
     }
 
     /** Describes how far away a date is, e.g. "today", "tomorrow" or "in 5 days". */

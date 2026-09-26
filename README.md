@@ -25,6 +25,7 @@ Payments due in the next 7 days:
 11. Free trials
 12. Cancel a subscription
 13. Cancelled subscriptions and savings
+14. Filter by billing cycle
 0. Exit
 ```
 
@@ -45,6 +46,7 @@ Payments due in the next 7 days:
 | 11. Free trials | Lists your free trials, soonest ending first, with how long is left and what they'll cost afterwards. |
 | 12. Cancel a subscription | Moves a subscription to your cancelled list instead of deleting it, and shows what you'll save per month and per year. |
 | 13. Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
+| 14. Filter by billing cycle | Shows only weekly, monthly, quarterly or yearly subscriptions, with how many there are and what they cost per month and per year. |
 
 A few things happen automatically:
 

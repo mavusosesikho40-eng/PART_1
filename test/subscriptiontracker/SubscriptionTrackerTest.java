@@ -629,6 +629,39 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void filterByCycleShowsOnlyThatCycleWithTotals() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming",
+                "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
+                "3\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
+
+        String out = run("14", "2", "0");
+
+        assertTrue(out.contains("Netflix"));
+        assertTrue(out.contains("Spotify"));
+        assertTrue(!out.contains("Adobe"));
+        assertTrue(out.contains("2 found. Monthly: 258.99  Yearly: 3,107.88"));
+    }
+
+    @Test
+    public void filterByCycleWithNoMatches() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("14", "1", "0");
+
+        assertTrue(out.contains("No weekly subscriptions."));
+    }
+
+    @Test
+    public void filterByCycleBlankGoesBack() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("14", "", "0");
+
+        assertTrue(!out.contains("found."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

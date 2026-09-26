@@ -225,6 +225,11 @@ public class SubscriptionManager {
         return sorted;
     }
 
+    /** Active subscriptions with the given billing cycle, soonest payment first. */
+    public List<Subscription> getByCycle(BillingCycle cycle) {
+        return getAll().stream().filter(s -> s.getCycle() == cycle).toList();
+    }
+
     /** Free trials, soonest ending first. */
     public List<Subscription> getFreeTrials() {
         return getAll().stream().filter(Subscription::isFreeTrial).toList();
