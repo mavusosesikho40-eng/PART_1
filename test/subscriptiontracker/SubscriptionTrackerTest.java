@@ -262,7 +262,7 @@ public class SubscriptionTrackerTest {
         seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming");
         Path csv = folder.getRoot().toPath().resolve("export.csv");
 
-        String out = run("7", csv.toString(), "0");
+        String out = run("7", "1", csv.toString(), "0");
 
         assertTrue(out.contains("Exported 1 subscription(s) to"));
         List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
@@ -272,7 +272,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void exportWithNoSubscriptionsWritesNothing() {
-        String out = run("7", "0");
+        String out = run("7", "1", "0");
 
         assertTrue(out.contains("You have no subscriptions to export."));
     }
@@ -734,7 +734,7 @@ public class SubscriptionTrackerTest {
         assertTrue(out.contains("4. Upcoming payments and free trials"));
         assertTrue(out.contains("5. Search, filter and sort"));
         assertTrue(out.contains("6. Spending, budget and savings"));
-        assertTrue(out.contains("7. Export to CSV"));
+        assertTrue(out.contains("7. Import or export CSV"));
         assertTrue(!out.contains("8. "));
     }
 
@@ -842,6 +842,59 @@ public class SubscriptionTrackerTest {
 
         assertTrue(out.contains("Currency symbol unchanged."));
         assertEquals("R", saved().getCurrencySymbol());
+    }
+
+    @Test
+    public void importAddsSubscriptionsFromACsvFileAndReportsSkippedRows() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+        Path csv = folder.getRoot().toPath().resolve("import.csv");
+        LocalDate due = LocalDate.now().plusDays(10);
+        Files.writeString(csv, "Name,Cost,Billing Cycle,Next Payment,Category\n"
+                + "Spotify,59.99,Monthly," + due + ",Music\n"
+                + "Netflix,199.00,Monthly," + due + ",Streaming\n"
+                + "Gym,lots,Monthly," + due + ",Health\n");
+
+        String out = run("7", "2", csv.toString(), "0");
+
+        assertTrue(out.contains("Imported 1 subscription(s)."));
+        assertTrue(out.contains("Skipped 2 row(s):"));
+        assertTrue(out.contains("Row 3: \"Netflix\" is already in your list."));
+        assertTrue(out.contains("Row 4: the cost \"lots\" isn't an amount."));
+        Subscription spotify = saved().find(2).orElseThrow();
+        assertEquals("Spotify", spotify.getName());
+        assertEquals(due, spotify.getNextPayment());
+    }
+
+    @Test
+    public void exportThenImportGivesTheSameSubscriptions() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\tTRIAL\tNOTE=Family, shared",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due.plusDays(1) + "\tSoftware");
+        Path csv = folder.getRoot().toPath().resolve("round-trip.csv");
+        run("7", "1", csv.toString(), "0");
+
+        Path other = folder.getRoot().toPath().resolve("other.txt");
+        new SubscriptionTracker(new SubscriptionStorage(other),
+                new Scanner("7\n2\n" + csv + "\n0\n")).run();
+
+        SubscriptionManager imported = new SubscriptionManager();
+        new SubscriptionStorage(other).load(imported);
+        Subscription netflix = imported.getAll().get(0);
+        assertEquals("Netflix", netflix.getName());
+        assertEquals(new BigDecimal("199.00"), netflix.getCost());
+        assertEquals(due, netflix.getNextPayment());
+        assertTrue(netflix.isFreeTrial());
+        assertEquals("Family, shared", netflix.getNote());
+        Subscription adobe = imported.getAll().get(1);
+        assertEquals(BillingCycle.YEARLY, adobe.getCycle());
+        assertEquals("Software", adobe.getCategory());
+    }
+
+    @Test
+    public void importFromAMissingFileSaysSo() {
+        String out = run("7", "2", folder.getRoot().toPath().resolve("nope.csv").toString(), "0");
+
+        assertTrue(out.contains("There's no file called"));
     }
 
     @Test

@@ -18,11 +18,11 @@ Payments due in the next 7 days:
 4. Upcoming payments and free trials
 5. Search, filter and sort
 6. Spending, budget and savings
-7. Export to CSV
+7. Import or export CSV
 0. Exit
 ```
 
-Options 3 to 6 open a short sub-menu; press Enter on a blank line to go back.
+Options 3 to 7 open a short sub-menu; press Enter on a blank line to go back.
 
 ## Features
 
@@ -43,7 +43,8 @@ Options 3 to 6 open a short sub-menu; press Enter on a blank line to go back.
 | &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
 | &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
 | &nbsp;&nbsp;&nbsp;→ Currency symbol | Show every amount with a symbol, e.g. `R 199.00` or `$199.00` (symbols ending in a letter get a space). Enter `-` to remove it. The CSV export always uses plain numbers. |
-| **7. Export to CSV** | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
+| **7. Import or export CSV** → Export | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
+| &nbsp;&nbsp;&nbsp;→ Import | Adds subscriptions from a CSV file: one exported by the app, or a spreadsheet saved as CSV. See [Importing from a spreadsheet](#importing-from-a-spreadsheet). |
 
 A few things happen automatically:
 
@@ -61,6 +62,26 @@ A few things happen automatically:
 - **Saving** — every change is saved straight away.
 - **Fair cost comparisons** — totals and the cost sort convert every subscription to a monthly
   amount, so a 2,400 yearly plan counts as 200 a month.
+
+## Importing from a spreadsheet
+
+Save your spreadsheet as CSV, then choose **7. Import or export CSV → Import** and type the file's
+name. The first row must name the columns; they can be in any order, and other columns are
+ignored.
+
+| Column | Needed? | Also recognised as | Notes |
+| --- | --- | --- | --- |
+| Name | Yes | Subscription, Service | |
+| Cost | Yes | Price, Amount | `199`, `R 1,299.00`, `$1 299.50` and `1299,50` all work. |
+| Billing Cycle | No (Monthly) | Cycle, Billing, Frequency | Weekly, Monthly, Quarterly or Yearly (also Annual/Annually). |
+| Next Payment | No (today) | Next Payment Date, Next Due, Due Date, Next Billing Date | `2026-10-01`, `2026/10/01` or `01/10/2026` (day first). |
+| Category | No (Other) | | |
+| Free Trial | No | Trial | Yes/No. |
+| Note | No | Notes | |
+
+Files separated by commas, semicolons (as Excel saves them with some regional settings) or tabs
+all work. Rows that can't be read, or whose name is already in your list, are skipped, and the app
+tells you which rows and why; everything else is imported.
 
 ## Requirements
 
@@ -149,6 +170,8 @@ src/subscriptiontracker/
   PriceChange.java           One price change: date, old and new cost
   BillingCycle.java          Weekly / monthly / quarterly / yearly, with cost conversions
   SubscriptionStorage.java   Saving to and loading from subscriptions.txt, safely
+  CsvScreen.java             The Import or export CSV menu
   CsvExporter.java           CSV export
+  CsvImporter.java           CSV import: column names, amounts, dates, quoted cells
 test/subscriptiontracker/    JUnit tests
 ```
