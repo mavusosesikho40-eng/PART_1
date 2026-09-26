@@ -15,8 +15,47 @@ import java.util.TreeMap;
  */
 public class SubscriptionManager {
 
+    /** How the monthly total compares with the monthly budget. */
+    public enum BudgetStatus {
+        /** No budget has been set. */
+        NO_BUDGET,
+        /** Below {@link #NEAR_BUDGET_SHARE} of the budget. */
+        UNDER,
+        /** At least {@link #NEAR_BUDGET_SHARE} of the budget, but not over it. */
+        NEAR,
+        /** More than the budget. */
+        OVER
+    }
+
+    /** Spending at or above this share of the budget counts as near it. */
+    public static final BigDecimal NEAR_BUDGET_SHARE = new BigDecimal("0.90");
+
     private final List<Subscription> subscriptions = new ArrayList<>();
     private int nextId = 1;
+    private BigDecimal monthlyBudget;
+
+    public Optional<BigDecimal> getMonthlyBudget() {
+        return Optional.ofNullable(monthlyBudget);
+    }
+
+    /** Sets the monthly budget; null, zero or a negative amount removes it. */
+    public void setMonthlyBudget(BigDecimal budget) {
+        monthlyBudget = budget == null || budget.signum() <= 0 ? null : budget;
+    }
+
+    public BudgetStatus getBudgetStatus() {
+        if (monthlyBudget == null) {
+            return BudgetStatus.NO_BUDGET;
+        }
+        BigDecimal monthly = getMonthlyTotal();
+        if (monthly.compareTo(monthlyBudget) > 0) {
+            return BudgetStatus.OVER;
+        }
+        if (monthly.compareTo(monthlyBudget.multiply(NEAR_BUDGET_SHARE)) >= 0) {
+            return BudgetStatus.NEAR;
+        }
+        return BudgetStatus.UNDER;
+    }
 
     public Subscription add(String name, BigDecimal cost, BillingCycle cycle,
             LocalDate nextPayment, String category) {

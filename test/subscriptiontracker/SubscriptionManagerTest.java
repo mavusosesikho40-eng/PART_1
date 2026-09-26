@@ -233,6 +233,53 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void thereIsNoBudgetByDefault() {
+        assertTrue(manager.getMonthlyBudget().isEmpty());
+        assertEquals(SubscriptionManager.BudgetStatus.NO_BUDGET, manager.getBudgetStatus());
+    }
+
+    @Test
+    public void budgetStatusChangesAtNinetyPercentAndAboveTheBudget() {
+        manager.setMonthlyBudget(new BigDecimal("100.00"));
+        Subscription sub = add("Gym", "89.99", BillingCycle.MONTHLY, TODAY, "Health");
+        assertEquals(SubscriptionManager.BudgetStatus.UNDER, manager.getBudgetStatus());
+
+        sub.setCost(new BigDecimal("90.00"));
+        assertEquals(SubscriptionManager.BudgetStatus.NEAR, manager.getBudgetStatus());
+
+        sub.setCost(new BigDecimal("100.00"));
+        assertEquals(SubscriptionManager.BudgetStatus.NEAR, manager.getBudgetStatus());
+
+        sub.setCost(new BigDecimal("100.01"));
+        assertEquals(SubscriptionManager.BudgetStatus.OVER, manager.getBudgetStatus());
+    }
+
+    @Test
+    public void budgetComparesMonthlyEquivalents() {
+        manager.setMonthlyBudget(new BigDecimal("150"));
+        add("Adobe", "2400.00", BillingCycle.YEARLY, TODAY, "Software");   // 200.00 a month
+
+        assertEquals(SubscriptionManager.BudgetStatus.OVER, manager.getBudgetStatus());
+    }
+
+    @Test
+    public void zeroNegativeOrNullBudgetRemovesIt() {
+        manager.setMonthlyBudget(new BigDecimal("500"));
+        assertEquals(new BigDecimal("500"), manager.getMonthlyBudget().orElseThrow());
+
+        manager.setMonthlyBudget(BigDecimal.ZERO);
+        assertTrue(manager.getMonthlyBudget().isEmpty());
+
+        manager.setMonthlyBudget(new BigDecimal("500"));
+        manager.setMonthlyBudget(new BigDecimal("-1"));
+        assertTrue(manager.getMonthlyBudget().isEmpty());
+
+        manager.setMonthlyBudget(new BigDecimal("500"));
+        manager.setMonthlyBudget(null);
+        assertEquals(SubscriptionManager.BudgetStatus.NO_BUDGET, manager.getBudgetStatus());
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

@@ -408,6 +408,76 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void settingABudgetSavesItAndWarnsWhenClose() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("10", "200", "0");
+
+        assertTrue(out.contains("You haven't set a monthly budget."));
+        assertTrue(out.contains("Monthly budget set to 200.00."));
+        assertTrue(out.contains("Heads up: you're close to your monthly budget. "
+                + "200.00 a month; you're spending 199.00 (99%), 1.00 left."));
+        assertEquals(new BigDecimal("200.00"), saved().getMonthlyBudget().orElseThrow());
+    }
+
+    @Test
+    public void startupWarnsWhenOverBudget() throws IOException {
+        seed("BUDGET\t150.00",
+                "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("0");
+
+        assertTrue(out.contains("Warning: you're over your monthly budget. "
+                + "150.00 a month; you're spending 199.00 (132%), 49.00 over."));
+    }
+
+    @Test
+    public void noWarningWhenWellUnderBudget() throws IOException {
+        seed("BUDGET\t1000.00",
+                "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("0");
+
+        assertTrue(!out.contains("over your monthly budget"));
+        assertTrue(!out.contains("close to your monthly budget"));
+    }
+
+    @Test
+    public void addingASubscriptionThatGoesOverBudgetWarns() throws IOException {
+        seed("BUDGET\t250.00",
+                "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("2", "Spotify", "59.99", "2", LocalDate.now().plusDays(20).toString(), "Music", "0");
+
+        assertTrue(out.contains("Added \"Spotify\" (#2)."));
+        assertTrue(out.contains("Warning: you're over your monthly budget. "
+                + "250.00 a month; you're spending 258.99 (103%), 8.99 over."));
+    }
+
+    @Test
+    public void spendingSummaryShowsBudgetUse() throws IOException {
+        seed("BUDGET\t1000.00",
+                "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "0");
+
+        assertTrue(out.contains("Budget:        1,000.00 a month; you're spending 199.00 (19%), 801.00 left."));
+    }
+
+    @Test
+    public void blankKeepsTheBudgetAndZeroRemovesIt() throws IOException {
+        seed("BUDGET\t500.00",
+                "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("10", "", "10", "0", "0");
+
+        assertTrue(out.contains("Monthly budget unchanged."));
+        assertTrue(out.contains("Monthly budget removed."));
+        assertTrue(saved().getMonthlyBudget().isEmpty());
+        assertTrue(saved().find(1).isPresent());
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 
