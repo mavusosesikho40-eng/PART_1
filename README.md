@@ -106,8 +106,20 @@ Free trials have `TRIAL` as an extra column at the end of the line, and cancelle
 have `CANCELLED=` followed by the date they were cancelled. If you've set a monthly
 budget, it's saved on the first line as `BUDGET` followed by the amount.
 
-`subscriptions.txt` and `subscriptions.csv` are listed in `.gitignore`, so your personal data is
-never committed.
+### Keeping your data safe
+
+Saving never leaves a half-written file behind, even if the app is closed or the computer loses
+power in the middle of a save. The new contents are written to a temporary file first, and only
+once that's safely on disk does it replace `subscriptions.txt`.
+
+- **`subscriptions.txt.bak`** — the previous version, kept every time the app saves. If something
+  goes wrong, rename it to `subscriptions.txt` to go back one save.
+- **`subscriptions.txt.unreadable`** — if the app ever finds lines it can't read when it starts, it
+  warns you and copies the file exactly as it was here before saving anything, so those lines
+  aren't lost.
+
+`subscriptions.txt`, its backup copies and `subscriptions.csv` are listed in `.gitignore`, so your
+personal data is never committed.
 
 ## Running the tests
 

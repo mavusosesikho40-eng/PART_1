@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SubscriptionStorageTest {
 
@@ -177,6 +178,76 @@ public class SubscriptionStorageTest {
                 StandardCharsets.UTF_8);
 
         assertEquals(1, storage.load(new SubscriptionManager()));
+    }
+
+    private static SubscriptionManager oneSubscription(String name) {
+        SubscriptionManager manager = new SubscriptionManager();
+        manager.add(name, new BigDecimal("10"), BillingCycle.MONTHLY, LocalDate.of(2026, 10, 1), "X");
+        return manager;
+    }
+
+    private Path sibling(String suffix) {
+        return file.resolveSibling(file.getFileName() + suffix);
+    }
+
+    @Test
+    public void firstSaveLeavesNoBackupOrTemporaryFile() throws IOException {
+        storage.save(oneSubscription("Netflix"));
+
+        assertTrue(Files.exists(file));
+        assertTrue(!Files.exists(storage.getBackupFile()));
+        assertTrue(!Files.exists(sibling(".tmp")));
+    }
+
+    @Test
+    public void eachSaveKeepsThePreviousVersionAsABackup() throws IOException {
+        storage.save(oneSubscription("First"));
+        storage.save(oneSubscription("Second"));
+
+        assertEquals(sibling(".bak"), storage.getBackupFile());
+        assertEquals(List.of("1\tFirst\t10\tMONTHLY\t2026-10-01\tX"),
+                Files.readAllLines(storage.getBackupFile(), StandardCharsets.UTF_8));
+        assertEquals(List.of("1\tSecond\t10\tMONTHLY\t2026-10-01\tX"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+        assertTrue(!Files.exists(sibling(".tmp")));
+    }
+
+    @Test
+    public void failedSaveLeavesTheOriginalFileUntouched() throws IOException {
+        storage.save(oneSubscription("Original"));
+        // A directory where the temporary file should go makes writing it fail.
+        Files.createDirectory(sibling(".tmp"));
+
+        try {
+            storage.save(oneSubscription("Replacement"));
+            fail("expected the save to fail");
+        } catch (IOException expected) {
+            // The save failed, as intended.
+        }
+
+        assertEquals(List.of("1\tOriginal\t10\tMONTHLY\t2026-10-01\tX"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void leftoverTemporaryFileFromACrashIsReplaced() throws IOException {
+        Files.writeString(sibling(".tmp"), "half-written junk from an earlier crash");
+
+        storage.save(oneSubscription("Netflix"));
+
+        assertEquals(List.of("1\tNetflix\t10\tMONTHLY\t2026-10-01\tX"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+        assertTrue(!Files.exists(sibling(".tmp")));
+    }
+
+    @Test
+    public void keepUnreadableCopyCopiesTheFileExactly() throws IOException {
+        Files.writeString(file, "not a subscription\n1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming\n");
+
+        Path copy = storage.keepUnreadableCopy();
+
+        assertEquals(sibling(".unreadable"), copy);
+        assertEquals(Files.readString(file), Files.readString(copy));
     }
 
     @Test

@@ -662,6 +662,21 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void unreadableLinesAreKeptInACopyEvenAfterSaving() throws IOException {
+        seed("this line is broken",
+                "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("2", "Spotify", "59.99", "2", "", LocalDate.now().plusDays(20).toString(), "Music",
+                "2", "Gym", "250", "2", "", LocalDate.now().plusDays(20).toString(), "Health", "0");
+
+        assertTrue(out.contains("Warning: skipped 1 unreadable line(s)"));
+        assertTrue(out.contains("so those lines aren't lost."));
+        Path copy = file.resolveSibling(file.getFileName() + ".unreadable");
+        assertTrue(Files.readAllLines(copy, StandardCharsets.UTF_8).contains("this line is broken"));
+        assertEquals(3, saved().getAll().size());
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

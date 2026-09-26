@@ -2,9 +2,14 @@ package subscriptiontracker;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +20,10 @@ import java.util.List;
  * followed by optional flags: "TRIAL" for a free trial and
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription.
  * If a monthly budget is set, the first line is "BUDGET" and the amount.
+ *
+ * <p>Saving never leaves a half-written file behind: the new contents are
+ * written to a temporary file and flushed to disk, the previous file is kept
+ * as a ".bak" copy, and only then is the new file moved into place.
  */
 public class SubscriptionStorage {
 
@@ -31,6 +40,28 @@ public class SubscriptionStorage {
 
     public Path getFile() {
         return file;
+    }
+
+    /** The previous version of the data file, kept on every save. */
+    public Path getBackupFile() {
+        return sibling(".bak");
+    }
+
+    /**
+     * Copies the data file, exactly as it is, to a ".unreadable" file next to
+     * it. Used when loading found lines it couldn't read, so they are kept
+     * even though the next save leaves them out.
+     *
+     * @return the copy
+     */
+    public Path keepUnreadableCopy() throws IOException {
+        Path copy = sibling(".unreadable");
+        Files.copy(file, copy, StandardCopyOption.REPLACE_EXISTING);
+        return copy;
+    }
+
+    private Path sibling(String suffix) {
+        return file.resolveSibling(file.getFileName() + suffix);
     }
 
     public void save(SubscriptionManager manager) throws IOException {
@@ -53,7 +84,34 @@ public class SubscriptionStorage {
             }
             lines.add(line);
         }
-        Files.write(file, lines, StandardCharsets.UTF_8);
+        writeSafely(lines);
+    }
+
+    private void writeSafely(List<String> lines) throws IOException {
+        StringBuilder text = new StringBuilder();
+        for (String line : lines) {
+            text.append(line).append(System.lineSeparator());
+        }
+        Path temp = sibling(".tmp");
+        try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            ByteBuffer buffer = ByteBuffer.wrap(text.toString().getBytes(StandardCharsets.UTF_8));
+            while (buffer.hasRemaining()) {
+                channel.write(buffer);
+            }
+            channel.force(true);
+        } catch (IOException e) {
+            Files.deleteIfExists(temp);
+            throw e;
+        }
+        if (Files.exists(file)) {
+            Files.copy(file, getBackupFile(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        try {
+            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     /**
