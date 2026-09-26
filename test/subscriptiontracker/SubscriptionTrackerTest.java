@@ -207,6 +207,27 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void exportWritesCsvToTheChosenFile() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming");
+        Path csv = folder.getRoot().toPath().resolve("export.csv");
+
+        String out = run("8", csv.toString(), "0");
+
+        assertTrue(out.contains("Exported 1 subscription(s) to"));
+        List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
+        assertEquals(2, lines.size());
+        assertEquals("1,Netflix,Streaming,199.00,Monthly," + due + ",199.00,2388.00", lines.get(1));
+    }
+
+    @Test
+    public void exportWithNoSubscriptionsWritesNothing() {
+        String out = run("8", "0");
+
+        assertTrue(out.contains("You have no subscriptions to export."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 
