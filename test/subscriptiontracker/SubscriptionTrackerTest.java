@@ -330,6 +330,32 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void sortByCycleShowsShortestFirstByDefault() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware",
+                "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
+                "3\tCoffee\t20.00\tWEEKLY\t" + due + "\tFood");
+
+        String out = run("13", "", "0");
+
+        assertTrue(out.indexOf("Coffee") < out.indexOf("Spotify"));
+        assertTrue(out.indexOf("Spotify") < out.indexOf("Adobe"));
+        assertTrue(out.contains("Sorted by billing cycle, shortest first."));
+    }
+
+    @Test
+    public void sortByCycleCanShowLongestFirst() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
+
+        String out = run("13", "2", "0");
+
+        assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
+        assertTrue(out.contains("Sorted by billing cycle, longest first."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

@@ -201,6 +201,28 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void sortByCycleGoesFromWeeklyToYearly() {
+        add("Adobe", "1", BillingCycle.YEARLY, TODAY, "X");
+        add("Spotify", "1", BillingCycle.MONTHLY, TODAY, "X");
+        add("Coffee", "1", BillingCycle.WEEKLY, TODAY, "X");
+        add("Insurance", "1", BillingCycle.QUARTERLY, TODAY, "X");
+
+        assertEquals(List.of("Coffee", "Spotify", "Insurance", "Adobe"), names(manager.getSortedByCycle(true)));
+        assertEquals(List.of("Adobe", "Insurance", "Spotify", "Coffee"), names(manager.getSortedByCycle(false)));
+    }
+
+    @Test
+    public void sortByCycleOrdersByNameWithinACycle() {
+        add("Spotify", "1", BillingCycle.MONTHLY, TODAY, "X");
+        add("apple TV", "1", BillingCycle.MONTHLY, TODAY, "X");
+        add("Netflix", "1", BillingCycle.MONTHLY, TODAY, "X");
+        add("Adobe", "1", BillingCycle.YEARLY, TODAY, "X");
+
+        assertEquals(List.of("apple TV", "Netflix", "Spotify", "Adobe"), names(manager.getSortedByCycle(true)));
+        assertEquals(List.of("Adobe", "apple TV", "Netflix", "Spotify"), names(manager.getSortedByCycle(false)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");
