@@ -351,6 +351,18 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void getByCycleReturnsActiveMatchesSoonestFirst() {
+        add("Adobe", "2400", BillingCycle.YEARLY, TODAY.plusDays(90), "Software");
+        add("Netflix", "199", BillingCycle.MONTHLY, TODAY.plusDays(9), "Streaming");
+        add("Spotify", "59.99", BillingCycle.MONTHLY, TODAY.plusDays(2), "Music");
+        add("Showmax", "99", BillingCycle.MONTHLY, TODAY.plusDays(1), "Streaming").cancel(TODAY);
+
+        assertEquals(List.of("Spotify", "Netflix"), names(manager.getByCycle(BillingCycle.MONTHLY)));
+        assertEquals(List.of("Adobe"), names(manager.getByCycle(BillingCycle.YEARLY)));
+        assertTrue(manager.getByCycle(BillingCycle.WEEKLY).isEmpty());
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");
