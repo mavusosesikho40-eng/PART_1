@@ -57,6 +57,7 @@ public class SubscriptionTracker {
                 case "9" -> sortByCost();
                 case "10" -> sortByNextPayment();
                 case "11" -> sortByName();
+                case "12" -> sortByCategory();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -79,6 +80,7 @@ public class SubscriptionTracker {
         System.out.println("9. Sort by cost");
         System.out.println("10. Sort by next payment date");
         System.out.println("11. Sort by name");
+        System.out.println("12. Sort by category");
         System.out.println("0. Exit");
     }
 
@@ -287,6 +289,22 @@ public class SubscriptionTracker {
         boolean aToZ = !choice.equals("2");
         printTable(manager.getSortedByName(aToZ));
         System.out.println("Sorted by name, " + (aToZ ? "A to Z" : "Z to A") + ".");
+    }
+
+    private void sortByCategory() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("  1. A to Z");
+        System.out.println("  2. Z to A");
+        String choice = prompt("Order [1]");
+        if (choice == null) {
+            return;
+        }
+        boolean aToZ = !choice.equals("2");
+        printTable(manager.getSortedByCategory(aToZ));
+        System.out.println("Sorted by category, " + (aToZ ? "A to Z" : "Z to A") + ".");
     }
 
     // ---- Display helpers ----

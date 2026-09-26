@@ -109,6 +109,21 @@ public class SubscriptionManager {
         return sorted;
     }
 
+    /**
+     * All subscriptions in alphabetical order by category, ignoring case.
+     * Within a category they are ordered by name, A to Z.
+     */
+    public List<Subscription> getSortedByCategory(boolean aToZ) {
+        Comparator<Subscription> byCategory =
+                Comparator.comparing(Subscription::getCategory, String.CASE_INSENSITIVE_ORDER);
+        if (!aToZ) {
+            byCategory = byCategory.reversed();
+        }
+        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        sorted.sort(byCategory.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
+        return sorted;
+    }
+
     public BigDecimal getMonthlyTotal() {
         return subscriptions.stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
