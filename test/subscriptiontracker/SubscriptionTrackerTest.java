@@ -802,6 +802,49 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void settingACurrencySymbolShowsItOnAmountsAndIsSaved() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "5", "R", "6", "1", "0");
+
+        assertTrue(out.contains("Amounts will now look like R 1,234.50."));
+        assertTrue(out.contains("Monthly total: R 199.00"));
+        assertEquals("R", saved().getCurrencySymbol());
+    }
+
+    @Test
+    public void savedCurrencySymbolIsUsedOnStartup() throws IOException {
+        seed("CURRENCY\t$", "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(2) + "\tStreaming");
+
+        String out = run("0");
+
+        assertTrue(out.contains("Total due: $199.00"));
+    }
+
+    @Test
+    public void currencySymbolRejectsNumbersAndCanBeRemoved() throws IOException {
+        seed("CURRENCY\tR", "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "5", "12", "-", "6", "1", "0");
+
+        assertTrue(out.contains("Amounts are shown like R 1,234.50."));
+        assertTrue(out.contains("Please use up to 5 letters or symbols, e.g. R or $."));
+        assertTrue(out.contains("Currency symbol removed."));
+        assertTrue(out.contains("Monthly total: 199.00"));
+        assertEquals("", saved().getCurrencySymbol());
+    }
+
+    @Test
+    public void blankKeepsTheCurrencySymbol() throws IOException {
+        seed("CURRENCY\tR", "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "5", "", "0");
+
+        assertTrue(out.contains("Currency symbol unchanged."));
+        assertEquals("R", saved().getCurrencySymbol());
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

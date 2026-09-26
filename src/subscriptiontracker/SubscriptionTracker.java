@@ -39,6 +39,7 @@ public class SubscriptionTracker {
 
     public void run() {
         load();
+        Display.setCurrency(manager.getCurrencySymbol());
         System.out.println("=== Subscription Tracker ===");
         upcoming.showUpcoming(7);
         upcoming.showTrialReminders(7);

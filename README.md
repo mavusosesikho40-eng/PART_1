@@ -42,6 +42,7 @@ Options 3 to 6 open a short sub-menu; press Enter on a blank line to go back.
 | &nbsp;&nbsp;&nbsp;→ Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
 | &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
 | &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
+| &nbsp;&nbsp;&nbsp;→ Currency symbol | Show every amount with a symbol, e.g. `R 199.00` or `$199.00` (symbols ending in a letter get a space). Enter `-` to remove it. The CSV export always uses plain numbers. |
 | **7. Export to CSV** | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 
 A few things happen automatically:
@@ -102,7 +103,8 @@ Free trials have `TRIAL` as an extra column at the end of the line, cancelled su
 have `CANCELLED=` followed by the date they were cancelled, and each recorded price change adds a
 `PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00`. A note is saved as a
 `NOTE=` column. If you've set a monthly
-budget, it's saved on the first line as `BUDGET` followed by the amount.
+budget, it's saved on the first line as `BUDGET` followed by the amount, and a currency symbol is
+saved on a `CURRENCY` line.
 
 ### Keeping your data safe
 

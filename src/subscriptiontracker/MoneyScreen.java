@@ -14,8 +14,8 @@ import java.util.Optional;
 
 /**
  * The "Spending, budget and savings" menu: the spending summary, the
- * monthly budget, cancelled subscriptions with what they've saved, and
- * price changes.
+ * monthly budget, cancelled subscriptions with what they've saved, price
+ * changes, and the currency symbol amounts are shown with.
  */
 class MoneyScreen {
 
@@ -34,11 +34,13 @@ class MoneyScreen {
                 "Spending summary",
                 "Monthly budget",
                 "Cancelled subscriptions and savings",
-                "Price changes")) {
+                "Price changes",
+                "Currency symbol")) {
             case 1 -> spendingSummary();
             case 2 -> monthlyBudget();
             case 3 -> cancelledSubscriptions();
             case 4 -> priceChanges();
+            case 5 -> currencySymbol();
             default -> {
                 // Back to the main menu.
             }
@@ -149,6 +151,41 @@ class MoneyScreen {
         BigDecimal monthly = manager.getMonthlyPriceChangeSince(LocalDate.now().minusYears(1));
         System.out.println("Price changes in the last 12 months: " + signedMoney(monthly) + " a month ("
                 + signedMoney(monthly.multiply(BigDecimal.valueOf(12))) + " a year).");
+    }
+
+    private static final BigDecimal EXAMPLE_AMOUNT = new BigDecimal("1234.50");
+
+    private void currencySymbol() {
+        if (manager.getCurrencySymbol().isEmpty()) {
+            System.out.println("Amounts are shown without a currency symbol, like " + money(EXAMPLE_AMOUNT) + ".");
+        } else {
+            System.out.println("Amounts are shown like " + money(EXAMPLE_AMOUNT) + ".");
+        }
+        while (true) {
+            String input = console.prompt("Currency symbol, e.g. R or $ (blank to keep, - to remove)");
+            if (input == null || input.isEmpty()) {
+                System.out.println("Currency symbol unchanged.");
+                return;
+            }
+            if (input.equals("-")) {
+                setCurrency("");
+                System.out.println("Currency symbol removed. Amounts will look like " + money(EXAMPLE_AMOUNT) + ".");
+                return;
+            }
+            if (input.length() <= 5 && input.chars().noneMatch(c -> Character.isDigit(c)
+                    || Character.isWhitespace(c) || ".,+-".indexOf(c) >= 0)) {
+                setCurrency(input);
+                System.out.println("Amounts will now look like " + money(EXAMPLE_AMOUNT) + ".");
+                return;
+            }
+            System.out.println("Please use up to 5 letters or symbols, e.g. R or $.");
+        }
+    }
+
+    private void setCurrency(String symbol) {
+        manager.setCurrencySymbol(symbol);
+        Display.setCurrency(symbol);
+        save.run();
     }
 
     /** Warns when monthly spending is over the budget or close to it. */

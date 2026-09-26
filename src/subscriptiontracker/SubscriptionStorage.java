@@ -21,7 +21,8 @@ import java.util.List;
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription, and one
  * "PRICE=yyyy-mm-dd:old:new" for each recorded price change, and
  * "NOTE=text" for a note.
- * If a monthly budget is set, the first line is "BUDGET" and the amount.
+ * If a monthly budget is set, the first line is "BUDGET" and the amount; a
+ * currency symbol is saved the same way on a "CURRENCY" line.
  *
  * <p>Saving never leaves a half-written file behind: the new contents are
  * written to a temporary file and flushed to disk, the previous file is kept
@@ -31,6 +32,7 @@ public class SubscriptionStorage {
 
     private static final String SEPARATOR = "\t";
     private static final String BUDGET = "BUDGET";
+    private static final String CURRENCY = "CURRENCY";
     private static final String TRIAL = "TRIAL";
     private static final String CANCELLED = "CANCELLED=";
     private static final String PRICE = "PRICE=";
@@ -72,6 +74,9 @@ public class SubscriptionStorage {
         List<String> lines = new ArrayList<>();
         manager.getMonthlyBudget().ifPresent(budget ->
                 lines.add(BUDGET + SEPARATOR + budget.toPlainString()));
+        if (!manager.getCurrencySymbol().isEmpty()) {
+            lines.add(CURRENCY + SEPARATOR + manager.getCurrencySymbol());
+        }
         for (Subscription s : manager.getAllIncludingCancelled()) {
             String line = String.join(SEPARATOR,
                     String.valueOf(s.getId()),
@@ -144,6 +149,10 @@ public class SubscriptionStorage {
             try {
                 if (parts[0].equals(BUDGET)) {
                     manager.setMonthlyBudget(new BigDecimal(parts[1]));
+                    continue;
+                }
+                if (parts[0].equals(CURRENCY)) {
+                    manager.setCurrencySymbol(parts[1]);
                     continue;
                 }
                 Subscription sub = new Subscription(

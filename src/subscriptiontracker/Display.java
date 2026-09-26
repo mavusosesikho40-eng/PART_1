@@ -11,11 +11,29 @@ import java.util.List;
  */
 final class Display {
 
+    private static String currency = "";
+
     private Display() {
     }
 
+    /**
+     * Sets the currency symbol every amount is shown with; empty for none.
+     * The app sets this from the data file when it starts.
+     */
+    static void setCurrency(String symbol) {
+        currency = symbol == null ? "" : symbol;
+    }
+
+    /**
+     * Formats an amount with the currency symbol, e.g. "R 1,234.50",
+     * "$1,234.50" or "-R 30.00". Symbols ending in a letter get a space.
+     */
     static String money(BigDecimal amount) {
-        return String.format("%,.2f", amount);
+        if (currency.isEmpty()) {
+            return String.format("%,.2f", amount);
+        }
+        String gap = Character.isLetter(currency.charAt(currency.length() - 1)) ? " " : "";
+        return (amount.signum() < 0 ? "-" : "") + currency + gap + String.format("%,.2f", amount.abs());
     }
 
     static String shorten(String text, int max) {

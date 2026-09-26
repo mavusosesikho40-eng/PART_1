@@ -295,6 +295,20 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void currencySymbolIsSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.setMonthlyBudget(new BigDecimal("500"));
+        original.setCurrencySymbol("R");
+        storage.save(original);
+
+        assertEquals(List.of("BUDGET\t500", "CURRENCY\tR"), Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertEquals("R", loaded.getCurrencySymbol());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

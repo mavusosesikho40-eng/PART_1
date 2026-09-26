@@ -37,6 +37,16 @@ public class SubscriptionManager {
     private final List<Subscription> subscriptions = new ArrayList<>();
     private int nextId = 1;
     private BigDecimal monthlyBudget;
+    private String currencySymbol = "";
+
+    /** The symbol amounts are shown with, e.g. "R" or "$"; empty for none. */
+    public String getCurrencySymbol() {
+        return currencySymbol;
+    }
+
+    public void setCurrencySymbol(String symbol) {
+        currencySymbol = symbol == null ? "" : symbol.strip();
+    }
 
     public Optional<BigDecimal> getMonthlyBudget() {
         return Optional.ofNullable(monthlyBudget);
