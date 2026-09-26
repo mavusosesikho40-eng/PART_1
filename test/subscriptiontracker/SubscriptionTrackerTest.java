@@ -356,6 +356,30 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void sortByIdShowsLowestFirstByDefault() throws IOException {
+        seed("3\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(20) + "\tSoftware",
+                "1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(30) + "\tMusic",
+                "2\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(25) + "\tStreaming");
+
+        String out = run("14", "", "0");
+
+        assertTrue(out.indexOf("Spotify") < out.indexOf("Netflix"));
+        assertTrue(out.indexOf("Netflix") < out.indexOf("Adobe"));
+        assertTrue(out.contains("Sorted by ID, lowest first."));
+    }
+
+    @Test
+    public void sortByIdCanShowHighestFirst() throws IOException {
+        seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tMusic",
+                "2\tAdobe\t2400.00\tYEARLY\t" + LocalDate.now().plusDays(30) + "\tSoftware");
+
+        String out = run("14", "2", "0");
+
+        assertTrue(out.indexOf("Adobe") < out.indexOf("Spotify"));
+        assertTrue(out.contains("Sorted by ID, highest first."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

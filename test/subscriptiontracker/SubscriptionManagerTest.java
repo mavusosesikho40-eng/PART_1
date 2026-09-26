@@ -223,6 +223,16 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void sortByIdInEitherDirection() {
+        manager.restore(new Subscription(10, "Ten", BigDecimal.ONE, BillingCycle.MONTHLY, TODAY, "X"));
+        manager.restore(new Subscription(2, "Two", BigDecimal.ONE, BillingCycle.MONTHLY, TODAY.plusDays(9), "X"));
+        manager.restore(new Subscription(7, "Seven", BigDecimal.ONE, BillingCycle.MONTHLY, TODAY.plusDays(1), "X"));
+
+        assertEquals(List.of("Two", "Seven", "Ten"), names(manager.getSortedById(true)));
+        assertEquals(List.of("Ten", "Seven", "Two"), names(manager.getSortedById(false)));
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");
