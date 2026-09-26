@@ -111,7 +111,7 @@ class MoneyScreen {
         System.out.println("Cancelling these saves you " + money(manager.getCancelledMonthlyTotal())
                 + " a month (" + money(yearly) + " a year).");
 
-        String input = console.prompt("ID to restore if you've signed up again (blank to go back)");
+        String input = console.prompt("ID of one to restore or remove (blank to go back)");
         if (input == null || input.isEmpty()) {
             return;
         }
@@ -127,11 +127,31 @@ class MoneyScreen {
             return;
         }
         Subscription sub = found.get();
-        sub.reactivate(today);
-        save.run();
-        System.out.println("Restored \"" + sub.getName() + "\". Next payment: " + sub.getNextPayment()
-                + " (" + dueIn(sub.getNextPayment()) + ").");
-        showBudgetWarning();
+        switch (console.choose("\"" + sub.getName() + "\"",
+                "Restore it (you've signed up again)",
+                "Remove it permanently")) {
+            case 1 -> {
+                sub.reactivate(today);
+                save.run();
+                System.out.println("Restored \"" + sub.getName() + "\". Next payment: " + sub.getNextPayment()
+                        + " (" + dueIn(sub.getNextPayment()) + ").");
+                showBudgetWarning();
+            }
+            case 2 -> {
+                String answer = console.prompt("Remove \"" + sub.getName()
+                        + "\" permanently? Its savings will no longer be counted. (y/n)");
+                if (answer != null && answer.equalsIgnoreCase("y")) {
+                    manager.remove(sub.getId());
+                    save.run();
+                    System.out.println("Removed \"" + sub.getName() + "\".");
+                } else {
+                    System.out.println("Nothing removed.");
+                }
+            }
+            default -> {
+                // Back to the main menu.
+            }
+        }
     }
 
     private void priceChanges() {

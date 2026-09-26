@@ -659,6 +659,7 @@ public class SubscriptionTrackerTest {
         LocalDate skipped = LocalDate.now().minusDays(35);
         seed("1\tNetflix\t199.00\tMONTHLY\t" + skipped + "\tStreaming\tCANCELLED=" + skipped.minusDays(5));
 
+        // Pick ID 1, then "1. Restore it".
         String out = run("6", "3", "1", "1", "0");
 
         assertTrue(out.contains("Restored \"Netflix\"."));
@@ -945,6 +946,30 @@ public class SubscriptionTrackerTest {
         assertTrue(out.contains("Price change recorded: 199.00 a month -> 2,000.00 a year (-32.33 a month, -16%)."));
         assertTrue(out.contains("Price changes in the last 12 months: -32.33 a month (-387.96 a year)."));
         assertEquals(BillingCycle.YEARLY, saved().find(1).orElseThrow().getCycle());
+    }
+
+    @Test
+    public void cancelledSubscriptionCanBeRemovedPermanently() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\tCANCELLED=" + LocalDate.now(),
+                "2\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
+
+        String out = run("6", "3", "1", "2", "y", "0");
+
+        assertTrue(out.contains("Removed \"Netflix\"."));
+        assertTrue(saved().find(1).isEmpty());
+        assertTrue(saved().find(2).isPresent());
+    }
+
+    @Test
+    public void removingACancelledSubscriptionAsksFirst() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tCANCELLED="
+                + LocalDate.now());
+
+        String out = run("6", "3", "1", "2", "n", "0");
+
+        assertTrue(out.contains("Nothing removed."));
+        assertTrue(saved().find(1).orElseThrow().isCancelled());
     }
 
     @Test
