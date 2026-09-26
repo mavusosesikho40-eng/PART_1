@@ -50,7 +50,8 @@ A few things happen automatically:
 
 - **Reminders on startup** — payments due in the next 7 days are shown when the app opens.
 - **Payment dates roll forward** — once a payment date has passed, it moves to the next one
-  (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01).
+  (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01). Subscriptions billed late in the
+  month keep their day: one billed on the 31st is due 28 Feb, then 31 Mar again.
 - **Free-trial reminders** — trials ending in the next 7 days are called out at startup, with what
   you'll be charged unless you cancel. Trials are marked "(trial)" in lists, and once the end date
   has passed a trial becomes a normal paid subscription.
@@ -124,7 +125,8 @@ ID    Name    Cost    Cycle    Next payment    Category
 Free trials have `TRIAL` as an extra column at the end of the line, cancelled subscriptions
 have `CANCELLED=` followed by the date they were cancelled, and each recorded price change adds a
 `PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00`. A note is saved as a
-`NOTE=` column. If you've set a monthly
+`NOTE=` column, and a `DAY=31` column remembers the billing day while a short month has moved
+the date earlier. If you've set a monthly
 budget, it's saved on the first line as `BUDGET` followed by the amount, and a currency symbol is
 saved on a `CURRENCY` line.
 

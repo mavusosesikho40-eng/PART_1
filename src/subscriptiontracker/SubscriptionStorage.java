@@ -20,7 +20,8 @@ import java.util.List;
  * followed by optional flags: "TRIAL" for a free trial and
  * "CANCELLED=yyyy-mm-dd" for a cancelled subscription, and one
  * "PRICE=yyyy-mm-dd:old:new" for each recorded price change, and
- * "NOTE=text" for a note.
+ * "NOTE=text" for a note, and "DAY=n" when the billing day differs from the
+ * next payment's day (e.g. billed on the 31st, next payment 28 Feb).
  * If a monthly budget is set, the first line is "BUDGET" and the amount; a
  * currency symbol is saved the same way on a "CURRENCY" line.
  *
@@ -37,6 +38,7 @@ public class SubscriptionStorage {
     private static final String CANCELLED = "CANCELLED=";
     private static final String PRICE = "PRICE=";
     private static final String NOTE = "NOTE=";
+    private static final String DAY = "DAY=";
 
     private final Path file;
 
@@ -90,6 +92,9 @@ public class SubscriptionStorage {
             }
             if (s.isCancelled()) {
                 line += SEPARATOR + CANCELLED + s.getCancelledOn();
+            }
+            if (s.getBillingDay() != s.getNextPayment().getDayOfMonth()) {
+                line += SEPARATOR + DAY + s.getBillingDay();
             }
             if (s.hasNote()) {
                 line += SEPARATOR + NOTE + s.getNote();
@@ -168,6 +173,8 @@ public class SubscriptionStorage {
                         sub.setFreeTrial(true);
                     } else if (parts[i].startsWith(CANCELLED)) {
                         sub.cancel(LocalDate.parse(parts[i].substring(CANCELLED.length())));
+                    } else if (parts[i].startsWith(DAY)) {
+                        sub.restoreBillingDay(Integer.parseInt(parts[i].substring(DAY.length())));
                     } else if (parts[i].startsWith(NOTE)) {
                         sub.setNote(parts[i].substring(NOTE.length()));
                     } else if (parts[i].startsWith(PRICE)) {

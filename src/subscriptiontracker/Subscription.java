@@ -16,6 +16,7 @@ public class Subscription {
     private BigDecimal cost;
     private BillingCycle cycle;
     private LocalDate nextPayment;
+    private int billingDay;
     private String category;
     private boolean freeTrial;
     private LocalDate cancelledOn;
@@ -29,6 +30,7 @@ public class Subscription {
         this.cost = cost;
         this.cycle = cycle;
         this.nextPayment = nextPayment;
+        this.billingDay = nextPayment.getDayOfMonth();
         this.category = category;
     }
 
@@ -64,8 +66,32 @@ public class Subscription {
         return nextPayment;
     }
 
+    /**
+     * Sets the next payment date. A different date also becomes the day of
+     * the month the subscription is billed on; setting the same date again
+     * keeps the billing day (so a payment moved to 28 Feb stays billed on the 31st).
+     */
     public void setNextPayment(LocalDate nextPayment) {
+        if (!nextPayment.equals(this.nextPayment)) {
+            this.billingDay = nextPayment.getDayOfMonth();
+        }
         this.nextPayment = nextPayment;
+    }
+
+    /**
+     * The day of the month payments are meant to fall on. It can be later
+     * than the next payment's day when that month is too short.
+     */
+    public int getBillingDay() {
+        return billingDay;
+    }
+
+    /** Sets the billing day loaded from storage (1 to 31). */
+    public void restoreBillingDay(int day) {
+        if (day < 1 || day > 31) {
+            throw new IllegalArgumentException("billing day " + day);
+        }
+        billingDay = day;
     }
 
     public String getCategory() {
@@ -165,7 +191,7 @@ public class Subscription {
             return BigDecimal.ZERO;
         }
         int payments = 0;
-        for (LocalDate d = nextPayment; !d.isAfter(today); d = cycle.next(d)) {
+        for (LocalDate d = nextPayment; !d.isAfter(today); d = cycle.next(d, billingDay)) {
             payments++;
         }
         return cost.multiply(BigDecimal.valueOf(payments));
@@ -193,7 +219,7 @@ public class Subscription {
         }
         boolean changed = false;
         while (nextPayment.isBefore(today)) {
-            nextPayment = cycle.next(nextPayment);
+            nextPayment = cycle.next(nextPayment, billingDay);
             changed = true;
         }
         if (changed) {

@@ -37,11 +37,25 @@ public enum BillingCycle {
 
     /** Returns the payment date that follows the given one. */
     public LocalDate next(LocalDate date) {
-        return switch (this) {
+        return next(date, date.getDayOfMonth());
+    }
+
+    /**
+     * Returns the payment date that follows the given one, for a subscription
+     * billed on the given day of the month. In a month too short for that
+     * day the last day of the month is used, and the next month goes back
+     * to the billing day (31 Jan, 28 Feb, 31 Mar...). Weekly payments ignore it.
+     */
+    public LocalDate next(LocalDate date, int billingDay) {
+        LocalDate next = switch (this) {
             case WEEKLY -> date.plusWeeks(1);
             case MONTHLY -> date.plusMonths(1);
             case QUARTERLY -> date.plusMonths(3);
             case YEARLY -> date.plusYears(1);
         };
+        if (this == WEEKLY) {
+            return next;
+        }
+        return next.withDayOfMonth(Math.min(billingDay, next.lengthOfMonth()));
     }
 }
