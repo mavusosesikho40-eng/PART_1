@@ -14,39 +14,34 @@ Payments due in the next 7 days:
 
 1. View all subscriptions
 2. Add a subscription
-3. Edit a subscription
-4. Remove a subscription
-5. Upcoming payments
-6. Spending summary
-7. Search by category
-8. Export to CSV
-9. Sort subscriptions
-10. Monthly budget
-11. Free trials
-12. Cancel a subscription
-13. Cancelled subscriptions and savings
-14. Filter by billing cycle
+3. Edit, cancel or remove a subscription
+4. Upcoming payments and free trials
+5. Search, filter and sort
+6. Spending, budget and savings
+7. Export to CSV
 0. Exit
 ```
 
+Options 3 to 6 open a short sub-menu; press Enter on a blank line to go back.
+
 ## Features
 
-| Option | What it does |
+| Menu | What it does |
 | --- | --- |
-| 1. View all subscriptions | Table of every subscription, soonest payment first. |
-| 2. Add a subscription | Name, cost, billing cycle (weekly, monthly, quarterly or yearly), whether it's a free trial, next payment date (`YYYY-MM-DD`) and category. For a free trial, the date is when the trial ends and the first charge is taken. Invalid answers are asked again; a blank name cancels. |
-| 3. Edit a subscription | Change any field, including whether it's a free trial; press Enter to keep the current value. |
-| 4. Remove a subscription | Deletes it permanently (asks for confirmation first). To keep a record instead, use 12. |
-| 5. Upcoming payments | Payments due in the next N days (30 by default) and their total. |
-| 6. Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
-| 7. Search by category | Finds subscriptions whose category contains your search text, ignoring case, with their totals. |
-| 8. Export to CSV | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
-| 9. Sort subscriptions | Sort by cost per month, next payment date, name, category, billing cycle or ID, in either direction. |
-| 10. Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
-| 11. Free trials | Lists your free trials, soonest ending first, with how long is left and what they'll cost afterwards. |
-| 12. Cancel a subscription | Moves a subscription to your cancelled list instead of deleting it, and shows what you'll save per month and per year. |
-| 13. Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
-| 14. Filter by billing cycle | Shows only weekly, monthly, quarterly or yearly subscriptions, with how many there are and what they cost per month and per year. |
+| **1. View all subscriptions** | Table of every subscription, soonest payment first. |
+| **2. Add a subscription** | Name, cost, billing cycle (weekly, monthly, quarterly or yearly), whether it's a free trial, next payment date (`YYYY-MM-DD`) and category. For a free trial, the date is when the trial ends and the first charge is taken. Invalid answers are asked again; a blank name cancels. |
+| **3. Edit, cancel or remove** → Edit | Change any field, including whether it's a free trial; press Enter to keep the current value. |
+| &nbsp;&nbsp;&nbsp;→ Cancel | Moves a subscription to your cancelled list instead of deleting it, and shows what you'll save per month and per year. |
+| &nbsp;&nbsp;&nbsp;→ Remove permanently | Deletes it for good (asks for confirmation first). |
+| **4. Upcoming payments and free trials** → Upcoming payments | Payments due in the next N days (30 by default) and their total. |
+| &nbsp;&nbsp;&nbsp;→ Free trials | Lists your free trials, soonest ending first, with how long is left and what they'll cost afterwards. |
+| **5. Search, filter and sort** → Search by category | Finds subscriptions whose category contains your search text, ignoring case, with their totals. |
+| &nbsp;&nbsp;&nbsp;→ Filter by billing cycle | Shows only weekly, monthly, quarterly or yearly subscriptions, with how many there are and what they cost per month and per year. |
+| &nbsp;&nbsp;&nbsp;→ Sort | Sort by cost per month, next payment date, name, category, billing cycle or ID, in either direction. |
+| **6. Spending, budget and savings** → Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
+| &nbsp;&nbsp;&nbsp;→ Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
+| &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
+| **7. Export to CSV** | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 
 A few things happen automatically:
 
@@ -137,11 +132,17 @@ They also run automatically on GitHub for every pull request and every push to `
 
 ```
 src/subscriptiontracker/
-  SubscriptionTracker.java   Console menu and main() — the app's entry point
-  SubscriptionManager.java   The list of subscriptions: add, remove, search, sort, totals
-  Subscription.java          One subscription and its payment-date roll-forward
+  SubscriptionTracker.java   main() and the main menu; loads and saves the data file
+  ManageScreen.java          View, add, edit, cancel and remove subscriptions
+  UpcomingScreen.java        Upcoming payments, free trials and the startup reminders
+  FindScreen.java            Search, filter and sort
+  MoneyScreen.java           Spending summary, monthly budget, cancelled subscriptions and savings
+  Console.java               Reading answers: prompts, amounts, dates, yes/no and sub-menus
+  Display.java               Shared formatting: amounts, "in 3 days", the subscription table
+  SubscriptionManager.java   The list of subscriptions: add, remove, search, sort, totals, budget
+  Subscription.java          One subscription: payment-date roll-forward, trials, cancelling
   BillingCycle.java          Weekly / monthly / quarterly / yearly, with cost conversions
-  SubscriptionStorage.java   Saving to and loading from subscriptions.txt
+  SubscriptionStorage.java   Saving to and loading from subscriptions.txt, safely
   CsvExporter.java           CSV export
-test/subscriptiontracker/    JUnit tests for each class above
+test/subscriptiontracker/    JUnit tests
 ```
