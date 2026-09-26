@@ -21,6 +21,7 @@ Payments due in the next 7 days:
 7. Search by category
 8. Export to CSV
 9. Sort subscriptions
+10. Monthly budget
 0. Exit
 ```
 
@@ -37,12 +38,16 @@ Payments due in the next 7 days:
 | 7. Search by category | Finds subscriptions whose category contains your search text, ignoring case, with their totals. |
 | 8. Export to CSV | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 | 9. Sort subscriptions | Sort by cost per month, next payment date, name, category, billing cycle or ID, in either direction. |
+| 10. Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
 
 A few things happen automatically:
 
 - **Reminders on startup** — payments due in the next 7 days are shown when the app opens.
 - **Payment dates roll forward** — once a payment date has passed, it moves to the next one
   (e.g. a monthly subscription due 2026-09-01 becomes 2026-10-01).
+- **Budget warnings** — if you've set a monthly budget, you're warned at startup and after adding
+  or editing a subscription when your subscriptions cost 90% or more of it, or go over it. The
+  spending summary also shows how much of the budget you've used.
 - **Saving** — every change is saved straight away.
 - **Fair cost comparisons** — totals and the cost sort convert every subscription to a monthly
   amount, so a 2,400 yearly plan counts as 200 a month.
@@ -83,6 +88,8 @@ The file is plain text with one subscription per line, tab-separated:
 ```
 ID    Name    Cost    Cycle    Next payment    Category
 ```
+
+If you've set a monthly budget, it's saved on the first line as `BUDGET` followed by the amount.
 
 `subscriptions.txt` and `subscriptions.csv` are listed in `.gitignore`, so your personal data is
 never committed.

@@ -87,6 +87,44 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void budgetIsSavedAsTheFirstLineAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.setMonthlyBudget(new BigDecimal("750.50"));
+        original.add("Netflix", new BigDecimal("199.00"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 10, 1), "Streaming");
+        storage.save(original);
+
+        assertEquals("BUDGET\t750.50", Files.readAllLines(file, StandardCharsets.UTF_8).get(0));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertEquals(new BigDecimal("750.50"), loaded.getMonthlyBudget().orElseThrow());
+        assertEquals(1, loaded.getAll().size());
+    }
+
+    @Test
+    public void noBudgetLineWhenNoBudgetIsSet() throws IOException {
+        SubscriptionManager manager = new SubscriptionManager();
+        manager.add("Netflix", new BigDecimal("199.00"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 10, 1), "Streaming");
+        storage.save(manager);
+
+        assertEquals(List.of("1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void unreadableBudgetLinesAreSkippedAndCounted() throws IOException {
+        Files.write(file, List.of("BUDGET\tlots", "BUDGET",
+                "1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming"), StandardCharsets.UTF_8);
+        SubscriptionManager manager = new SubscriptionManager();
+
+        assertEquals(2, storage.load(manager));
+        assertTrue(manager.getMonthlyBudget().isEmpty());
+        assertEquals(1, manager.getAll().size());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

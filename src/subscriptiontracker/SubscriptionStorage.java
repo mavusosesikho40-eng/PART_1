@@ -12,10 +12,12 @@ import java.util.List;
 /**
  * Saves and loads subscriptions as a tab-separated text file.
  * Each line holds: id, name, cost, cycle, next payment date, category.
+ * If a monthly budget is set, the first line is "BUDGET" and the amount.
  */
 public class SubscriptionStorage {
 
     private static final String SEPARATOR = "\t";
+    private static final String BUDGET = "BUDGET";
 
     private final Path file;
 
@@ -29,6 +31,8 @@ public class SubscriptionStorage {
 
     public void save(SubscriptionManager manager) throws IOException {
         List<String> lines = new ArrayList<>();
+        manager.getMonthlyBudget().ifPresent(budget ->
+                lines.add(BUDGET + SEPARATOR + budget.toPlainString()));
         for (Subscription s : manager.getAll()) {
             lines.add(String.join(SEPARATOR,
                     String.valueOf(s.getId()),
@@ -58,6 +62,10 @@ public class SubscriptionStorage {
             }
             String[] parts = line.split(SEPARATOR, -1);
             try {
+                if (parts[0].equals(BUDGET)) {
+                    manager.setMonthlyBudget(new BigDecimal(parts[1]));
+                    continue;
+                }
                 manager.restore(new Subscription(
                         Integer.parseInt(parts[0]),
                         parts[1],
