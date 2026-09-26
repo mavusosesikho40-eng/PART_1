@@ -27,17 +27,21 @@ adb push /tmp/seed.txt /data/local/tmp/seed.txt
 adb shell "run-as $PKG mkdir -p files"
 adb shell "cat /data/local/tmp/seed.txt | run-as $PKG sh -c 'cat > files/subscriptions.txt'"
 
+# The app checks for reminders when it opens: Spotify is due tomorrow, and
+# the Disney+ trial ends in 2 days. Photograph them before restarting the
+# app, since force-stopping an app clears its notifications.
+adb shell am start -W -n $PKG/.MainActivity
+sleep 8
+adb shell cmd statusbar expand-notifications
+sleep 3
+adb exec-out screencap -p > "$OUT/notifications.png"
+adb shell cmd statusbar collapse
+
 for screen in subscriptions upcoming spending cancelled add; do
   adb shell am start -S -W -n $PKG/.MainActivity --es screen $screen
   sleep 6
   adb exec-out screencap -p > "$OUT/$screen.png"
 done
 
-# The app checks for reminders when it opens: Spotify is due tomorrow, and
-# the Disney+ trial ends in 2 days.
-adb shell cmd statusbar expand-notifications
-sleep 3
-adb exec-out screencap -p > "$OUT/notifications.png"
-adb shell cmd statusbar collapse
 adb logcat -d > "$OUT/logcat.txt" || true
 ls -l "$OUT"
