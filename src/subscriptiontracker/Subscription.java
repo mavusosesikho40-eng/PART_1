@@ -14,6 +14,7 @@ public class Subscription {
     private BillingCycle cycle;
     private LocalDate nextPayment;
     private String category;
+    private boolean freeTrial;
 
     public Subscription(int id, String name, BigDecimal cost, BillingCycle cycle,
             LocalDate nextPayment, String category) {
@@ -69,6 +70,18 @@ public class Subscription {
         this.category = category;
     }
 
+    /**
+     * Whether this is a free trial. For a trial, the next payment date is
+     * the day the trial ends and the first charge is taken.
+     */
+    public boolean isFreeTrial() {
+        return freeTrial;
+    }
+
+    public void setFreeTrial(boolean freeTrial) {
+        this.freeTrial = freeTrial;
+    }
+
     public BigDecimal getMonthlyCost() {
         return cycle.toMonthly(cost);
     }
@@ -79,7 +92,8 @@ public class Subscription {
 
     /**
      * Moves the next payment date forward past any payments that have
-     * already happened, so it always points at today or later.
+     * already happened, so it always points at today or later. A free trial
+     * whose end date has passed becomes a normal paid subscription.
      *
      * @return true if the date changed
      */
@@ -88,6 +102,9 @@ public class Subscription {
         while (nextPayment.isBefore(today)) {
             nextPayment = cycle.next(nextPayment);
             changed = true;
+        }
+        if (changed) {
+            freeTrial = false;
         }
         return changed;
     }

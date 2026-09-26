@@ -125,6 +125,34 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void freeTrialIsSavedAsAnExtraColumnAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        original.add("Paid", new BigDecimal("10"), BillingCycle.MONTHLY, LocalDate.of(2026, 10, 1), "X");
+        original.add("Trial", new BigDecimal("20"), BillingCycle.MONTHLY, LocalDate.of(2026, 10, 2), "X")
+                .setFreeTrial(true);
+        storage.save(original);
+
+        assertEquals(List.of("1\tPaid\t10\tMONTHLY\t2026-10-01\tX",
+                "2\tTrial\t20\tMONTHLY\t2026-10-02\tX\tTRIAL"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        assertTrue(!loaded.find(1).orElseThrow().isFreeTrial());
+        assertTrue(loaded.find(2).orElseThrow().isFreeTrial());
+    }
+
+    @Test
+    public void unknownExtraColumnIsNotATrial() throws IOException {
+        Files.write(file, List.of("1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming\tSOMETHING"),
+                StandardCharsets.UTF_8);
+        SubscriptionManager manager = new SubscriptionManager();
+
+        assertEquals(0, storage.load(manager));
+        assertTrue(!manager.find(1).orElseThrow().isFreeTrial());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

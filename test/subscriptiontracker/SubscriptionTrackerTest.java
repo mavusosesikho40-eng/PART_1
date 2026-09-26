@@ -69,7 +69,7 @@ public class SubscriptionTrackerTest {
     public void addingASubscriptionSavesIt() throws IOException {
         LocalDate due = LocalDate.now().plusDays(10);
 
-        String out = run("2", "Netflix", "199", "2", due.toString(), "Streaming", "0");
+        String out = run("2", "Netflix", "199", "2", "", due.toString(), "Streaming", "0");
 
         assertTrue(out.contains("Added \"Netflix\" (#1)."));
         Subscription sub = saved().find(1).orElseThrow();
@@ -84,7 +84,7 @@ public class SubscriptionTrackerTest {
     public void invalidAnswersAreAskedAgain() throws IOException {
         LocalDate due = LocalDate.now().plusDays(10);
 
-        String out = run("2", "Adobe", "abc", "-5", "2400", "9", "4", "15/01/2027", due.toString(), "", "0");
+        String out = run("2", "Adobe", "abc", "-5", "2400", "9", "4", "", "15/01/2027", due.toString(), "", "0");
 
         assertTrue(out.contains("Please enter a positive amount"));
         assertTrue(out.contains("Please choose 1-4."));
@@ -104,7 +104,7 @@ public class SubscriptionTrackerTest {
 
     @Test
     public void addingWithAPastDateRollsItForward() throws IOException {
-        run("2", "Gym", "50", "1", LocalDate.now().minusDays(20).toString(), "Health", "0");
+        run("2", "Gym", "50", "1", "", LocalDate.now().minusDays(20).toString(), "Health", "0");
 
         LocalDate next = saved().find(1).orElseThrow().getNextPayment();
         assertTrue(!next.isBefore(LocalDate.now()) && next.isBefore(LocalDate.now().plusWeeks(1)));
@@ -115,7 +115,7 @@ public class SubscriptionTrackerTest {
         LocalDate due = LocalDate.now().plusDays(5);
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
-        run("3", "1", "", "69.99", "", "", "", "0");
+        run("3", "1", "", "69.99", "", "", "", "", "0");
 
         Subscription sub = saved().find(1).orElseThrow();
         assertEquals("Spotify", sub.getName());
@@ -217,7 +217,7 @@ public class SubscriptionTrackerTest {
         assertTrue(out.contains("Exported 1 subscription(s) to"));
         List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
         assertEquals(2, lines.size());
-        assertEquals("1,Netflix,Streaming,199.00,Monthly," + due + ",199.00,2388.00", lines.get(1));
+        assertEquals("1,Netflix,Streaming,199.00,Monthly," + due + ",199.00,2388.00,No", lines.get(1));
     }
 
     @Test
@@ -447,7 +447,7 @@ public class SubscriptionTrackerTest {
         seed("BUDGET\t250.00",
                 "1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
 
-        String out = run("2", "Spotify", "59.99", "2", LocalDate.now().plusDays(20).toString(), "Music", "0");
+        String out = run("2", "Spotify", "59.99", "2", "", LocalDate.now().plusDays(20).toString(), "Music", "0");
 
         assertTrue(out.contains("Added \"Spotify\" (#2)."));
         assertTrue(out.contains("Warning: you're over your monthly budget. "
@@ -475,6 +475,89 @@ public class SubscriptionTrackerTest {
         assertTrue(out.contains("Monthly budget removed."));
         assertTrue(saved().getMonthlyBudget().isEmpty());
         assertTrue(saved().find(1).isPresent());
+    }
+
+    @Test
+    public void addingAFreeTrialSavesItAndConfirmsTheEndDate() throws IOException {
+        LocalDate ends = LocalDate.now().plusDays(14);
+
+        String out = run("2", "Netflix", "199", "2", "y", ends.toString(), "Streaming", "0");
+
+        assertTrue(out.contains("Trial end / first payment date (YYYY-MM-DD)"));
+        assertTrue(out.contains("Its free trial ends " + ends + " (in 14 days). "
+                + "You'll be reminded when it's a week away."));
+        assertTrue(saved().find(1).orElseThrow().isFreeTrial());
+    }
+
+    @Test
+    public void addingATrialEndingThisWeekSaysToCancelInTime() {
+        LocalDate ends = LocalDate.now().plusDays(7);
+
+        String out = run("2", "Netflix", "199", "2", "y", ends.toString(), "Streaming", "0");
+
+        assertTrue(out.contains("Its free trial ends " + ends + " (in 7 days). "
+                + "Cancel before then if you don't want to be charged."));
+    }
+
+    @Test
+    public void freeTrialQuestionRejectsOtherAnswers() throws IOException {
+        run("2", "Netflix", "199", "2", "maybe", "yes", LocalDate.now().plusDays(14).toString(), "", "0");
+
+        assertTrue(output.toString(StandardCharsets.UTF_8).contains("Please answer y or n."));
+        assertTrue(saved().find(1).orElseThrow().isFreeTrial());
+    }
+
+    @Test
+    public void startupRemindsAboutTrialsEndingThisWeek() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(3) + "\tStreaming\tTRIAL",
+                "2\tShowmax\t99.00\tMONTHLY\t" + LocalDate.now().plusDays(30) + "\tStreaming\tTRIAL");
+
+        String out = run("0");
+
+        assertTrue(out.contains("Reminder: your Netflix free trial ends in 3 days ("
+                + LocalDate.now().plusDays(3) + "). You'll be charged 199.00 unless you cancel."));
+        assertTrue(!out.contains("Showmax free trial"));
+    }
+
+    @Test
+    public void freeTrialsMenuListsTrialsOnly() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tTRIAL",
+                "2\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(10) + "\tMusic");
+
+        String out = run("11", "0");
+
+        assertTrue(out.contains("Trial ends"));
+        assertTrue(out.contains("in 20 days"));
+        assertTrue(!out.contains("Spotify"));
+        assertTrue(out.contains("Cancel before the end date if you don't want to be charged."));
+    }
+
+    @Test
+    public void freeTrialsMenuWithNoTrials() throws IOException {
+        seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(10) + "\tMusic");
+
+        String out = run("11", "0");
+
+        assertTrue(out.contains("You have no free trials."));
+    }
+
+    @Test
+    public void trialsAreLabelledInTheTable() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tTRIAL");
+
+        String out = run("1", "0");
+
+        assertTrue(out.contains("Netflix (trial)"));
+    }
+
+    @Test
+    public void editingCanTurnATrialIntoAPaidSubscription() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming\tTRIAL");
+
+        String out = run("3", "1", "", "", "", "n", "", "", "0");
+
+        assertTrue(out.contains("Free trial? (y/n) [y]"));
+        assertTrue(!saved().find(1).orElseThrow().isFreeTrial());
     }
 
     @Test

@@ -11,13 +11,15 @@ import java.util.List;
 
 /**
  * Saves and loads subscriptions as a tab-separated text file.
- * Each line holds: id, name, cost, cycle, next payment date, category.
+ * Each line holds: id, name, cost, cycle, next payment date, category,
+ * followed by "TRIAL" for a free trial.
  * If a monthly budget is set, the first line is "BUDGET" and the amount.
  */
 public class SubscriptionStorage {
 
     private static final String SEPARATOR = "\t";
     private static final String BUDGET = "BUDGET";
+    private static final String TRIAL = "TRIAL";
 
     private final Path file;
 
@@ -34,13 +36,14 @@ public class SubscriptionStorage {
         manager.getMonthlyBudget().ifPresent(budget ->
                 lines.add(BUDGET + SEPARATOR + budget.toPlainString()));
         for (Subscription s : manager.getAll()) {
-            lines.add(String.join(SEPARATOR,
+            String line = String.join(SEPARATOR,
                     String.valueOf(s.getId()),
                     s.getName(),
                     s.getCost().toPlainString(),
                     s.getCycle().name(),
                     s.getNextPayment().toString(),
-                    s.getCategory()));
+                    s.getCategory());
+            lines.add(s.isFreeTrial() ? line + SEPARATOR + TRIAL : line);
         }
         Files.write(file, lines, StandardCharsets.UTF_8);
     }
@@ -66,13 +69,15 @@ public class SubscriptionStorage {
                     manager.setMonthlyBudget(new BigDecimal(parts[1]));
                     continue;
                 }
-                manager.restore(new Subscription(
+                Subscription sub = new Subscription(
                         Integer.parseInt(parts[0]),
                         parts[1],
                         new BigDecimal(parts[2]),
                         BillingCycle.valueOf(parts[3]),
                         LocalDate.parse(parts[4]),
-                        parts[5]));
+                        parts[5]);
+                sub.setFreeTrial(parts.length > 6 && parts[6].equals(TRIAL));
+                manager.restore(sub);
             } catch (RuntimeException e) {
                 skipped++;
             }
