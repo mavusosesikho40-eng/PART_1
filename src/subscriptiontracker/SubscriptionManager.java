@@ -139,6 +139,20 @@ public class SubscriptionManager {
         return sorted;
     }
 
+    /**
+     * All subscriptions ordered by ID. IDs are given out in the order
+     * subscriptions are added, so lowest first means oldest first.
+     */
+    public List<Subscription> getSortedById(boolean lowestFirst) {
+        Comparator<Subscription> byId = Comparator.comparingInt(Subscription::getId);
+        if (!lowestFirst) {
+            byId = byId.reversed();
+        }
+        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        sorted.sort(byId);
+        return sorted;
+    }
+
     public BigDecimal getMonthlyTotal() {
         return subscriptions.stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

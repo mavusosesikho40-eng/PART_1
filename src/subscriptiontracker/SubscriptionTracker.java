@@ -59,6 +59,7 @@ public class SubscriptionTracker {
                 case "11" -> sortByName();
                 case "12" -> sortByCategory();
                 case "13" -> sortByCycle();
+                case "14" -> sortById();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -83,6 +84,7 @@ public class SubscriptionTracker {
         System.out.println("11. Sort by name");
         System.out.println("12. Sort by category");
         System.out.println("13. Sort by billing cycle");
+        System.out.println("14. Sort by ID");
         System.out.println("0. Exit");
     }
 
@@ -323,6 +325,22 @@ public class SubscriptionTracker {
         boolean shortestFirst = !choice.equals("2");
         printTable(manager.getSortedByCycle(shortestFirst));
         System.out.println("Sorted by billing cycle, " + (shortestFirst ? "shortest" : "longest") + " first.");
+    }
+
+    private void sortById() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("  1. Lowest first (oldest added first)");
+        System.out.println("  2. Highest first (newest added first)");
+        String choice = prompt("Order [1]");
+        if (choice == null) {
+            return;
+        }
+        boolean lowestFirst = !choice.equals("2");
+        printTable(manager.getSortedById(lowestFirst));
+        System.out.println("Sorted by ID, " + (lowestFirst ? "lowest" : "highest") + " first.");
     }
 
     // ---- Display helpers ----
