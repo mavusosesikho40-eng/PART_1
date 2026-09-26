@@ -182,6 +182,31 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void searchByCategoryListsMatchesWithTotals() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming",
+                "2\tShowmax\t99.00\tMONTHLY\t" + due + "\tstreaming",
+                "3\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware");
+
+        String out = run("7", "stream", "0");
+
+        assertTrue(out.contains("Categories: Software, Streaming"));
+        assertTrue(out.contains("Netflix"));
+        assertTrue(out.contains("Showmax"));
+        assertTrue(!out.contains("Adobe"));
+        assertTrue(out.contains("2 found. Monthly: 298.00  Yearly: 3,576.00"));
+    }
+
+    @Test
+    public void searchByCategoryReportsNoMatches() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("7", "Gaming", "0");
+
+        assertTrue(out.contains("No subscriptions in a category matching \"Gaming\"."));
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

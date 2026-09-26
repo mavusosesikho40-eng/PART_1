@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -55,6 +56,17 @@ public class SubscriptionManager {
         LocalDate end = today.plusDays(days);
         return getAll().stream()
                 .filter(s -> !s.getNextPayment().isBefore(today) && !s.getNextPayment().isAfter(end))
+                .toList();
+    }
+
+    /**
+     * Subscriptions whose category contains the query, ignoring case,
+     * soonest payment first.
+     */
+    public List<Subscription> searchByCategory(String query) {
+        String needle = query.trim().toLowerCase(Locale.ROOT);
+        return getAll().stream()
+                .filter(s -> s.getCategory().toLowerCase(Locale.ROOT).contains(needle))
                 .toList();
     }
 
