@@ -124,6 +124,21 @@ public class SubscriptionManager {
         return sorted;
     }
 
+    /**
+     * All subscriptions ordered by billing cycle, shortest (weekly) or
+     * longest (yearly) first. Within a cycle they are ordered by name, A to Z.
+     */
+    public List<Subscription> getSortedByCycle(boolean shortestFirst) {
+        // BillingCycle constants are declared from shortest to longest.
+        Comparator<Subscription> byCycle = Comparator.comparing(Subscription::getCycle);
+        if (!shortestFirst) {
+            byCycle = byCycle.reversed();
+        }
+        List<Subscription> sorted = new ArrayList<>(subscriptions);
+        sorted.sort(byCycle.thenComparing(Subscription::getName, String.CASE_INSENSITIVE_ORDER));
+        return sorted;
+    }
+
     public BigDecimal getMonthlyTotal() {
         return subscriptions.stream().map(Subscription::getMonthlyCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
