@@ -118,6 +118,17 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void searchByCategoryMatchesPartOfTheNameIgnoringCase() {
+        add("Netflix", "199", BillingCycle.MONTHLY, TODAY.plusDays(5), "Streaming");
+        add("Showmax", "99", BillingCycle.MONTHLY, TODAY.plusDays(2), "Video streaming");
+        add("Spotify", "59.99", BillingCycle.MONTHLY, TODAY.plusDays(1), "Music");
+
+        assertEquals(List.of("Showmax", "Netflix"), names(manager.searchByCategory("STREAM")));
+        assertEquals(List.of("Spotify"), names(manager.searchByCategory("  music ")));
+        assertTrue(manager.searchByCategory("Gaming").isEmpty());
+    }
+
+    @Test
     public void rollForwardAllCountsOnlyChangedSubscriptions() {
         add("Overdue1", "1", BillingCycle.MONTHLY, TODAY.minusDays(3), "X");
         add("Overdue2", "1", BillingCycle.WEEKLY, TODAY.minusDays(10), "X");

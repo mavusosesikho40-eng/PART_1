@@ -51,6 +51,7 @@ public class SubscriptionTracker {
                 case "4" -> removeSubscription();
                 case "5" -> upcomingPayments();
                 case "6" -> spendingSummary();
+                case "7" -> searchByCategory();
                 case "0" -> {
                     System.out.println("Goodbye!");
                     return;
@@ -68,6 +69,7 @@ public class SubscriptionTracker {
         System.out.println("4. Remove a subscription");
         System.out.println("5. Upcoming payments");
         System.out.println("6. Spending summary");
+        System.out.println("7. Search by category");
         System.out.println("0. Exit");
     }
 
@@ -172,6 +174,30 @@ public class SubscriptionTracker {
                     : e.getValue().multiply(BigDecimal.valueOf(100)).divide(monthly, 0, RoundingMode.HALF_UP);
             System.out.printf("  %-20s %12s  (%s%%)%n", e.getKey(), money(e.getValue()), percent);
         }
+    }
+
+    private void searchByCategory() {
+        if (manager.isEmpty()) {
+            System.out.println("You have no subscriptions yet.");
+            return;
+        }
+        System.out.println("Categories: " + String.join(", ", manager.getMonthlyByCategory().keySet()));
+        String query = prompt("Category to search for (blank to cancel)");
+        if (query == null || query.isEmpty()) {
+            return;
+        }
+        List<Subscription> matches = manager.searchByCategory(query);
+        if (matches.isEmpty()) {
+            System.out.println("No subscriptions in a category matching \"" + query + "\".");
+            return;
+        }
+        printTable(matches);
+        BigDecimal monthly = matches.stream().map(Subscription::getMonthlyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal yearly = matches.stream().map(Subscription::getYearlyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        System.out.println(matches.size() + " found. Monthly: " + money(monthly)
+                + "  Yearly: " + money(yearly));
     }
 
     // ---- Display helpers ----
