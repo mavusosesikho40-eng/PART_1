@@ -6,6 +6,7 @@ import static subscriptiontracker.Display.printTable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -91,7 +92,7 @@ class ManageScreen {
         Subscription sub = found.get();
         System.out.println("-- Press Enter to keep the current value --");
         sub.setName(console.readText("Name", sub.getName()));
-        sub.setCost(console.readCost("Cost per payment", sub.getCost()));
+        PriceChange priceChange = readPriceChange(sub);
         sub.setCycle(console.readCycle(sub.getCycle()));
         sub.setFreeTrial(console.readYesNo("Free trial? (y/n)", sub.isFreeTrial()));
         sub.setNextPayment(console.readDate(dateLabel(sub.isFreeTrial()), sub.getNextPayment()));
@@ -99,7 +100,31 @@ class ManageScreen {
         sub.rollForward(LocalDate.now());
         save.run();
         System.out.println("Updated \"" + sub.getName() + "\".");
+        if (priceChange != null) {
+            System.out.println("Price change recorded: " + Display.describe(priceChange) + ".");
+        }
         money.showBudgetWarning();
+    }
+
+    /**
+     * Asks for a new cost. If it's different, asks whether the price really
+     * changed (recorded in the price history) or a mistake is being fixed.
+     *
+     * @return the recorded price change, or null if none was recorded
+     */
+    private PriceChange readPriceChange(Subscription sub) {
+        BigDecimal newCost = console.readCost("Cost per payment", sub.getCost());
+        if (newCost.compareTo(sub.getCost()) == 0) {
+            return null;
+        }
+        System.out.println("  Answer n if you're only correcting a mistake.");
+        if (!console.readYesNo("Record this as a price change? (y/n)", true)) {
+            sub.setCost(newCost);
+            return null;
+        }
+        sub.changePrice(newCost, LocalDate.now());
+        List<PriceChange> changes = sub.getPriceChanges();
+        return changes.get(changes.size() - 1);
     }
 
     private void cancelSubscription() {

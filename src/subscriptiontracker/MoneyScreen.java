@@ -3,6 +3,7 @@ package subscriptiontracker;
 import static subscriptiontracker.Display.dueIn;
 import static subscriptiontracker.Display.money;
 import static subscriptiontracker.Display.shorten;
+import static subscriptiontracker.Display.signedMoney;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -13,7 +14,8 @@ import java.util.Optional;
 
 /**
  * The "Spending, budget and savings" menu: the spending summary, the
- * monthly budget, and cancelled subscriptions with what they've saved.
+ * monthly budget, cancelled subscriptions with what they've saved, and
+ * price changes.
  */
 class MoneyScreen {
 
@@ -31,10 +33,12 @@ class MoneyScreen {
         switch (console.choose("Spending, budget and savings",
                 "Spending summary",
                 "Monthly budget",
-                "Cancelled subscriptions and savings")) {
+                "Cancelled subscriptions and savings",
+                "Price changes")) {
             case 1 -> spendingSummary();
             case 2 -> monthlyBudget();
             case 3 -> cancelledSubscriptions();
+            case 4 -> priceChanges();
             default -> {
                 // Back to the main menu.
             }
@@ -126,6 +130,25 @@ class MoneyScreen {
         System.out.println("Restored \"" + sub.getName() + "\". Next payment: " + sub.getNextPayment()
                 + " (" + dueIn(sub.getNextPayment()) + ").");
         showBudgetWarning();
+    }
+
+    private void priceChanges() {
+        List<SubscriptionManager.PriceChangeEntry> changes = manager.getPriceChanges();
+        if (changes.isEmpty()) {
+            System.out.println("No price changes recorded yet. When a price changes, edit the subscription's "
+                    + "cost and the change is recorded here.");
+            return;
+        }
+        String format = "%-12s %-20s %s%n";
+        System.out.printf(format, "Date", "Name", "Change per payment");
+        System.out.println("-".repeat(70));
+        for (SubscriptionManager.PriceChangeEntry e : changes) {
+            System.out.printf(format, e.change().date(), shorten(e.subscription().getName(), 20),
+                    Display.describe(e.change()));
+        }
+        BigDecimal monthly = manager.getMonthlyPriceChangeSince(LocalDate.now().minusYears(1));
+        System.out.println("Price changes in the last 12 months: " + signedMoney(monthly) + " a month ("
+                + signedMoney(monthly.multiply(BigDecimal.valueOf(12))) + " a year).");
     }
 
     /** Warns when monthly spending is over the budget or close to it. */

@@ -27,6 +27,10 @@ public class SubscriptionManager {
         OVER
     }
 
+    /** A price change together with the subscription it belongs to. */
+    public record PriceChangeEntry(Subscription subscription, PriceChange change) {
+    }
+
     /** Spending at or above this share of the budget counts as near it. */
     public static final BigDecimal NEAR_BUDGET_SHARE = new BigDecimal("0.90");
 
@@ -238,6 +242,33 @@ public class SubscriptionManager {
     /** Free trials ending between today and today + days (inclusive), soonest first. */
     public List<Subscription> getTrialsEndingWithin(LocalDate today, int days) {
         return getUpcoming(today, days).stream().filter(Subscription::isFreeTrial).toList();
+    }
+
+    /** Price changes of active subscriptions, newest first. */
+    public List<PriceChangeEntry> getPriceChanges() {
+        List<PriceChangeEntry> entries = new ArrayList<>();
+        for (Subscription s : active()) {
+            for (PriceChange change : s.getPriceChanges()) {
+                entries.add(new PriceChangeEntry(s, change));
+            }
+        }
+        entries.sort(Comparator.comparing((PriceChangeEntry e) -> e.change().date()).reversed()
+                .thenComparing(e -> e.subscription().getName(), String.CASE_INSENSITIVE_ORDER));
+        return entries;
+    }
+
+    /**
+     * How much price changes since the given day have added to monthly
+     * spending on active subscriptions (negative if prices went down).
+     * New subscriptions don't count; only changes to existing prices do.
+     */
+    public BigDecimal getMonthlyPriceChangeSince(LocalDate since) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Subscription s : active()) {
+            BigDecimal then = s.getCycle().toMonthly(s.getCostOn(since));
+            total = total.add(s.getMonthlyCost().subtract(then));
+        }
+        return total;
     }
 
     public BigDecimal getMonthlyTotal() {

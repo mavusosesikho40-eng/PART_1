@@ -33,6 +33,19 @@ final class Display {
         return s.isFreeTrial() ? s.getName() + " (trial)" : s.getName();
     }
 
+    /** An amount with a "+" in front when it's positive, e.g. "+30.00" or "-5.00". */
+    static String signedMoney(BigDecimal amount) {
+        return (amount.signum() > 0 ? "+" : "") + money(amount);
+    }
+
+    /** Describes a price change, e.g. "169.00 -> 199.00 (+30.00, +18%)". */
+    static String describe(PriceChange change) {
+        BigDecimal percent = change.percent();
+        String percentText = percent == null ? "" : ", " + (percent.signum() > 0 ? "+" : "") + percent + "%";
+        return money(change.oldCost()) + " -> " + money(change.newCost())
+                + " (" + signedMoney(change.difference()) + percentText + ")";
+    }
+
     static void printTable(List<Subscription> subs) {
         String format = "%-4s %-20s %12s %-10s %-12s %-15s%n";
         System.out.printf(format, "ID", "Name", "Cost", "Cycle", "Next due", "Category");

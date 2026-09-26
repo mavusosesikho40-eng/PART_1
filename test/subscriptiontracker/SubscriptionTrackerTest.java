@@ -115,7 +115,8 @@ public class SubscriptionTrackerTest {
         LocalDate due = LocalDate.now().plusDays(5);
         seed("1\tSpotify\t59.99\tMONTHLY\t" + due + "\tMusic");
 
-        run("3", "1", "1", "", "69.99", "", "", "", "", "0");
+        // The blank answer after "69.99" accepts recording it as a price change.
+        String out = run("3", "1", "1", "", "69.99", "", "", "", "", "", "0");
 
         Subscription sub = saved().find(1).orElseThrow();
         assertEquals("Spotify", sub.getName());
@@ -123,6 +124,55 @@ public class SubscriptionTrackerTest {
         assertEquals(BillingCycle.MONTHLY, sub.getCycle());
         assertEquals(due, sub.getNextPayment());
         assertEquals("Music", sub.getCategory());
+        assertTrue(out.contains("Price change recorded: 59.99 -> 69.99 (+10.00, +17%)."));
+        assertEquals(1, sub.getPriceChanges().size());
+    }
+
+    @Test
+    public void fixingATypoInTheCostIsNotRecordedAsAPriceChange() throws IOException {
+        seed("1\tSpotify\t599.90\tMONTHLY\t" + LocalDate.now().plusDays(5) + "\tMusic");
+
+        String out = run("3", "1", "1", "", "59.99", "n", "", "", "", "", "0");
+
+        assertTrue(!out.contains("Price change recorded"));
+        Subscription sub = saved().find(1).orElseThrow();
+        assertEquals(new BigDecimal("59.99"), sub.getCost());
+        assertTrue(sub.getPriceChanges().isEmpty());
+    }
+
+    @Test
+    public void unchangedCostDoesNotAskAboutPriceChanges() throws IOException {
+        seed("1\tSpotify\t59.99\tMONTHLY\t" + LocalDate.now().plusDays(5) + "\tMusic");
+
+        String out = run("3", "1", "1", "Spotify Premium", "", "", "", "", "", "0");
+
+        assertTrue(!out.contains("Record this as a price change?"));
+        assertEquals("Spotify Premium", saved().find(1).orElseThrow().getName());
+    }
+
+    @Test
+    public void priceChangesListShowsChangesAndTheYearlyEffect() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        LocalDate changed = LocalDate.now().minusMonths(2);
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\tPRICE=" + changed + ":169.00:199.00",
+                "2\tAdobe\t2400.00\tYEARLY\t" + due + "\tSoftware\tPRICE=" + changed.minusYears(2)
+                        + ":2000.00:2400.00");
+
+        String out = run("6", "4", "0");
+
+        assertTrue(out.contains(changed + "   Netflix              169.00 -> 199.00 (+30.00, +18%)"));
+        assertTrue(out.contains("2,000.00 -> 2,400.00 (+400.00, +20%)"));
+        // Only the Netflix rise was in the last 12 months.
+        assertTrue(out.contains("Price changes in the last 12 months: +30.00 a month (+360.00 a year)."));
+    }
+
+    @Test
+    public void priceChangesListWhenThereAreNone() throws IOException {
+        seed("1\tNetflix\t199.00\tMONTHLY\t" + LocalDate.now().plusDays(20) + "\tStreaming");
+
+        String out = run("6", "4", "0");
+
+        assertTrue(out.contains("No price changes recorded yet."));
     }
 
     @Test

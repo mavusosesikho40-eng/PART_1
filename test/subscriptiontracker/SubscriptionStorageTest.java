@@ -251,6 +251,34 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void priceChangesAreSavedAndLoadedBack() throws IOException {
+        SubscriptionManager original = new SubscriptionManager();
+        Subscription sub = original.add("Netflix", new BigDecimal("169.00"), BillingCycle.MONTHLY,
+                LocalDate.of(2026, 10, 1), "Streaming");
+        sub.changePrice(new BigDecimal("199.00"), LocalDate.of(2026, 3, 1));
+        sub.changePrice(new BigDecimal("229.00"), LocalDate.of(2026, 9, 1));
+        storage.save(original);
+
+        assertEquals(List.of("1\tNetflix\t229.00\tMONTHLY\t2026-10-01\tStreaming"
+                + "\tPRICE=2026-03-01:169.00:199.00\tPRICE=2026-09-01:199.00:229.00"),
+                Files.readAllLines(file, StandardCharsets.UTF_8));
+
+        SubscriptionManager loaded = new SubscriptionManager();
+        assertEquals(0, storage.load(loaded));
+        Subscription back = loaded.find(1).orElseThrow();
+        assertEquals(new BigDecimal("229.00"), back.getCost());
+        assertEquals(sub.getPriceChanges(), back.getPriceChanges());
+    }
+
+    @Test
+    public void unreadablePriceChangeSkipsTheLine() throws IOException {
+        Files.write(file, List.of("1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming\tPRICE=yesterday:1:2"),
+                StandardCharsets.UTF_8);
+
+        assertEquals(1, storage.load(new SubscriptionManager()));
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

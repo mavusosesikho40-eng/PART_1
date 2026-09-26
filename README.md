@@ -30,7 +30,7 @@ Options 3 to 6 open a short sub-menu; press Enter on a blank line to go back.
 | --- | --- |
 | **1. View all subscriptions** | Table of every subscription, soonest payment first. |
 | **2. Add a subscription** | Name, cost, billing cycle (weekly, monthly, quarterly or yearly), whether it's a free trial, next payment date (`YYYY-MM-DD`) and category. For a free trial, the date is when the trial ends and the first charge is taken. Invalid answers are asked again; a blank name cancels. |
-| **3. Edit, cancel or remove** → Edit | Change any field, including whether it's a free trial; press Enter to keep the current value. |
+| **3. Edit, cancel or remove** → Edit | Change any field, including whether it's a free trial; press Enter to keep the current value. If you change the cost, you're asked whether the price really changed (it's added to the price history) or you're just fixing a mistake. |
 | &nbsp;&nbsp;&nbsp;→ Cancel | Moves a subscription to your cancelled list instead of deleting it, and shows what you'll save per month and per year. |
 | &nbsp;&nbsp;&nbsp;→ Remove permanently | Deletes it for good (asks for confirmation first). |
 | **4. Upcoming payments and free trials** → Upcoming payments | Payments due in the next N days (30 by default) and their total. |
@@ -41,6 +41,7 @@ Options 3 to 6 open a short sub-menu; press Enter on a blank line to go back.
 | **6. Spending, budget and savings** → Spending summary | Monthly and yearly totals, plus monthly spend per category with percentages. |
 | &nbsp;&nbsp;&nbsp;→ Monthly budget | Set, change or remove a monthly spending limit (enter 0 to remove it). |
 | &nbsp;&nbsp;&nbsp;→ Cancelled subscriptions and savings | Your cancelled subscriptions, what each has saved you so far (the payments you would have made since cancelling), and your total savings. You can restore one here if you sign up again. |
+| &nbsp;&nbsp;&nbsp;→ Price changes | Every recorded price change, newest first (e.g. `169.00 -> 199.00 (+30.00, +18%)`), and how much price changes in the last 12 months have added to your monthly and yearly spending. |
 | **7. Export to CSV** | Writes everything to a CSV file (`subscriptions.csv` by default) that Excel or Google Sheets can open. |
 
 A few things happen automatically:
@@ -97,8 +98,9 @@ The file is plain text with one subscription per line, tab-separated:
 ID    Name    Cost    Cycle    Next payment    Category
 ```
 
-Free trials have `TRIAL` as an extra column at the end of the line, and cancelled subscriptions
-have `CANCELLED=` followed by the date they were cancelled. If you've set a monthly
+Free trials have `TRIAL` as an extra column at the end of the line, cancelled subscriptions
+have `CANCELLED=` followed by the date they were cancelled, and each recorded price change adds a
+`PRICE=date:old:new` column, e.g. `PRICE=2026-09-26:169.00:199.00`. If you've set a monthly
 budget, it's saved on the first line as `BUDGET` followed by the amount.
 
 ### Keeping your data safe
@@ -136,11 +138,12 @@ src/subscriptiontracker/
   ManageScreen.java          View, add, edit, cancel and remove subscriptions
   UpcomingScreen.java        Upcoming payments, free trials and the startup reminders
   FindScreen.java            Search, filter and sort
-  MoneyScreen.java           Spending summary, monthly budget, cancelled subscriptions and savings
+  MoneyScreen.java           Spending summary, monthly budget, cancelled subscriptions and savings, price changes
   Console.java               Reading answers: prompts, amounts, dates, yes/no and sub-menus
   Display.java               Shared formatting: amounts, "in 3 days", the subscription table
   SubscriptionManager.java   The list of subscriptions: add, remove, search, sort, totals, budget
-  Subscription.java          One subscription: payment-date roll-forward, trials, cancelling
+  Subscription.java          One subscription: payment-date roll-forward, trials, cancelling, price history
+  PriceChange.java           One price change: date, old and new cost
   BillingCycle.java          Weekly / monthly / quarterly / yearly, with cost conversions
   SubscriptionStorage.java   Saving to and loading from subscriptions.txt, safely
   CsvExporter.java           CSV export
