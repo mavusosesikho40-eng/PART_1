@@ -1,0 +1,10 @@
+// To run on your own iPhone, put your Apple developer team ID here
+// (Xcode: Settings → Accounts → your Apple ID → Team), or pick the team
+// under Signing & Capabilities in Xcode.
+TEAM_ID=
+
+PRODUCT_NAME=Subscriptions
+PRODUCT_BUNDLE_IDENTIFIER=subscriptiontracker.mobile.SubscriptionTracker$(TEAM_ID)
+
+CURRENT_PROJECT_VERSION=1
+MARKETING_VERSION=1.0

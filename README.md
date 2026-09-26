@@ -7,6 +7,10 @@ how often you pay, and when the next payment is due.
 
 ![The Subscriptions screen](docs/window.png)
 
+There's also a phone version for **Android and iPhone** in [`mobile/`](mobile/README.md), with the
+same features laid out for a phone. Move your subscriptions to it with **Export CSV…** here and
+**Import CSV…** there.
+
 ## The window
 
 The sidebar switches between four screens. Every change is saved straight away.
