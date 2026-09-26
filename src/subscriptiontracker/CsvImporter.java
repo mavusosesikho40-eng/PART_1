@@ -3,8 +3,6 @@ package subscriptiontracker;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -58,7 +56,7 @@ public final class CsvImporter {
     }
 
     public static Result importFile(Path file, SubscriptionManager manager, LocalDate today) throws IOException {
-        return importText(Files.readString(file, StandardCharsets.UTF_8), manager, today);
+        return importText(TextFiles.read(file), manager, today);
     }
 
     public static Result importText(String text, SubscriptionManager manager, LocalDate today) {

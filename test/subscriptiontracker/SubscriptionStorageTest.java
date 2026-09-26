@@ -309,6 +309,26 @@ public class SubscriptionStorageTest {
     }
 
     @Test
+    public void readsAFileSavedInTheWindowsCharacterSet() throws IOException {
+        // "Café Club" as Notepad's "ANSI" encoding saves it: é is the single byte 0xE9.
+        Files.write(file, ("1\tCaf\u00e9 Club\t50.00\tMONTHLY\t2026-10-01\tFood\n")
+                .getBytes(java.nio.charset.Charset.forName("windows-1252")));
+        SubscriptionManager manager = new SubscriptionManager();
+
+        assertEquals(0, storage.load(manager));
+        assertEquals("Caf\u00e9 Club", manager.find(1).orElseThrow().getName());
+    }
+
+    @Test
+    public void readsAUtf8FileWithAByteOrderMark() throws IOException {
+        Files.writeString(file, "\uFEFF1\tNetflix\t199.00\tMONTHLY\t2026-10-01\tStreaming\n");
+        SubscriptionManager manager = new SubscriptionManager();
+
+        assertEquals(0, storage.load(manager));
+        assertEquals("Netflix", manager.find(1).orElseThrow().getName());
+    }
+
+    @Test
     public void saveOverwritesPreviousContents() throws IOException {
         SubscriptionManager manager = new SubscriptionManager();
         Subscription sub = manager.add("Netflix", new BigDecimal("199"), BillingCycle.MONTHLY,

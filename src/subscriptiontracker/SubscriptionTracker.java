@@ -23,6 +23,13 @@ public class SubscriptionTracker {
     private final FindScreen find;
     private final CsvScreen csv;
 
+    /**
+     * Set when the data file exists but couldn't be read. Saving is then
+     * refused, so the file is never replaced by the empty list the app
+     * started with.
+     */
+    private boolean dataFileUnreadable;
+
     public SubscriptionTracker(SubscriptionStorage storage, Scanner in) {
         this.storage = storage;
         this.console = new Console(in);
@@ -94,7 +101,10 @@ public class SubscriptionTracker {
                 save();
             }
         } catch (IOException e) {
+            dataFileUnreadable = true;
             System.out.println("Could not read " + storage.getFile() + ": " + e.getMessage());
+            System.out.println("To keep it safe, your changes won't be saved until the app is restarted "
+                    + "with a file it can read.");
         }
     }
 
@@ -108,6 +118,11 @@ public class SubscriptionTracker {
     }
 
     private void save() {
+        if (dataFileUnreadable) {
+            System.out.println("Not saved: " + storage.getFile() + " couldn't be read when the app started, "
+                    + "so it hasn't been overwritten.");
+            return;
+        }
         try {
             storage.save(manager);
         } catch (IOException e) {

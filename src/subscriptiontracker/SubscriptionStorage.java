@@ -132,7 +132,8 @@ public class SubscriptionStorage {
 
     /**
      * Loads saved subscriptions into the manager. Lines that cannot be read
-     * are skipped and counted.
+     * are skipped and counted. The file may be UTF-8 or, if it was edited in
+     * Notepad, the Windows character set; it is always saved as UTF-8.
      *
      * @return the number of lines that were skipped
      */
@@ -141,7 +142,7 @@ public class SubscriptionStorage {
             return 0;
         }
         int skipped = 0;
-        for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
+        for (String line : TextFiles.read(file).split("\\R")) {
             if (line.isBlank()) {
                 continue;
             }

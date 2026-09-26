@@ -898,6 +898,45 @@ public class SubscriptionTrackerTest {
     }
 
     @Test
+    public void windowsEncodedDataFileIsReadAndNothingIsLost() throws IOException {
+        LocalDate due = LocalDate.now().plusDays(20);
+        Files.write(file, ("1\tNetflix\t199.00\tMONTHLY\t" + due + "\tStreaming\n"
+                + "2\tCaf\u00e9 Club\t50.00\tMONTHLY\t" + due + "\tFood\n")
+                .getBytes(java.nio.charset.Charset.forName("windows-1252")));
+
+        run("2", "Gym", "250", "2", "", due.toString(), "Health", "", "0");
+
+        SubscriptionManager manager = saved();
+        assertEquals(3, manager.getAll().size());
+        assertEquals("Caf\u00e9 Club", manager.find(2).orElseThrow().getName());
+    }
+
+    @Test
+    public void aDataFileThatCantBeReadIsNeverOverwritten() throws IOException {
+        // A directory where the data file should be can't be read as a file.
+        Files.createDirectory(file);
+
+        String out = run("2", "Gym", "250", "2", "", LocalDate.now().plusDays(20).toString(), "Health", "", "0");
+
+        assertTrue(out.contains("Could not read"));
+        assertTrue(out.contains("won't be saved"));
+        assertTrue(Files.isDirectory(file));
+    }
+
+    @Test
+    public void importReadsAnExcelCsvSavedInTheWindowsCharacterSet() throws IOException {
+        Path csv = folder.getRoot().toPath().resolve("excel.csv");
+        Files.write(csv, "Name,Cost\nCaf\u00e9 Club,50\nNetflix,199\n"
+                .getBytes(java.nio.charset.Charset.forName("windows-1252")));
+
+        String out = run("7", "2", csv.toString(), "0");
+
+        assertTrue(out.contains("Imported 2 subscription(s)."));
+        assertEquals("Caf\u00e9 Club", saved().getAll().stream()
+                .filter(s -> s.getName().startsWith("Caf")).findFirst().orElseThrow().getName());
+    }
+
+    @Test
     public void endOfInputExitsWithoutError() {
         String out = run("1");
 

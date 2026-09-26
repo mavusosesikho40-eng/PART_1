@@ -79,7 +79,8 @@ ignored.
 | Free Trial | No | Trial | Yes/No. |
 | Note | No | Notes | |
 
-Files separated by commas, semicolons (as Excel saves them with some regional settings) or tabs
+Files saved as UTF-8 or in the Windows character set (Excel's "CSV (Comma delimited)") both work,
+so accents and symbols like "€" come through. Files separated by commas, semicolons (as Excel saves them with some regional settings) or tabs
 all work. Rows that can't be read, or whose name is already in your list, are skipped, and the app
 tells you which rows and why; everything else is imported.
 
@@ -135,6 +136,9 @@ once that's safely on disk does it replace `subscriptions.txt`.
 
 - **`subscriptions.txt.bak`** — the previous version, kept every time the app saves. If something
   goes wrong, rename it to `subscriptions.txt` to go back one save.
+- **Edited it in Notepad?** The file is normally saved as UTF-8, but if it's been saved in the Windows
+  character set (Notepad's "ANSI"), the app still reads it, accents and all, and saves it back as UTF-8.
+  If the file can't be read at all, the app warns you and won't save over it.
 - **`subscriptions.txt.unreadable`** — if the app ever finds lines it can't read when it starts, it
   warns you and copies the file exactly as it was here before saving anything, so those lines
   aren't lost.
