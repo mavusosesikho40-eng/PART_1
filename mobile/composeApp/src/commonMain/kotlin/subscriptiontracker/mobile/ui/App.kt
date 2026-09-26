@@ -13,6 +13,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -40,9 +41,12 @@ import io.github.vinceglb.filekit.writeString
 import kotlinx.coroutines.launch
 import okio.FileSystem
 import okio.Path
+import subscriptiontracker.mobile.data.Backup
 import subscriptiontracker.mobile.data.CsvExporter
 import subscriptiontracker.mobile.data.CsvImporter
 import subscriptiontracker.mobile.data.Format
+import subscriptiontracker.mobile.data.Storage
+import subscriptiontracker.mobile.data.SubscriptionManager
 import subscriptiontracker.mobile.data.TextDecoding
 
 private enum class Tab(val title: String, val label: String, val icon: ImageVector) {
@@ -54,18 +58,28 @@ private enum class Tab(val title: String, val label: String, val icon: ImageVect
 
 /**
  * The whole app: four tabs along the bottom, a menu at the top right for
- * importing, exporting and the currency symbol, and the add/edit form over
- * the top when it's open. [file] is where the subscriptions are saved.
+ * import, export, backups and the currency symbol, and the add/edit form
+ * over the top when it's open. [file] is where the subscriptions are saved;
+ * [onSaved] is told after every save. [startScreen] ("upcoming", "spending",
+ * "cancelled" or "add") opens that screen first.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun App(fileSystem: FileSystem, file: Path) {
-    val state = remember { AppState(fileSystem, file) }
-    var tab by rememberSaveable { mutableStateOf(Tab.SUBSCRIPTIONS) }
+fun App(
+    fileSystem: FileSystem,
+    file: Path,
+    onSaved: (SubscriptionManager) -> Unit = {},
+    startScreen: String? = null,
+) {
+    val state = remember {
+        AppState(fileSystem, file, onSaved).also { if (startScreen == "add") it.editing = AppState.Editing(null) }
+    }
+    var tab by rememberSaveable { mutableStateOf(Tab.entries.firstOrNull { it.name.equals(startScreen, true) } ?: Tab.SUBSCRIPTIONS) }
     var menuOpen by remember { mutableStateOf(false) }
     var choosingCurrency by remember { mutableStateOf(false) }
     var importReport by remember { mutableStateOf<String?>(null) }
     var showLoadError by remember { mutableStateOf(state.loadError != null) }
+    var restoring by remember { mutableStateOf<Backup?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -110,6 +124,32 @@ fun App(fileSystem: FileSystem, file: Path) {
             }
         }
 
+        val restorer = rememberFilePickerLauncher(type = FileKitType.File(setOf("txt"))) { picked ->
+            if (picked == null) return@rememberFilePickerLauncher
+            scope.launch {
+                try {
+                    val backup = Backup.read(TextDecoding.decode(picked.readBytes()), state.today)
+                    if (backup.isEmpty) importReport = "That file has no subscriptions in it. Pick a backup made " +
+                        "with \"Back up all data\", or the desktop app's subscriptions.txt."
+                    else restoring = backup
+                } catch (e: Exception) {
+                    importReport = "Couldn't read that file: ${e.message}"
+                }
+            }
+        }
+        @Suppress("DEPRECATION")
+        val backer = rememberFileSaverLauncher { target ->
+            if (target == null) return@rememberFileSaverLauncher
+            scope.launch {
+                state.message = try {
+                    target.writeString(Storage.format(state.manager))
+                    "Backed up everything. Keep the file somewhere safe, e.g. Google Drive or iCloud Drive."
+                } catch (e: Exception) {
+                    "Couldn't back up: ${e.message}"
+                }
+            }
+        }
+
         val editing = state.editing
         if (editing != null) {
             EditScreen(state, editing.subscription)
@@ -131,6 +171,16 @@ fun App(fileSystem: FileSystem, file: Path) {
                                     menuOpen = false
                                     exporter.launch(suggestedName = "subscriptions", extension = "csv")
                                 })
+                                HorizontalDivider()
+                                DropdownMenuItem(text = { Text("Back up all data…") }, onClick = {
+                                    menuOpen = false
+                                    backer.launch(suggestedName = "subscriptions-backup", extension = "txt")
+                                })
+                                DropdownMenuItem(text = { Text("Restore from backup…") }, onClick = {
+                                    menuOpen = false
+                                    restorer.launch()
+                                })
+                                HorizontalDivider()
                                 DropdownMenuItem(text = { Text("Currency symbol…") }, onClick = {
                                     menuOpen = false
                                     choosingCurrency = true
@@ -190,6 +240,21 @@ fun App(fileSystem: FileSystem, file: Path) {
                 title = { Text("Couldn't read your subscriptions") },
                 text = { Text(state.loadError ?: "") },
                 confirmButton = { TextButton(onClick = { showLoadError = false }) { Text("OK") } },
+            )
+        }
+        restoring?.let { backup ->
+            val m = backup.manager
+            val now = state.manager
+            ConfirmDialog(
+                title = "Restore this backup?",
+                text = "It has ${m.all.size} subscription(s)" +
+                    (if (m.cancelled.isEmpty()) "" else " and ${m.cancelled.size} cancelled") +
+                    (if (backup.skippedLines > 0) ", plus ${backup.skippedLines} line(s) that couldn't be read" else "") +
+                    ". Everything on this phone (${now.all.size} subscription(s)) will be replaced.",
+                confirm = "Replace",
+                danger = true,
+                onConfirm = { state.restore(backup) },
+                onDismiss = { restoring = null },
             )
         }
         importReport?.let { report ->

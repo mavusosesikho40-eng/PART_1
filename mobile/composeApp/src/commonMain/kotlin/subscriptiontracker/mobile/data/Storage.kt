@@ -26,29 +26,6 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
 
     private fun sibling(suffix: String): Path = file.parent!! / (file.name + suffix)
 
-    /** The text that [save] writes, one line per subscription. */
-    fun format(manager: SubscriptionManager): String {
-        val lines = mutableListOf<String>()
-        manager.monthlyBudget?.let { lines += BUDGET + SEP + Money.toPlainString(it) }
-        if (manager.currencySymbol.isNotEmpty()) lines += CURRENCY + SEP + manager.currencySymbol
-        for (s in manager.allIncludingCancelled) {
-            val line = StringBuilder(listOf(
-                s.id.toString(), s.name, Money.toPlainString(s.cost), s.cycle.name, s.nextPayment.toString(), s.category,
-            ).joinToString(SEP))
-            if (s.freeTrial) line.append(SEP).append(TRIAL)
-            s.cancelledOn?.let { line.append(SEP).append(CANCELLED).append(it) }
-            if (s.billingDay != s.nextPayment.day) line.append(SEP).append(DAY).append(s.billingDay)
-            if (s.hasNote) line.append(SEP).append(NOTE).append(s.note)
-            for (change in s.priceChanges) {
-                line.append(SEP).append(PRICE).append(change.date).append(':')
-                    .append(Money.toPlainString(change.oldCost)).append(':').append(Money.toPlainString(change.newCost))
-                if (change.cycleChanged) line.append(':').append(change.oldCycle.name).append(':').append(change.newCycle.name)
-            }
-            lines += line.toString()
-        }
-        return lines.joinToString("") { it + "\n" }
-    }
-
     fun save(manager: SubscriptionManager) {
         val temp = sibling(".tmp")
         try {
@@ -82,58 +59,81 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
         return LoadResult(skipped, copy)
     }
 
-    /** Reads the data file's text into the manager, returning how many lines were skipped. */
-    fun parse(text: String, manager: SubscriptionManager): Int {
-        var skipped = 0
-        for (line in text.split(Regex("\r\n|\r|\n"))) {
-            if (line.isBlank()) continue
-            val parts = line.split(SEP)
-            try {
-                when (parts[0]) {
-                    BUDGET -> manager.monthlyBudget = Money.parsePlain(parts[1])
-                    CURRENCY -> manager.currencySymbol = parts[1]
-                    else -> manager.restore(parseSubscription(parts))
+    companion object {
+        /** The text that [save] writes, one line per subscription. */
+        fun format(manager: SubscriptionManager): String {
+            val lines = mutableListOf<String>()
+            manager.monthlyBudget?.let { lines += BUDGET + SEP + Money.toPlainString(it) }
+            if (manager.currencySymbol.isNotEmpty()) lines += CURRENCY + SEP + manager.currencySymbol
+            for (s in manager.allIncludingCancelled) {
+                val line = StringBuilder(listOf(
+                    s.id.toString(), s.name, Money.toPlainString(s.cost), s.cycle.name, s.nextPayment.toString(), s.category,
+                ).joinToString(SEP))
+                if (s.freeTrial) line.append(SEP).append(TRIAL)
+                s.cancelledOn?.let { line.append(SEP).append(CANCELLED).append(it) }
+                if (s.billingDay != s.nextPayment.day) line.append(SEP).append(DAY).append(s.billingDay)
+                if (s.hasNote) line.append(SEP).append(NOTE).append(s.note)
+                for (change in s.priceChanges) {
+                    line.append(SEP).append(PRICE).append(change.date).append(':')
+                        .append(Money.toPlainString(change.oldCost)).append(':').append(Money.toPlainString(change.newCost))
+                    if (change.cycleChanged) line.append(':').append(change.oldCycle.name).append(':').append(change.newCycle.name)
                 }
-            } catch (e: IllegalArgumentException) {
-                skipped++
-            } catch (e: IndexOutOfBoundsException) {
-                skipped++
+                lines += line.toString()
             }
+            return lines.joinToString("") { it + "\n" }
         }
-        return skipped
-    }
 
-    private fun parseSubscription(parts: List<String>): Subscription {
-        val sub = Subscription(
-            parts[0].toInt(), parts[1], Money.parsePlain(parts[2]), BillingCycle.valueOf(parts[3]),
-            LocalDate.parse(parts[4]), parts[5],
-        )
-        for (part in parts.drop(6)) {
-            when {
-                part == TRIAL -> sub.freeTrial = true
-                part.startsWith(CANCELLED) -> sub.cancel(LocalDate.parse(part.removePrefix(CANCELLED)))
-                part.startsWith(DAY) -> sub.restoreBillingDay(part.removePrefix(DAY).toInt())
-                part.startsWith(NOTE) -> sub.note = part.removePrefix(NOTE)
-                part.startsWith(PRICE) -> {
-                    val price = part.removePrefix(PRICE).split(":")
-                    val oldCycle = if (price.size > 3) BillingCycle.valueOf(price[3]) else sub.cycle
-                    val newCycle = if (price.size > 4) BillingCycle.valueOf(price[4]) else sub.cycle
-                    sub.restorePriceChange(PriceChange(LocalDate.parse(price[0]),
-                        Money.parsePlain(price[1]), Money.parsePlain(price[2]), oldCycle, newCycle))
+        /** Reads the data file's text into the manager, returning how many lines were skipped. */
+        fun parse(text: String, manager: SubscriptionManager): Int {
+            var skipped = 0
+            for (line in text.split(Regex("\r\n|\r|\n"))) {
+                if (line.isBlank()) continue
+                val parts = line.split(SEP)
+                try {
+                    when (parts[0]) {
+                        BUDGET -> manager.monthlyBudget = Money.parsePlain(parts[1])
+                        CURRENCY -> manager.currencySymbol = parts[1]
+                        else -> manager.restore(parseSubscription(parts))
+                    }
+                } catch (e: IllegalArgumentException) {
+                    skipped++
+                } catch (e: IndexOutOfBoundsException) {
+                    skipped++
                 }
             }
+            return skipped
         }
-        return sub
-    }
 
-    private companion object {
-        const val SEP = "\t"
-        const val BUDGET = "BUDGET"
-        const val CURRENCY = "CURRENCY"
-        const val TRIAL = "TRIAL"
-        const val CANCELLED = "CANCELLED="
-        const val PRICE = "PRICE="
-        const val NOTE = "NOTE="
-        const val DAY = "DAY="
+        private fun parseSubscription(parts: List<String>): Subscription {
+            val sub = Subscription(
+                parts[0].toInt(), parts[1], Money.parsePlain(parts[2]), BillingCycle.valueOf(parts[3]),
+                LocalDate.parse(parts[4]), parts[5],
+            )
+            for (part in parts.drop(6)) {
+                when {
+                    part == TRIAL -> sub.freeTrial = true
+                    part.startsWith(CANCELLED) -> sub.cancel(LocalDate.parse(part.removePrefix(CANCELLED)))
+                    part.startsWith(DAY) -> sub.restoreBillingDay(part.removePrefix(DAY).toInt())
+                    part.startsWith(NOTE) -> sub.note = part.removePrefix(NOTE)
+                    part.startsWith(PRICE) -> {
+                        val price = part.removePrefix(PRICE).split(":")
+                        val oldCycle = if (price.size > 3) BillingCycle.valueOf(price[3]) else sub.cycle
+                        val newCycle = if (price.size > 4) BillingCycle.valueOf(price[4]) else sub.cycle
+                        sub.restorePriceChange(PriceChange(LocalDate.parse(price[0]),
+                            Money.parsePlain(price[1]), Money.parsePlain(price[2]), oldCycle, newCycle))
+                    }
+                }
+            }
+            return sub
+        }
+
+        private const val SEP = "\t"
+        private const val BUDGET = "BUDGET"
+        private const val CURRENCY = "CURRENCY"
+        private const val TRIAL = "TRIAL"
+        private const val CANCELLED = "CANCELLED="
+        private const val PRICE = "PRICE="
+        private const val NOTE = "NOTE="
+        private const val DAY = "DAY="
     }
 }

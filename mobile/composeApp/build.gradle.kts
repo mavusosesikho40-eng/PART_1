@@ -41,9 +41,17 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.work.runtime)
+            implementation(libs.androidx.glance.appwidget)
         }
     }
 }
+
+// The key every build from GitHub is signed with, so a newer version of the
+// app installs over the old one and keeps your data. It comes from the
+// repository's secrets (see mobile/README.md); builds without it use
+// Android's usual debug key.
+val signingKeystore = System.getenv("SIGNING_KEYSTORE_FILE")?.takeIf { it.isNotBlank() && file(it).exists() }
 
 android {
     namespace = "subscriptiontracker.mobile"
@@ -61,9 +69,23 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        if (signingKeystore != null) {
+            create("shared") {
+                storeFile = file(signingKeystore)
+                storePassword = System.getenv("SIGNING_KEYSTORE_PASSWORD")
+                keyAlias = "subscriptions"
+                keyPassword = System.getenv("SIGNING_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
+        getByName("debug") {
+            if (signingKeystore != null) signingConfig = signingConfigs.getByName("shared")
+        }
         getByName("release") {
             isMinifyEnabled = false
+            if (signingKeystore != null) signingConfig = signingConfigs.getByName("shared")
         }
     }
     compileOptions {
