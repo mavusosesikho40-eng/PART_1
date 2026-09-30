@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admissions | Rand Training College</title>
+<meta name="description" content="Admission requirements, fees, key dates and the online application form for Rand Training College.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">RTC</span>
+      <span class="brand-text">
+        <strong>Rand Training College</strong>
+        <span>Skills for a working life</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span></span>
+    </button>
+    <nav class="main-nav" aria-label="Primary">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="academics.html">Academics</a></li>
+        <li><a href="admissions.html" aria-current="page">Admissions</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a class="nav-cta" href="admissions.html#apply">Apply Now</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">Home</a> / Admissions</div>
+      <h1>Admissions</h1>
+      <p>Everything you need to know about applying to Rand Training College, from requirements to fees to key dates.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="container grid grid-2">
+      <div class="card">
+        <span class="eyebrow">General requirements</span>
+        <h3>What you need to apply</h3>
+        <ul>
+          <li>Grade 11 or Grade 12 (Matric) certificate, or equivalent NQF Level 4 qualification</li>
+          <li>Certified copy of your South African ID or passport</li>
+          <li>Proof of residence not older than three months</li>
+          <li>Completed application form and non-refundable application fee</li>
+        </ul>
+        <p class="form-note">Some diploma programmes (Financial Accounting, Software Development, Mechanical Engineering, Marketing &amp; Entrepreneurship) require a Matric pass with Mathematics or Mathematical Literacy. Health Sciences programmes require a medical fitness declaration.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Fees &amp; payment</span>
+        <h3>Tuition &amp; payment plans</h3>
+        <ul>
+          <li>Application fee: <strong>R 250</strong> (non-refundable)</li>
+          <li>Registration fee: <strong>R 1,500</strong>, due on acceptance</li>
+          <li>Certificate programmes: from <strong>R 18,500</strong> per year</li>
+          <li>Diploma programmes: from <strong>R 26,900</strong> per year</li>
+        </ul>
+        <p class="form-note">Interest-free monthly payment plans are available for all programmes. NSFAS-eligible students should contact the admissions office for guidance on funding applications.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-alt">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Key dates</span>
+        <h2>2027 intake</h2>
+      </div>
+      <div class="grid grid-4">
+        <div class="card text-center">
+          <h3>1 Oct 2026</h3>
+          <p>Applications open</p>
+        </div>
+        <div class="card text-center">
+          <h3>30 Nov 2026</h3>
+          <p>Early application deadline (priority placement)</p>
+        </div>
+        <div class="card text-center">
+          <h3>31 Jan 2027</h3>
+          <p>Final application deadline</p>
+        </div>
+        <div class="card text-center">
+          <h3>17 Feb 2027</h3>
+          <p>First day of classes</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="apply">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Apply online</span>
+        <h2>Start your application</h2>
+        <p>Fill in the form below and our admissions office will contact you to confirm your documents and next steps. Fields marked <span class="required">*</span> are required.</p>
+      </div>
+
+      <div class="form-card" style="max-width:760px; margin:0 auto;">
+        <div class="form-status" role="status"></div>
+        <form id="application-form" novalidate>
+          <div class="form-row two">
+            <div>
+              <label for="app-firstname">First name <span class="required">*</span></label>
+              <input type="text" id="app-firstname" name="firstname" required>
+              <div class="field-error" id="app-firstname-error">Please enter your first name.</div>
+            </div>
+            <div>
+              <label for="app-lastname">Last name <span class="required">*</span></label>
+              <input type="text" id="app-lastname" name="lastname" required>
+              <div class="field-error" id="app-lastname-error">Please enter your last name.</div>
+            </div>
+          </div>
+
+          <div class="form-row two">
+            <div>
+              <label for="app-email">Email address <span class="required">*</span></label>
+              <input type="email" id="app-email" name="email" required>
+              <div class="field-error" id="app-email-error">Please enter a valid email address.</div>
+            </div>
+            <div>
+              <label for="app-phone">Phone number <span class="required">*</span></label>
+              <input type="tel" id="app-phone" name="phone" required pattern="^[0-9+\s()-]{7,}$">
+              <div class="field-error" id="app-phone-error">Please enter a valid phone number.</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="app-programme">Programme you are applying for <span class="required">*</span></label>
+              <select id="app-programme" name="programme" required>
+                <option value="">Select a programme</option>
+                <optgroup label="Business & Commerce">
+                  <option>Diploma in Financial Accounting</option>
+                  <option>Certificate in Office Administration</option>
+                  <option>Diploma in Marketing &amp; Entrepreneurship</option>
+                </optgroup>
+                <optgroup label="Information Technology">
+                  <option>Diploma in Software Development</option>
+                  <option>Certificate in Network Administration</option>
+                  <option>Certificate in IT Support &amp; Technical Helpdesk</option>
+                </optgroup>
+                <optgroup label="Engineering Trades">
+                  <option>Certificate in Electrical Installation</option>
+                  <option>Diploma in Mechanical Engineering</option>
+                  <option>Certificate in Civil Engineering Technology</option>
+                </optgroup>
+                <optgroup label="Health Sciences">
+                  <option>Certificate in Nursing Auxiliary Studies</option>
+                  <option>Certificate in Primary Health Care</option>
+                  <option>Certificate in Community Health Work</option>
+                </optgroup>
+              </select>
+              <div class="field-error" id="app-programme-error">Please select a programme.</div>
+            </div>
+          </div>
+
+          <div class="form-row two">
+            <div>
+              <label for="app-qualification">Highest qualification <span class="required">*</span></label>
+              <select id="app-qualification" name="qualification" required>
+                <option value="">Select one</option>
+                <option>Grade 11</option>
+                <option>Matric / Grade 12</option>
+                <option>NQF Level 4 equivalent</option>
+                <option>Certificate or Diploma</option>
+              </select>
+              <div class="field-error" id="app-qualification-error">Please select your highest qualification.</div>
+            </div>
+            <div>
+              <label for="app-start">Preferred intake</label>
+              <select id="app-start" name="start">
+                <option>February 2027</option>
+                <option>July 2027</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="app-message">Anything else we should know?</label>
+              <textarea id="app-message" name="message" rows="4"></textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Submit Application</button>
+          <p class="form-note">This form does not yet connect to a live processing system. Wire the <code>#application-form</code> submit handler in <code>js/main.js</code> to your backend or form service (e.g. an API endpoint or Formspree) before going live.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h4>Rand Training College</h4>
+        <p>Accredited certificate and diploma programmes in business, technology, engineering and health sciences.</p>
+        <div class="social-row" aria-label="Social media links">
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="Instagram">i</a>
+          <a href="#" aria-label="LinkedIn">in</a>
+          <a href="#" aria-label="YouTube">yt</a>
+        </div>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul class="footer-links">
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="academics.html">Academics</a></li>
+          <li><a href="admissions.html">Admissions</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Programmes</h4>
+        <ul class="footer-links">
+          <li><a href="academics.html#business">Business &amp; Commerce</a></li>
+          <li><a href="academics.html#technology">Information Technology</a></li>
+          <li><a href="academics.html#engineering">Engineering Trades</a></li>
+          <li><a href="academics.html#health">Health Sciences</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul class="footer-links">
+          <li>142 Empire Road, Braamfontein, Johannesburg</li>
+          <li>+27 11 555 0142</li>
+          <li>info@randtrainingcollege.ac.za</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span id="current-year">2026</span> Rand Training College. All rights reserved.</span>
+      <span>Registered with the Department of Higher Education and Training.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
