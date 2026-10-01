@@ -120,7 +120,9 @@
       <div class="form-card">
         <h2>Send us a message</h2>
         <div class="form-status" role="status"></div>
-        <form id="contact-form" novalidate>
+        <form id="contact-form" novalidate action="https://formspree.io/f/xaenkkkb" method="POST">
+          <input type="hidden" name="_subject" value="Website enquiry — Contact form">
+          <input type="hidden" name="form_source" value="Contact page">
           <div class="form-row two">
             <div>
               <label for="contact-name">Full name <span class="required">*</span></label>
@@ -158,7 +160,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary">Send Message</button>
-          <p class="form-note">This form does not yet connect to a live processing system. Wire the <code>#contact-form</code> submit handler in <code>js/main.js</code> to your backend or form service before going live.</p>
+          <p class="form-note">We'll only use these details to reply to your enquiry.</p>
         </form>
       </div>
     </div>
