@@ -33,10 +33,9 @@
   window.addEventListener("scroll", onScroll, { passive: true });
 })();
 
-// Generic client-side form validation + fake submit handling.
-// There is no backend yet, so a real submission has nowhere to go —
-// this confirms the form is filled in correctly and shows a success
-// message, so the markup is ready to be wired to a real endpoint later.
+// Generic client-side form validation, then a real submit to the
+// form's own action (Formspree) via fetch so the page can show an
+// inline success/error message instead of a full-page redirect.
 function validateForm(form) {
   var valid = true;
   var fields = form.querySelectorAll("[required]");
@@ -63,26 +62,60 @@ function wireForm(formId, statusMessage) {
   if (!form) return;
 
   var status = form.querySelector(".form-status");
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var submitLabel = submitBtn ? submitBtn.textContent : "";
+
+  function showStatus(message, isSuccess) {
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("success", !!isSuccess);
+    status.classList.add("show");
+  }
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();
 
     if (!validateForm(form)) {
-      if (status) {
-        status.textContent = "Please fix the highlighted fields and try again.";
-        status.classList.remove("success");
-        status.classList.add("show");
-      }
+      showStatus("Please fix the highlighted fields and try again.", false);
       var firstInvalid = form.querySelector(".invalid");
       if (firstInvalid) firstInvalid.focus();
       return;
     }
 
-    if (status) {
-      status.textContent = statusMessage;
-      status.classList.add("show", "success");
+    if (status) status.classList.remove("show", "success");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending…";
     }
-    form.reset();
+
+    fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { Accept: "application/json" }
+    })
+      .then(function (response) {
+        if (response.ok) {
+          showStatus(statusMessage, true);
+          form.reset();
+          return;
+        }
+        return response.json().catch(function () { return null; }).then(function (data) {
+          var message =
+            data && data.errors && data.errors.length
+              ? data.errors.map(function (e) { return e.message; }).join(" ")
+              : "Something went wrong sending this. Please try again, or email us directly.";
+          showStatus(message, false);
+        });
+      })
+      .catch(function () {
+        showStatus("Something went wrong sending this. Please check your connection and try again.", false);
+      })
+      .finally(function () {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = submitLabel;
+        }
+      });
   });
 
   form.querySelectorAll("[required]").forEach(function (field) {
