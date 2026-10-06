@@ -5,6 +5,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.vinceglb.filekit.FileKit
+import org.jetbrains.compose.resources.painterResource
+import subscriptiontracker.mobile.resources.Res
+import subscriptiontracker.mobile.resources.app_icon
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
@@ -21,6 +24,7 @@ fun main(args: Array<String>) {
         Window(
             onCloseRequest = ::exitApplication,
             title = "Subscription Tracker",
+            icon = painterResource(Res.drawable.app_icon),
             state = rememberWindowState(width = 1100.dp, height = 820.dp),
         ) {
             App(FileSystem.SYSTEM, file)
