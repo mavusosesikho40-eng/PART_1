@@ -19,8 +19,13 @@ import okio.Path
  */
 class Storage(private val fileSystem: FileSystem, val file: Path) {
 
-    /** What loading found. [skippedLines] couldn't be read; the file was copied to [unreadableCopy] first. */
-    data class LoadResult(val skippedLines: Int, val unreadableCopy: Path?)
+    /**
+     * What loading found. [skippedLines] couldn't be read; the file was
+     * copied to [unreadableCopy] first. [newIds] is true when some
+     * subscriptions had no permanent id yet and were given one, so the file
+     * should be saved to keep them.
+     */
+    data class LoadResult(val skippedLines: Int, val unreadableCopy: Path?, val newIds: Boolean = false)
 
     val backupFile: Path get() = sibling(".bak")
 
@@ -56,7 +61,8 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
             fileSystem.delete(copy, mustExist = false)
             fileSystem.copy(file, copy)
         }
-        return LoadResult(skipped, copy)
+        val newIds = manager.allIncludingCancelled.any { !text.contains(UID + it.uid) }
+        return LoadResult(skipped, copy, newIds)
     }
 
     companion object {
@@ -66,33 +72,47 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
             manager.monthlyBudget?.let { lines += BUDGET + SEP + Money.toPlainString(it) }
             if (manager.currencySymbol.isNotEmpty()) lines += CURRENCY + SEP + manager.currencySymbol
             for ((code, micro) in manager.rates.entries.sortedBy { it.key }) lines += RATE + SEP + code + SEP + Money.rateToString(micro)
-            for (s in manager.allIncludingCancelled) {
-                val line = StringBuilder(listOf(
-                    s.id.toString(), s.name, Money.toPlainString(s.cost), s.cycle.name, s.nextPayment.toString(), s.category,
-                ).joinToString(SEP))
-                if (s.freeTrial) line.append(SEP).append(TRIAL)
-                s.cancelledOn?.let { line.append(SEP).append(CANCELLED).append(it) }
-                if (s.billingDay != s.nextPayment.day) line.append(SEP).append(DAY).append(s.billingDay)
-                if (s.hasNote) line.append(SEP).append(NOTE).append(s.note)
-                if (s.isForeign) line.append(SEP).append(CUR).append(s.currency)
-                for (change in s.priceChanges) {
-                    line.append(SEP).append(PRICE).append(change.date).append(':')
-                        .append(Money.toPlainString(change.oldCost)).append(':').append(Money.toPlainString(change.newCost))
-                    if (change.cycleChanged) line.append(':').append(change.oldCycle.name).append(':').append(change.newCycle.name)
-                }
-                for (p in s.payments) {
-                    line.append(SEP).append(PAID).append(p.date).append(':').append(Money.toPlainString(p.amount))
-                    if (!p.confirmed) line.append(":assumed")
-                }
-                lines += line.toString()
-            }
+            if (manager.settingsUpdated > 0) lines += SETTINGS + SEP + manager.settingsUpdated
+            for ((uid, at) in manager.deleted.entries.sortedBy { it.key }) lines += DELETED + SEP + uid + SEP + at
+            for (s in manager.allIncludingCancelled) lines += subscriptionLine(s)
             return lines.joinToString("") { it + "\n" }
+        }
+
+        /**
+         * One subscription's line. Without [sync] it leaves out its permanent
+         * id and change time, which is what's compared to spot your changes.
+         */
+        fun subscriptionLine(s: Subscription, sync: Boolean = true): String {
+            val line = StringBuilder(listOf(
+                s.id.toString(), s.name, Money.toPlainString(s.cost), s.cycle.name, s.nextPayment.toString(), s.category,
+            ).joinToString(SEP))
+            if (s.freeTrial) line.append(SEP).append(TRIAL)
+            s.cancelledOn?.let { line.append(SEP).append(CANCELLED).append(it) }
+            if (s.billingDay != s.nextPayment.day) line.append(SEP).append(DAY).append(s.billingDay)
+            if (s.hasNote) line.append(SEP).append(NOTE).append(s.note)
+            if (s.isForeign) line.append(SEP).append(CUR).append(s.currency)
+            for (change in s.priceChanges) {
+                line.append(SEP).append(PRICE).append(change.date).append(':')
+                    .append(Money.toPlainString(change.oldCost)).append(':').append(Money.toPlainString(change.newCost))
+                if (change.cycleChanged) line.append(':').append(change.oldCycle.name).append(':').append(change.newCycle.name)
+            }
+            for (p in s.payments) {
+                line.append(SEP).append(PAID).append(p.date).append(':').append(Money.toPlainString(p.amount))
+                if (!p.confirmed) line.append(":assumed")
+            }
+            if (sync) {
+                line.append(SEP).append(UID).append(s.uid)
+                if (s.updated > 0) line.append(SEP).append(UPDATED).append(s.updated)
+            }
+            return line.toString()
         }
 
         /** Reads the data file's text into the manager, returning how many lines were skipped. */
         fun parse(text: String, manager: SubscriptionManager): Int {
             var skipped = 0
             for (line in text.split(Regex("\r\n|\r|\n"))) {
+                // A sync file ends here; anything after is left over from a longer earlier version.
+                if (line == END) break
                 if (line.isBlank()) continue
                 val parts = line.split(SEP)
                 try {
@@ -100,6 +120,8 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
                         BUDGET -> manager.monthlyBudget = Money.parsePlain(parts[1])
                         CURRENCY -> manager.currencySymbol = parts[1]
                         RATE -> manager.setRate(parts[1], Money.parseScaled(parts[2], 6))
+                        SETTINGS -> manager.settingsUpdated = parts[1].toLong()
+                        DELETED -> manager.markDeleted(parts[1], parts[2].toLong())
                         else -> manager.restore(parseSubscription(parts))
                     }
                 } catch (e: IllegalArgumentException) {
@@ -123,6 +145,8 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
                     part.startsWith(DAY) -> sub.restoreBillingDay(part.removePrefix(DAY).toInt())
                     part.startsWith(NOTE) -> sub.note = part.removePrefix(NOTE)
                     part.startsWith(CUR) -> sub.currency = part.removePrefix(CUR)
+                    part.startsWith(UID) -> sub.uid = part.removePrefix(UID)
+                    part.startsWith(UPDATED) -> sub.updated = part.removePrefix(UPDATED).toLong()
                     part.startsWith(PAID) -> {
                         val p = part.removePrefix(PAID).split(":")
                         sub.restorePayment(Paid(LocalDate.parse(p[0]), Money.parsePlain(p[1]), confirmed = p.getOrNull(2) != "assumed"))
@@ -139,6 +163,12 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
             return sub
         }
 
+        /**
+         * The last line of a sync file. Some cloud drives don't shorten a file
+         * when it's overwritten with less, so reading stops here.
+         */
+        const val END = "END"
+
         private const val SEP = "\t"
         private const val BUDGET = "BUDGET"
         private const val CURRENCY = "CURRENCY"
@@ -150,5 +180,9 @@ class Storage(private val fileSystem: FileSystem, val file: Path) {
         private const val CUR = "CUR="
         private const val PAID = "PAID="
         private const val RATE = "RATE"
+        private const val SETTINGS = "SETTINGS"
+        private const val DELETED = "DELETED"
+        private const val UID = "UID="
+        private const val UPDATED = "UPDATED="
     }
 }

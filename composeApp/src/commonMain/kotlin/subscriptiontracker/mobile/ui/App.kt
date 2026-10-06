@@ -55,6 +55,7 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.writeString
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okio.FileSystem
 import okio.Path
@@ -101,10 +102,20 @@ fun App(
     var importReport by remember { mutableStateOf<String?>(null) }
     var showLoadError by remember { mutableStateOf(state.loadError != null) }
     var restoring by remember { mutableStateOf<Backup?>(null) }
+    var showingSync by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     AppTheme {
+        // Sync when the app opens, and shortly after each change while syncing.
+        LaunchedEffect(Unit) { state.syncNow() }
+        LaunchedEffect(state.syncRequests) {
+            if (state.syncRequests > 0) {
+                delay(1500)
+                state.syncNow()
+            }
+        }
+
         LaunchedEffect(state.message) {
             state.message?.let {
                 snackbar.showSnackbar(it)
@@ -143,6 +154,13 @@ fun App(
                     "Couldn't export: ${e.message}"
                 }
             }
+        }
+
+        val syncPicker = rememberFilePickerLauncher(type = FileKitType.File(setOf("txt"))) { picked ->
+            if (picked != null) scope.launch { state.useSyncFile(picked) }
+        }
+        val syncCreator = rememberFileSaverLauncher { target ->
+            if (target != null) scope.launch { state.useSyncFile(target) }
         }
 
         val restorer = rememberFilePickerLauncher(type = FileKitType.File(setOf("txt"))) { picked ->
@@ -250,6 +268,10 @@ fun App(
                                     restorer.launch()
                                 })
                                 HorizontalDivider()
+                                DropdownMenuItem(text = { Text(if (state.syncFileName == null) "Sync…" else "Sync (on)…") }, onClick = {
+                                    menuOpen = false
+                                    showingSync = true
+                                })
                                 DropdownMenuItem(text = { Text("Currency symbol…") }, onClick = {
                                     menuOpen = false
                                     choosingCurrency = true
@@ -316,6 +338,15 @@ fun App(
                 title = { Text("Couldn't read your subscriptions") },
                 text = { Text(state.loadError ?: "") },
                 confirmButton = { TextButton(onClick = { showLoadError = false }) { Text("OK") } },
+            )
+        }
+        if (showingSync) {
+            SyncDialog(
+                state,
+                onCreate = { syncCreator.launch(suggestedName = "subscriptions-sync", extension = "txt") },
+                onPick = { syncPicker.launch() },
+                onSyncNow = { scope.launch { state.syncNow() } },
+                onDismiss = { showingSync = false },
             )
         }
         restoring?.let { backup ->

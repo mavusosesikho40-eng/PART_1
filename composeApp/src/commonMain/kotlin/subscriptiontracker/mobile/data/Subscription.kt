@@ -44,6 +44,15 @@ class Subscription(
     /** Whether this is a free trial; the next payment date is then when the trial ends. */
     var freeTrial: Boolean = false
 
+    /**
+     * A permanent random name for this subscription, the same on every
+     * device it's synced to (the [id] is only this device's number for it).
+     */
+    var uid: String = newUid()
+
+    /** When it was last changed by you, in milliseconds since 1970; 0 if never. Used to merge synced copies. */
+    var updated: Long = 0
+
     /** The currency it's billed in, e.g. "USD"; empty for your own currency. */
     var currency: String = ""
         set(value) {
@@ -90,6 +99,21 @@ class Subscription(
     /** Changes what was paid on [date] to [amount], e.g. when it wasn't the list price. */
     fun correctPayment(date: LocalDate, amount: Long) {
         restorePayment(Paid(date, amount, confirmed = true))
+    }
+
+    /** An exact copy with another [id] (used when merging synced copies). */
+    fun copy(id: Int): Subscription {
+        val c = Subscription(id, name, cost, cycle, nextPayment, category)
+        c.restoreBillingDay(billingDay)
+        c.freeTrial = freeTrial
+        c.note = note
+        c.currency = currency
+        c.uid = uid
+        c.updated = updated
+        cancelledOn?.let { c.cancel(it) }
+        changes.forEach { c.restorePriceChange(it) }
+        paid.forEach { c.restorePayment(it) }
+        return c
     }
 
     private fun moveToNextPayment() {
@@ -188,4 +212,10 @@ class Subscription(
         if (changed) freeTrial = false
         return changed
     }
+}
+
+/** 16 random hexadecimal characters. */
+fun newUid(): String {
+    val digits = "0123456789abcdef"
+    return (1..16).map { digits[kotlin.random.Random.nextInt(16)] }.joinToString("")
 }

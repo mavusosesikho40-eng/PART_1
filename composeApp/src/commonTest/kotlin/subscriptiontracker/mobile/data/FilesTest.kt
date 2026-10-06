@@ -36,7 +36,8 @@ class StorageTest {
 
         val result = storage.load(m)
 
-        assertEquals(Storage.LoadResult(0, null), result)
+        // The desktop app's file has no sync ids yet, so they're given out (and the file is then saved).
+        assertEquals(Storage.LoadResult(0, null, newIds = true), result)
         assertEquals(120000, m.monthlyBudget)
         assertEquals("R", m.currencySymbol)
         assertEquals(4, m.all.size)
@@ -60,7 +61,8 @@ class StorageTest {
 
         // Line endings become \n, and the budget is written with its cents.
         val expected = desktopFile.replace("\r\n", "\n").replace("BUDGET\t1200", "BUDGET\t1200.00")
-        assertEquals(expected, fs.read(file) { readUtf8() })
+        // Each line also gets a permanent random id for syncing, which varies.
+        assertEquals(expected, fs.read(file) { readUtf8() }.replace(Regex("\tUID=[0-9a-f]{16}"), ""))
     }
 
     @Test

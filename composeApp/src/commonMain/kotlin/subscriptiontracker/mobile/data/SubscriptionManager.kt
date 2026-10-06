@@ -28,6 +28,18 @@ class SubscriptionManager {
     data class Month(val start: LocalDate, val total: Long)
 
     private val exchangeRates = mutableMapOf<String, Long>()
+    private val deletedAt = mutableMapOf<String, Long>()
+
+    /** When the currency, budget or exchange rates were last changed by you (milliseconds since 1970). */
+    var settingsUpdated: Long = 0
+
+    /** Subscriptions removed on this or another device: when, by [Subscription.uid]. Used to merge synced copies. */
+    val deleted: Map<String, Long> get() = deletedAt.toMap()
+
+    /** Records that the subscription with [uid] was removed at [at]. */
+    fun markDeleted(uid: String, at: Long) {
+        deletedAt[uid] = maxOf(at, deletedAt[uid] ?: 0L)
+    }
 
     /**
      * Exchange rates in millionths of your currency per unit, by currency
