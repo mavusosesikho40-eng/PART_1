@@ -21,7 +21,11 @@ Every change that reaches `master` and passes its checks is published on the
 
 ## What it does
 
-Four tabs (along the bottom on a phone, down the side in a wide window):
+**The first time** you open it, a short setup asks which currency you pay in, whether you'd like a
+monthly budget, and how you'd like to start: add your first subscription, import a CSV, restore a
+backup, or just look around. (It doesn't appear again once there's data.)
+
+Then four tabs (along the bottom on a phone, down the side in a wide window):
 
 | Tab | What it shows |
 | --- | --- |
@@ -145,8 +149,12 @@ composeApp/src/
   iosMain/       MainViewController, reminders (local notifications)
   desktopMain/   main() for the desktop app
   desktopTest/   Draws every screen to PNG files
+  commonMain/composeResources/font/   DM Serif Display, the headline font
 iosApp/          The Xcode project that wraps it for iPhone
 scripts/         The Android emulator screenshots
 ```
 
 Amounts are kept as whole cents and rounded half up, so totals are exact.
+
+The headline font, [DM Serif Display](https://fonts.google.com/specimen/DM+Serif+Display), is
+included under the SIL Open Font License (`licenses/OFL-DMSerifDisplay.txt`).

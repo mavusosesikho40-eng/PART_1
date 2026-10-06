@@ -38,6 +38,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.material.icons.extended)
             implementation(libs.kotlinx.datetime)
             implementation(libs.okio)
@@ -106,6 +107,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+compose.resources {
+    publicResClass = false
+    packageOfResClass = "subscriptiontracker.mobile.resources"
 }
 
 compose.desktop {

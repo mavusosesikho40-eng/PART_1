@@ -43,6 +43,13 @@ class AppState(fileSystem: FileSystem, file: Path, private val onSaved: (Subscri
 
     val format: Format get() = Format(manager.currencySymbol)
 
+    /**
+     * True on the very first start, when there's no data file yet: the app
+     * then shows the setup steps. Finishing them (or restoring a backup)
+     * saves, which creates the file, so they don't appear again.
+     */
+    var settingUp by mutableStateOf(!fileSystem.exists(file))
+
     init {
         try {
             val result = storage.load(manager)
@@ -54,12 +61,22 @@ class AppState(fileSystem: FileSystem, file: Path, private val onSaved: (Subscri
             onSaved(manager)
         } catch (e: IOException) {
             loadError = "Couldn't read your subscriptions (${e.message}). Nothing will be saved until the app is restarted."
+            settingUp = false
         }
+    }
+
+    /** Saves what was chosen during setup and goes to the app. */
+    fun finishSetup(currencySymbol: String, monthlyBudget: Long?) {
+        manager.currencySymbol = currencySymbol
+        manager.monthlyBudget = monthlyBudget
+        settingUp = false
+        changed("You're all set.")
     }
 
     /** Replaces everything with a backup's contents, then saves. */
     fun restore(backup: Backup) {
         manager = backup.manager
+        settingUp = false
         changed("Restored ${backup.manager.all.size} subscription(s)" +
             (if (backup.manager.cancelled.isEmpty()) "" else " and ${backup.manager.cancelled.size} cancelled") + ".")
     }

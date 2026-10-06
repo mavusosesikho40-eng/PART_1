@@ -61,6 +61,24 @@ class DesktopScreenshots {
                 }
             }
         }
+        // The first-run setup, drawn with no data file yet.
+        for ((sizeName, size) in sizes) {
+            for (screen in listOf("welcome", "setup-currency", "setup-budget", "setup-start")) {
+                val fresh = File(Files.createTempDirectory("fresh").toFile(), "subscriptions.txt")
+                val scene = ImageComposeScene(size.first, minOf(size.second, 900), Density(1f)) {
+                    App(FileSystem.SYSTEM, fresh.toPath().toOkioPath(), startScreen = screen)
+                }
+                try {
+                    scene.render(0)
+                    scene.render(500_000_000)
+                    val png = scene.render(1_000_000_000).encodeToData(EncodedImageFormat.PNG)!!.bytes
+                    File(out, "$sizeName-$screen.png").writeBytes(png)
+                } finally {
+                    scene.close()
+                }
+                assertTrue(!fresh.exists(), "Just looking at the setup mustn't create the data file")
+            }
+        }
         assertTrue(File(out, "desktop-subscriptions.png").length() > 0)
     }
 }

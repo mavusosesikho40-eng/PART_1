@@ -17,7 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -95,9 +96,17 @@ fun EditScreen(state: AppState, editing: Subscription?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (editing == null) "Add subscription" else "Edit subscription") },
+                title = {
+                    Text(if (editing == null) "Add subscription" else "Edit subscription",
+                        style = MaterialTheme.typography.headlineSmall)
+                },
                 navigationIcon = { IconButton(onClick = close) { Icon(Icons.Filled.Close, contentDescription = "Close") } },
-                actions = { TextButton(onClick = ::save) { Text("Save", fontWeight = FontWeight.Bold) } },
+                actions = { TextButton(onClick = ::save) { Text("Save", fontWeight = FontWeight.Bold, color = Color.White) } },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.Ink,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                ),
             )
         },
     ) { padding ->
@@ -224,9 +233,7 @@ fun EditScreen(state: AppState, editing: Subscription?) {
 
             problem?.let { Text(it, color = StatusColors.danger, style = MaterialTheme.typography.bodyMedium) }
 
-            Button(onClick = ::save, modifier = Modifier.fillMaxWidth()) {
-                Text(if (editing == null) "Add subscription" else "Save changes")
-            }
+            PrimaryButton(if (editing == null) "Add subscription" else "Save changes", onClick = ::save)
 
             if (editing != null) {
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
