@@ -4,6 +4,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalDate
 import okio.FileSystem
 import okio.IOException
@@ -130,6 +133,13 @@ class AppState(private val fileSystem: FileSystem, file: Path, private val onSav
     var syncRequests by mutableIntStateOf(0)
         private set
 
+    /** Whether a sync is waiting for the edit form to close. */
+    var syncWaiting = false
+        private set
+
+    /** One sync at a time, so two never read and write the file at once. */
+    private val syncing = Mutex()
+
     private fun syncBookmark(): ByteArray? =
         if (fileSystem.exists(syncBookmarkFile)) fileSystem.read(syncBookmarkFile) { readByteArray() } else null
 
@@ -167,14 +177,20 @@ class AppState(private val fileSystem: FileSystem, file: Path, private val onSav
      * (whichever copy changed each one last wins), saves the result here,
      * and writes it back to the sync file.
      */
-    suspend fun syncNow() {
-        val bookmark = syncBookmark() ?: return
-        if (loadError != null) return
+    suspend fun syncNow(): Unit = syncing.withLock {
+        val bookmark = syncBookmark() ?: return@withLock
+        if (loadError != null) return@withLock
         try {
             val target = PlatformFile.fromBookmarkData(BookmarkData(bookmark))
             val bytes = target.readBytes()
             val remote = SubscriptionManager()
             Storage.parse(TextDecoding.decode(bytes), remote)
+            // The edit form is working on a subscription that merging would replace: wait until it closes.
+            if (editing?.subscription != null) {
+                syncWaiting = true
+                return@withLock
+            }
+            syncWaiting = false
             // Anything changed here since the last save carries its time into the merge.
             tracker.stamp(manager, Dates.nowMillis())
             val merged = SyncMerge.merge(manager, remote)
@@ -190,6 +206,8 @@ class AppState(private val fileSystem: FileSystem, file: Path, private val onSav
                 target.write((Storage.format(merged) + Storage.END + "\n").encodeToByteArray())
             }
             syncStatus = "Synced at " + Dates.timeNow()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             syncStatus = "Couldn't sync: ${e.message ?: "the file couldn't be read or written."}"
         }

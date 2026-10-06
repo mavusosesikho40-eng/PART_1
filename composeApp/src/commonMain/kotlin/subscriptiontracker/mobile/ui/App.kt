@@ -112,8 +112,12 @@ fun App(
         LaunchedEffect(state.syncRequests) {
             if (state.syncRequests > 0) {
                 delay(1500)
-                state.syncNow()
+                // Outside this effect, so a change made meanwhile doesn't cut the sync short.
+                scope.launch { state.syncNow() }
             }
+        }
+        LaunchedEffect(state.editing) {
+            if (state.editing == null && state.syncWaiting) scope.launch { state.syncNow() }
         }
 
         LaunchedEffect(state.message) {
