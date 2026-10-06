@@ -16,18 +16,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,7 +63,7 @@ import subscriptiontracker.mobile.data.SubscriptionManager.BudgetStatus
  * sorting. Tapping one opens it for editing.
  */
 @Composable
-fun SubscriptionsScreen(state: AppState, padding: PaddingValues) {
+fun SubscriptionsScreen(state: AppState, padding: PaddingValues, listState: LazyListState = rememberLazyListState()) {
     state.version // Redraw after every change.
     val manager = state.manager
     val format = state.format
@@ -80,6 +82,7 @@ fun SubscriptionsScreen(state: AppState, padding: PaddingValues) {
     val trials = manager.trialsEndingWithin(today, 7).filter { it.id !in dismissedTrials }
 
     LazyColumn(
+        state = listState,
         contentPadding = PaddingValues(
             start = 16.dp, end = 16.dp,
             top = padding.calculateTopPadding() + 8.dp,

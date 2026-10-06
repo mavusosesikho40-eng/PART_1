@@ -1,11 +1,17 @@
 package subscriptiontracker.mobile.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -21,19 +27,19 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,14 +48,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
@@ -104,6 +112,20 @@ fun App(
     var restoring by remember { mutableStateOf<Backup?>(null) }
     var showingSync by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
+
+    // The Add button steps aside while you scroll down the list, so it never sits over a price,
+    // and comes back when you scroll up, reach the top or reach the end.
+    val subscriptionsList = rememberLazyListState()
+    var addVisible by remember { mutableStateOf(true) }
+    LaunchedEffect(subscriptionsList) {
+        var last = 0 to 0
+        snapshotFlow { subscriptionsList.firstVisibleItemIndex to subscriptionsList.firstVisibleItemScrollOffset }
+            .collect { now ->
+                val down = now.first > last.first || (now.first == last.first && now.second > last.second)
+                addVisible = now == (0 to 0) || !subscriptionsList.canScrollForward || !down
+                last = now
+            }
+    }
     val scope = rememberCoroutineScope()
 
     AppTheme {
@@ -216,8 +238,10 @@ fun App(
                 contentColor = Color.White,
                 header = {
                     Text("subscription\ntracker", style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = MaterialTheme.typography.headlineSmall.fontFamily, fontWeight = FontWeight.Normal),
-                        color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 20.dp, bottom = 16.dp))
+                        fontFamily = MaterialTheme.typography.headlineSmall.fontFamily, fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp, lineHeight = 18.sp),
+                        color = Color.White, textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 16.dp))
                 },
             ) {
                 Tab.entries.forEach { t ->
@@ -298,7 +322,11 @@ fun App(
                 }
             },
             floatingActionButton = {
-                if (tab == Tab.SUBSCRIPTIONS) {
+                AnimatedVisibility(
+                    visible = tab == Tab.SUBSCRIPTIONS && addVisible,
+                    enter = scaleIn() + fadeIn(),
+                    exit = scaleOut() + fadeOut(),
+                ) {
                     ExtendedFloatingActionButton(
                         onClick = { state.editing = AppState.Editing(null) },
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -313,7 +341,7 @@ fun App(
         ) { padding ->
             Centered(if (wide) 760.dp else Dp.Infinity) {
                 when (tab) {
-                    Tab.SUBSCRIPTIONS -> SubscriptionsScreen(state, padding)
+                    Tab.SUBSCRIPTIONS -> SubscriptionsScreen(state, padding, subscriptionsList)
                     Tab.UPCOMING -> UpcomingScreen(state, padding)
                     Tab.SPENDING -> SpendingScreen(state, padding)
                     Tab.CANCELLED -> CancelledScreen(state, padding)
