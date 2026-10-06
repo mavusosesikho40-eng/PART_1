@@ -203,6 +203,14 @@ class FormatTest {
     }
 
     @Test
+    fun axisAmountsAreWhole() {
+        assertEquals("R 1,500", Format("R").moneyWhole(150000))
+        assertEquals("$1,500", Format("$").moneyWhole(149950))
+        assertEquals("0", Format("").moneyWhole(49))
+        assertEquals("Sep", Format.monthShort(LocalDate(2026, 9, 1)))
+    }
+
+    @Test
     fun budgetLineSaysHowMuchIsLeftOrOver() {
         assertEquals("No monthly budget set", Format("R").budgetLine(100000, null))
         assertEquals("88% of your R 1,200.00 budget · R 134.11 left", Format("R").budgetLine(106589, 120000))

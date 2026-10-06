@@ -30,6 +30,14 @@ class Format(val currencySymbol: String) {
         return currencySymbol + (if (currencySymbol.last().isLetter()) " " else "") + text
     }
 
+    /** A whole amount for chart axes: "R 1,500" (rounded to the nearest unit). */
+    fun moneyWhole(cents: Long): String {
+        val whole = Money.plain(Money.divideRounded(cents, 100) * 100).substringBefore('.')
+        if (currencySymbol.isEmpty()) return whole
+        val gap = if (currencySymbol.last().isLetter()) " " else ""
+        return if (whole.startsWith("-")) "-" + currencySymbol + gap + whole.drop(1) else currencySymbol + gap + whole
+    }
+
     /** An amount with a "+" in front when it's positive. */
     fun signedMoney(cents: Long): String = (if (cents > 0) "+" else "") + money(cents)
 
@@ -65,6 +73,9 @@ class Format(val currencySymbol: String) {
 
         /** "1 Oct 2026". */
         fun date(date: LocalDate): String = "${date.day} ${MONTHS[date.month.ordinal]} ${date.year}"
+
+        /** "Sep". */
+        fun monthShort(date: LocalDate): String = MONTHS[date.month.ordinal]
 
         /** "Sep 2026". */
         fun monthName(date: LocalDate): String = "${MONTHS[date.month.ordinal]} ${date.year}"
