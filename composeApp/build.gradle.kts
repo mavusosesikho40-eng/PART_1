@@ -38,6 +38,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.material.icons.extended)
             implementation(libs.kotlinx.datetime)
             implementation(libs.okio)
@@ -108,6 +109,11 @@ android {
     }
 }
 
+compose.resources {
+    publicResClass = false
+    packageOfResClass = "subscriptiontracker.mobile.resources"
+}
+
 compose.desktop {
     application {
         mainClass = "subscriptiontracker.mobile.MainKt"
@@ -117,11 +123,18 @@ compose.desktop {
             packageVersion = "1.0.$buildNumber"
             description = "Keep track of your subscriptions"
             windows {
+                iconFile.set(project.file("icons/app.ico"))
                 menuGroup = "Subscription Tracker"
                 shortcut = true
                 perUserInstall = true
                 // Keeps new versions installing over old ones.
                 upgradeUuid = "6f1c9a52-3d0e-4d6b-9b7e-2a5c4e8f7d31"
+            }
+            macOS {
+                iconFile.set(project.file("icons/app.icns"))
+            }
+            linux {
+                iconFile.set(project.file("icons/app.png"))
             }
         }
     }

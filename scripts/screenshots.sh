@@ -13,6 +13,14 @@ day() { date -d "$1" +%F; }
 adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 
+# First, the setup shown on a fresh install (there's no data yet).
+for screen in welcome setup-currency setup-budget setup-start; do
+  adb shell am start -S -W -n $PKG/.MainActivity --es screen $screen
+  sleep 6
+  adb exec-out screencap -p > "$OUT/$screen.png"
+done
+adb shell am force-stop $PKG
+
 # Sample data, with dates around today so the reminders and "in N days" show.
 printf 'BUDGET\t1600.00\nCURRENCY\tR\nRATE\tUSD\t18.25\n' > /tmp/seed.txt
 printf '1\tNetflix\t199.00\tMONTHLY\t%s\tEntertainment\tNOTE=Shared with family\tPRICE=%s:169.00:199.00\n' "$(day '+5 days')" "$(day '-6 months')" >> /tmp/seed.txt

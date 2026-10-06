@@ -21,17 +21,21 @@ Every change that reaches `master` and passes its checks is published on the
 
 ## What it does
 
-Four tabs (along the bottom on a phone, down the side in a wide window):
+**The first time** you open it, a short setup asks which currency you pay in, whether you'd like a
+monthly budget, and how you'd like to start: add your first subscription, import a CSV, restore a
+backup, or just look around. (It doesn't appear again once there's data.)
+
+Then four tabs (along the bottom on a phone, down the side in a wide window):
 
 | Tab | What it shows |
 | --- | --- |
 | **Subscriptions** | A reminder when a free trial ends this week, your monthly spending against your budget, what's due in the next 7 days and your yearly total. Then every subscription, with search, a billing-cycle filter and sorting (next payment, name, cost per month, category). Tap one to edit, cancel or remove it; **Add** puts in a new one. |
 | **Upcoming** | Every payment due in the next 7, 14, 30 or 90 days with the total, and your free trials, which you can keep or cancel. **Paid…** records what you actually paid for a payment due this week. |
-| **Spending** | Monthly and yearly totals, the monthly budget, how much price changes in the last 12 months have added, what you actually spent in the last 12 months and each of the last 6, your recent payments, spending per category, exchange rates and the price history. |
+| **Spending** | Monthly and yearly totals, the monthly budget, how much price changes in the last 12 months have added, a chart of what you actually spent in each of the last 12 months against your budget (tap a month to read it, or switch to a table), your recent payments, spending per category, exchange rates and the price history. |
 | **Cancelled** | What cancelling has saved you, and your cancelled subscriptions, which you can restore or remove. |
 
 The menu at the top right has **Import CSV…**, **Export CSV…**, **Back up all data…**,
-**Restore from backup…** and **Currency symbol…**.
+**Restore from backup…**, **Sync…** and **Currency symbol…**.
 
 - **Billing dates move on by themselves.** Once a payment date passes it moves to the next one
   (a monthly subscription due 1 Sep becomes 1 Oct), and one billed on the 31st goes back to the
@@ -70,7 +74,22 @@ over by itself if you start it from the folder the old app ran in.
 The file has one subscription per line, tab-separated: ID, name, cost, cycle, next payment date
 and category, then any of `TRIAL`, `CANCELLED=date`, `DAY=31` (billing day after a short month),
 `NOTE=text`, `CUR=USD`, `PRICE=date:old:new[:OLDCYCLE:NEWCYCLE]` and `PAID=date:amount[:assumed]`.
-`BUDGET`, `CURRENCY` and `RATE` lines hold the budget, your currency symbol and exchange rates.
+`UID=` and `UPDATED=` identify each subscription and when it last changed, for syncing.
+`BUDGET`, `CURRENCY` and `RATE` lines hold the budget, your currency symbol and exchange rates;
+`SETTINGS` says when those last changed and `DELETED` lines remember removed subscriptions, so a
+sync doesn't bring them back.
+
+### Syncing between your phone and computer
+
+**Sync…** keeps one list on all your devices through a single file in your Google Drive, iCloud
+Drive or OneDrive. On the first device choose **Create a sync file** and save it in the drive; on
+the others choose **Use an existing sync file** and pick that same file. (On a computer, install
+the drive's own app, e.g. Google Drive for desktop, so its folder shows up among your files.)
+
+The app syncs when it opens and a moment after each change. Changes are merged one subscription at
+a time: if you edit Netflix on your phone and add Spotify on your computer, both survive. When the
+same subscription was changed on two devices, the later change wins; payments recorded on either
+are kept. **Stop syncing** leaves the file and your data as they are.
 
 ## Importing from a spreadsheet
 
@@ -138,15 +157,19 @@ The [Build](.github/workflows/build.yml) workflow runs on every push and pull re
 composeApp/src/
   commonMain/kotlin/subscriptiontracker/mobile/
     data/        The logic: subscriptions, billing dates, budget, price changes, currencies,
-                 payments, reminders, saving, CSV import and export, backups
+                 payments, reminders, saving, CSV import and export, backups, sync
     ui/          The screens, shared by every platform
   commonTest/    Tests for the logic; they run on Android, iPhone and the desktop
   androidMain/   MainActivity, reminders (WorkManager), the widget, the manifest
   iosMain/       MainViewController, reminders (local notifications)
   desktopMain/   main() for the desktop app
   desktopTest/   Draws every screen to PNG files
+  commonMain/composeResources/font/   DM Serif Display, the headline font
 iosApp/          The Xcode project that wraps it for iPhone
 scripts/         The Android emulator screenshots
 ```
 
 Amounts are kept as whole cents and rounded half up, so totals are exact.
+
+The headline font, [DM Serif Display](https://fonts.google.com/specimen/DM+Serif+Display), is
+included under the SIL Open Font License (`licenses/OFL-DMSerifDisplay.txt`).

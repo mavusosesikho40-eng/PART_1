@@ -205,8 +205,7 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
     val changed = manager.monthlyPriceChangeSince(today.minus(1, DateTimeUnit.YEAR))
     val categories = manager.monthlyByCategory
     val history = manager.priceChanges
-    val months = manager.spentByMonth(today, 6)
-    val yearSpent = manager.spentBetween(today.minus(1, DateTimeUnit.YEAR), today)
+    val months = manager.spentByMonth(today, 12)
     val recent = manager.spent.take(10)
     val currencies = (manager.rates.keys + manager.currenciesWithoutRate).sorted()
 
@@ -277,21 +276,8 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
         }
         item(key = "spent") {
             AppCard(Modifier.fillMaxWidth()) {
-                Text("Spent in the last 12 months", style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(format.money(yearSpent), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                val most = months.maxOfOrNull { it.total }?.takeIf { it > 0 } ?: 1L
-                months.forEach { month ->
-                    Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(Format.monthName(month.start), modifier = Modifier.width(72.dp),
-                            style = MaterialTheme.typography.bodyMedium)
-                        Bar(month.total.toFloat() / most.toFloat(), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-                        Text(format.money(month.total), modifier = Modifier.width(110.dp).padding(start = 12.dp),
-                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
+                SpendingChart(months, budget, format, Modifier.fillMaxWidth())
+                Spacer(Modifier.height(10.dp))
                 Text("Payments are counted at the list price when their date passes. Use \"Paid…\" on the " +
                     "Upcoming tab, or tap a payment below, to record what you actually paid.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

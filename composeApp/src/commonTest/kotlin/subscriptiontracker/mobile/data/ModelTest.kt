@@ -268,3 +268,15 @@ class ListViewTest {
         assertEquals(listOf(coffee, office, netflix), ListView.sort(all, ListView.Sort.CATEGORY))
     }
 }
+
+class ChartScaleTest {
+
+    @Test
+    fun ticksAreRoundAndCoverTheMaximum() {
+        assertEquals(listOf(0L, 50000, 100000, 150000, 200000), ChartScale.ticks(160000))
+        assertEquals(listOf(0L, 20000, 40000, 60000), ChartScale.ticks(44998))
+        assertEquals(listOf(0L, 25000, 50000, 75000, 100000), ChartScale.ticks(90000))
+        assertEquals(listOf(0L, 10000), ChartScale.ticks(0))
+        assertTrue(ChartScale.ticks(1).last() >= 1)
+    }
+}

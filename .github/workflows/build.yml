@@ -1,8 +1,16 @@
 name: Build
 
 on:
+  # The website in website/ has its own workflow (pages.yml); changes to it
+  # don't need the apps rebuilt or a new release.
   push:
+    paths-ignore:
+      - "website/**"
+      - ".github/workflows/pages.yml"
   pull_request:
+    paths-ignore:
+      - "website/**"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 jobs:

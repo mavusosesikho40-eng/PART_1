@@ -25,6 +25,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -43,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,6 +55,7 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.writeString
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okio.FileSystem
 import okio.Path
@@ -73,7 +78,8 @@ private enum class Tab(val title: String, val label: String, val icon: ImageVect
  * The whole app: four tabs along the bottom, a menu at the top right for
  * import, export, backups and the currency symbol, and the add/edit form
  * over the top when it's open. [file] is where the subscriptions are saved;
- * [onSaved] is told after every save. [startScreen] ("upcoming", "spending",
+ * [onSaved] is told after every save. [startScreen] ("welcome", "setup-currency",
+ * "setup-budget", "setup-start", "upcoming", "spending",
  * "cancelled" or "add") opens that screen first.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +91,10 @@ fun App(
     startScreen: String? = null,
 ) {
     val state = remember {
-        AppState(fileSystem, file, onSaved).also { if (startScreen == "add") it.editing = AppState.Editing(null) }
+        AppState(fileSystem, file, onSaved).also {
+            if (startScreen == "add") it.editing = AppState.Editing(null)
+            if (startScreen != null && startScreen in SETUP_SCREENS) it.settingUp = true
+        }
     }
     var tab by rememberSaveable { mutableStateOf(Tab.entries.firstOrNull { it.name.equals(startScreen, true) } ?: Tab.SUBSCRIPTIONS) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -93,10 +102,24 @@ fun App(
     var importReport by remember { mutableStateOf<String?>(null) }
     var showLoadError by remember { mutableStateOf(state.loadError != null) }
     var restoring by remember { mutableStateOf<Backup?>(null) }
+    var showingSync by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     AppTheme {
+        // Sync when the app opens, and shortly after each change while syncing.
+        LaunchedEffect(Unit) { state.syncNow() }
+        LaunchedEffect(state.syncRequests) {
+            if (state.syncRequests > 0) {
+                delay(1500)
+                // Outside this effect, so a change made meanwhile doesn't cut the sync short.
+                scope.launch { state.syncNow() }
+            }
+        }
+        LaunchedEffect(state.editing) {
+            if (state.editing == null && state.syncWaiting) scope.launch { state.syncNow() }
+        }
+
         LaunchedEffect(state.message) {
             state.message?.let {
                 snackbar.showSnackbar(it)
@@ -137,6 +160,13 @@ fun App(
             }
         }
 
+        val syncPicker = rememberFilePickerLauncher(type = FileKitType.File(setOf("txt"))) { picked ->
+            if (picked != null) scope.launch { state.useSyncFile(picked) }
+        }
+        val syncCreator = rememberFileSaverLauncher { target ->
+            if (target != null) scope.launch { state.useSyncFile(target) }
+        }
+
         val restorer = rememberFilePickerLauncher(type = FileKitType.File(setOf("txt"))) { picked ->
             if (picked == null) return@rememberFilePickerLauncher
             scope.launch {
@@ -164,7 +194,14 @@ fun App(
         }
 
         val editing = state.editing
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+        if (state.settingUp) {
+            SetupFlow(
+                state,
+                firstStep = startScreen?.let { SETUP_SCREENS[it] } ?: SetupStep.WELCOME,
+                onImport = { importer.launch() },
+                onRestore = { restorer.launch() },
+            )
+        } else BoxWithConstraints(Modifier.fillMaxSize()) {
         // On a wide screen (a desktop window or a tablet) the tabs go down the
         // side, like the old desktop app's sidebar, and the content keeps to a
         // readable width.
@@ -173,11 +210,14 @@ fun App(
             Centered(if (wide) 680.dp else Dp.Infinity) { EditScreen(state, editing.subscription) }
         } else Row {
         if (wide) {
+            // A black sidebar, the selected tab picked out in white.
             NavigationRail(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                containerColor = AppColors.Ink,
+                contentColor = Color.White,
                 header = {
-                    Text("Subscription\nTracker", style = MaterialTheme.typography.labelLarge,
-                        textAlign = TextAlign.Center, modifier = Modifier.padding(top = 20.dp, bottom = 12.dp))
+                    Text("subscription\ntracker", style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = MaterialTheme.typography.headlineSmall.fontFamily, fontWeight = FontWeight.Normal),
+                        color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 20.dp, bottom = 16.dp))
                 },
             ) {
                 Tab.entries.forEach { t ->
@@ -187,14 +227,27 @@ fun App(
                         icon = { Icon(t.icon, contentDescription = null) },
                         label = { Text(t.label) },
                         modifier = Modifier.padding(vertical = 4.dp),
+                        colors = NavigationRailItemDefaults.colors(
+                            selectedIconColor = AppColors.Ink,
+                            indicatorColor = Color.White,
+                            selectedTextColor = Color.White,
+                            unselectedIconColor = Color(0xFFB5B5B0),
+                            unselectedTextColor = Color(0xFFB5B5B0),
+                        ),
                     )
                 }
             }
         }
         Scaffold(
             topBar = {
+                // A black bar with the screen's name in the serif, in light and dark mode.
                 TopAppBar(
-                    title = { Text(tab.title) },
+                    title = { Text(tab.title, style = MaterialTheme.typography.headlineSmall) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = AppColors.Ink,
+                        titleContentColor = Color.White,
+                        actionIconContentColor = Color.White,
+                    ),
                     actions = {
                         Box {
                             IconButton(onClick = { menuOpen = true }) {
@@ -219,6 +272,10 @@ fun App(
                                     restorer.launch()
                                 })
                                 HorizontalDivider()
+                                DropdownMenuItem(text = { Text(if (state.syncFileName == null) "Sync…" else "Sync (on)…") }, onClick = {
+                                    menuOpen = false
+                                    showingSync = true
+                                })
                                 DropdownMenuItem(text = { Text("Currency symbol…") }, onClick = {
                                     menuOpen = false
                                     choosingCurrency = true
@@ -244,6 +301,9 @@ fun App(
                 if (tab == Tab.SUBSCRIPTIONS) {
                     ExtendedFloatingActionButton(
                         onClick = { state.editing = AppState.Editing(null) },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = MaterialTheme.shapes.small,
                         icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                         text = { Text("Add") },
                     )
@@ -284,6 +344,15 @@ fun App(
                 confirmButton = { TextButton(onClick = { showLoadError = false }) { Text("OK") } },
             )
         }
+        if (showingSync) {
+            SyncDialog(
+                state,
+                onCreate = { syncCreator.launch(suggestedName = "subscriptions-sync", extension = "txt") },
+                onPick = { syncPicker.launch() },
+                onSyncNow = { scope.launch { state.syncNow() } },
+                onDismiss = { showingSync = false },
+            )
+        }
         restoring?.let { backup ->
             val m = backup.manager
             val now = state.manager
@@ -309,6 +378,14 @@ fun App(
         }
     }
 }
+
+/** Start screens that open the first-run setup at a given step (used for screenshots). */
+private val SETUP_SCREENS = mapOf(
+    "welcome" to SetupStep.WELCOME,
+    "setup-currency" to SetupStep.CURRENCY,
+    "setup-budget" to SetupStep.BUDGET,
+    "setup-start" to SetupStep.START,
+)
 
 /** The content, no wider than [maxWidth], in the middle of the space. */
 @Composable

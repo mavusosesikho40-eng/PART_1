@@ -4,6 +4,15 @@ package subscriptiontracker.mobile.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -17,6 +26,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -36,14 +50,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-/** A white card with a thin border, like the desktop app's. */
+/** A white card with a soft shadow (a faint outline in dark mode, where shadows don't show). */
 @Composable
 fun AppCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSystemInDarkTheme()) 0.dp else 2.dp),
+        border = if (isSystemInDarkTheme()) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
     ) {
         Column(Modifier.padding(16.dp), content = content)
     }
@@ -68,7 +83,7 @@ fun SummaryCard(
             action?.invoke(this)
         }
         Spacer(Modifier.height(4.dp))
-        Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = valueColor)
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = valueColor)
         extra?.invoke(this)
         if (detail != null) {
             Spacer(Modifier.height(6.dp))
@@ -187,4 +202,83 @@ fun TextInputDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/** The main action on a screen: a solid black bar with white text and an arrow. */
+@Composable
+fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, arrow: Boolean = true) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().heightIn(min = 52.dp),
+        shape = MaterialTheme.shapes.small,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    ) {
+        Text(text, style = MaterialTheme.typography.titleMedium)
+        if (arrow) {
+            Spacer(Modifier.width(10.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+/**
+ * One of a list of choices: a white card that gets a green outline and a
+ * tick when it's the one picked.
+ */
+@Composable
+fun ChoiceCard(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    detail: String? = null,
+) {
+    val green = StatusColors.check
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected || isSystemInDarkTheme()) 0.dp else 2.dp),
+        border = when {
+            selected -> BorderStroke(2.dp, green)
+            isSystemInDarkTheme() -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            else -> null
+        },
+    ) {
+        Row(Modifier.padding(horizontal = 20.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(text, style = MaterialTheme.typography.bodyLarge)
+                if (detail != null) {
+                    Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (selected) {
+                Spacer(Modifier.width(12.dp))
+                Box(Modifier.size(26.dp).background(green, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.Check, contentDescription = "Chosen", tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
+
+/** The round black "next" button at the bottom right of each setup step. */
+@Composable
+fun NextButton(onClick: () -> Unit, enabled: Boolean = true, modifier: Modifier = Modifier) {
+    FilledIconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.size(64.dp),
+        shape = CircleShape,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    ) {
+        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", modifier = Modifier.size(28.dp))
+    }
 }
