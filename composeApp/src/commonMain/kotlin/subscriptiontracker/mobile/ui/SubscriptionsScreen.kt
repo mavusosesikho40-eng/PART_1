@@ -3,7 +3,6 @@
 package subscriptiontracker.mobile.ui
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,32 +13,35 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,9 +49,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import subscriptiontracker.mobile.data.BillingCycle
 import subscriptiontracker.mobile.data.Format
@@ -59,8 +61,8 @@ import subscriptiontracker.mobile.data.SubscriptionManager.BudgetStatus
 
 /**
  * The "Subscriptions" tab: a reminder for trials ending soon, what you
- * spend, then every subscription with search, a billing-cycle filter and
- * sorting. Tapping one opens it for editing.
+ * spend, then every subscription as a card in a stack, with search, a
+ * billing-cycle filter and sorting. Tapping a card opens it for editing.
  */
 @Composable
 fun SubscriptionsScreen(state: AppState, padding: PaddingValues, listState: LazyListState = rememberLazyListState()) {
@@ -99,16 +101,23 @@ fun SubscriptionsScreen(state: AppState, padding: PaddingValues, listState: Lazy
         }
         item(key = "spending") { SpendingCards(state) }
         item(key = "search") {
-            OutlinedTextField(
+            // A pill-shaped search bar.
+            TextField(
                 value = search,
                 onValueChange = { search = it },
-                placeholder = { Text("Search name or category") },
+                placeholder = { Text("Search subscriptions") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 trailingIcon = if (search.isEmpty()) null else {
                     { IconButton(onClick = { search = "" }) { Icon(Icons.Filled.Clear, contentDescription = "Clear search") } }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = CircleShape,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -123,8 +132,19 @@ fun SubscriptionsScreen(state: AppState, padding: PaddingValues, listState: Lazy
         } else if (shown.isEmpty()) {
             item(key = "none") { EmptyNote("Nothing matches.") }
         }
-        items(shown, key = { it.id }) { sub ->
-            SubscriptionRow(sub, format, today, home = manager.homeCost(sub), onClick = { state.editing = AppState.Editing(sub) })
+        if (shown.isNotEmpty()) {
+            item(key = "cards") {
+                Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.TopCenter) {
+                    CardStack(Modifier.widthIn(max = 440.dp)) {
+                        shown.forEach { sub ->
+                            key(sub.id) {
+                                SubscriptionCard(sub, format, today, home = manager.homeCost(sub),
+                                    onClick = { state.editing = AppState.Editing(sub) })
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (all.isNotEmpty()) {
             item(key = "count") {
@@ -165,12 +185,8 @@ private fun TrialReminder(
     onCancel: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = StatusColors.warningBackground),
-        border = BorderStroke(1.dp, AppColors.WarningBorder),
-    ) {
-        Column(Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 4.dp)) {
+    Surface(shape = MaterialTheme.shapes.large, color = StatusColors.warningBackground) {
+        Column(Modifier.padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 4.dp)) {
             Text(
                 "${trial.name} free trial ends ${Format.dueIn(trial.nextPayment, today)}",
                 fontWeight = FontWeight.Bold,
@@ -253,10 +269,9 @@ private fun FilterRow(
             Modifier.weight(1f).horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip(selected = cycleIndex < 0, onClick = { onCycle(-1) }, label = { Text("All") })
+            Chip("All", selected = cycleIndex < 0, onClick = { onCycle(-1) })
             BillingCycle.entries.forEachIndexed { i, c ->
-                FilterChip(selected = cycleIndex == i, onClick = { onCycle(if (cycleIndex == i) -1 else i) },
-                    label = { Text(c.label) })
+                Chip(c.label, selected = cycleIndex == i, onClick = { onCycle(if (cycleIndex == i) -1 else i) })
             }
         }
         var open by remember { mutableStateOf(false) }
@@ -276,48 +291,41 @@ private fun FilterRow(
     }
 }
 
-/** One subscription: name, category and note on the left; cost and next payment on the right. */
+/** A filter chip with a tick when it's on. */
 @Composable
-fun SubscriptionRow(sub: Subscription, format: Format, today: kotlinx.datetime.LocalDate, home: Long, onClick: () -> Unit) {
-    AppCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(sub.name, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false))
-                    if (sub.freeTrial) {
-                        Spacer(Modifier.width(8.dp))
-                        TrialBadge()
-                    }
-                }
-                Text(
-                    sub.category + if (sub.hasNote) " · " + sub.note else "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(format.moneyIn(sub.currency, sub.cost), fontWeight = FontWeight.SemiBold)
-                if (sub.isForeign) {
-                    Text("≈ " + format.money(home), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(
-                    sub.cycle.label + " · " + Format.shortDate(sub.nextPayment),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    Format.dueIn(sub.nextPayment, today),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
+fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = if (selected) {
+            { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+        } else {
+            null
+        },
+    )
+}
+
+/**
+ * One subscription as a wallet card: its name, how often and when it's due,
+ * and its cost along the top; the next payment date, category and note on
+ * the front card.
+ */
+@Composable
+fun SubscriptionCard(sub: Subscription, format: Format, today: kotlinx.datetime.LocalDate, home: Long, onClick: (() -> Unit)?) {
+    WalletCard(
+        name = sub.name,
+        subtitle = sub.cycle.label + " · due " + Format.dueIn(sub.nextPayment, today),
+        price = format.moneyIn(sub.currency, sub.cost),
+        priceDetail = if (sub.isForeign) "≈ " + format.money(home) else null,
+        color = cardColor(sub.name),
+        trial = sub.freeTrial,
+        footerLabel = if (sub.freeTrial) "Trial ends" else "Next payment",
+        footerValue = Format.date(sub.nextPayment),
+        footerEnd = sub.category,
+        footerEndDetail = if (sub.hasNote) sub.note else null,
+        onClick = onClick,
+    )
 }
 
 /** An outlined button in the danger colour, for Remove. */

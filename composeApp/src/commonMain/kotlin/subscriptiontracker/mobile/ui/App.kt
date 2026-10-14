@@ -5,11 +5,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -32,14 +34,12 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,13 +51,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
@@ -232,17 +234,10 @@ fun App(
             Centered(if (wide) 680.dp else Dp.Infinity) { EditScreen(state, editing.subscription) }
         } else Row {
         if (wide) {
-            // A black sidebar, the selected tab picked out in white.
+            // A side rail on the page's own colour, the app's little card stack at the top.
             NavigationRail(
-                containerColor = AppColors.Ink,
-                contentColor = Color.White,
-                header = {
-                    Text("subscription\ntracker", style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = MaterialTheme.typography.headlineSmall.fontFamily, fontWeight = FontWeight.Normal,
-                        fontSize = 16.sp, lineHeight = 18.sp),
-                        color = Color.White, textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 16.dp))
-                },
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                header = { AppMark(Modifier.padding(top = 20.dp, bottom = 20.dp)) },
             ) {
                 Tab.entries.forEach { t ->
                     NavigationRailItem(
@@ -251,27 +246,14 @@ fun App(
                         icon = { Icon(t.icon, contentDescription = null) },
                         label = { Text(t.label) },
                         modifier = Modifier.padding(vertical = 4.dp),
-                        colors = NavigationRailItemDefaults.colors(
-                            selectedIconColor = AppColors.Ink,
-                            indicatorColor = Color.White,
-                            selectedTextColor = Color.White,
-                            unselectedIconColor = Color(0xFFB5B5B0),
-                            unselectedTextColor = Color(0xFFB5B5B0),
-                        ),
                     )
                 }
             }
         }
         Scaffold(
             topBar = {
-                // A black bar with the screen's name in the serif, in light and dark mode.
                 TopAppBar(
-                    title = { Text(tab.title, style = MaterialTheme.typography.headlineSmall) },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = AppColors.Ink,
-                        titleContentColor = Color.White,
-                        actionIconContentColor = Color.White,
-                    ),
+                    title = { Text(tab.title) },
                     actions = {
                         Box {
                             IconButton(onClick = { menuOpen = true }) {
@@ -329,9 +311,6 @@ fun App(
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = { state.editing = AppState.Editing(null) },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        shape = MaterialTheme.shapes.small,
                         icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                         text = { Text("Add") },
                     )
@@ -414,6 +393,25 @@ private val SETUP_SCREENS = mapOf(
     "setup-budget" to SetupStep.BUDGET,
     "setup-start" to SetupStep.START,
 )
+
+/**
+ * The app's mark: three cards stacked like a wallet's, in three of the card
+ * colours, each edged in [gap] (the rail's colour) so they stand apart.
+ */
+@Composable
+private fun AppMark(modifier: Modifier = Modifier, gap: Color = MaterialTheme.colorScheme.surfaceContainerLow) {
+    Canvas(modifier.size(width = 40.dp, height = 36.dp).semantics { contentDescription = "Subscription Tracker" }) {
+        val w = size.width
+        val h = size.height * 0.62f
+        val step = (size.height - h) / 2f
+        val edge = 1.5.dp.toPx()
+        listOf(CardColors[4], CardColors[3], CardColors[0]).forEachIndexed { i, color ->
+            val y = i * step
+            drawRoundRect(gap, Offset(-edge, y - edge), Size(w + edge * 2, h + edge * 2), CornerRadius(h * 0.18f + edge))
+            drawRoundRect(color, Offset(0f, y), Size(w, h), CornerRadius(h * 0.18f))
+        }
+    }
+}
 
 /** The content, no wider than [maxWidth], in the middle of the space. */
 @Composable

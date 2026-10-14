@@ -2,6 +2,7 @@ package subscriptiontracker.mobile.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -35,7 +37,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,8 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -96,17 +95,9 @@ fun EditScreen(state: AppState, editing: Subscription?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(if (editing == null) "Add subscription" else "Edit subscription",
-                        style = MaterialTheme.typography.headlineSmall)
-                },
+                title = { Text(if (editing == null) "Add subscription" else "Edit subscription") },
                 navigationIcon = { IconButton(onClick = close) { Icon(Icons.Filled.Close, contentDescription = "Close") } },
-                actions = { TextButton(onClick = ::save) { Text("Save", fontWeight = FontWeight.Bold, color = Color.White) } },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppColors.Ink,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                ),
+                actions = { TextButton(onClick = ::save) { Text("Save") } },
             )
         },
     ) { padding ->
@@ -119,6 +110,22 @@ fun EditScreen(state: AppState, editing: Subscription?) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            // The card as it will look, updated while you type.
+            Box(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp), contentAlignment = Alignment.TopCenter) {
+                val code = if (form.isForeign) form.currency.trim().uppercase() else ""
+                WalletCard(
+                    name = form.name.trim().ifEmpty { "New subscription" },
+                    subtitle = form.cycle.label + (form.date?.let { " · due " + Format.dueIn(it, today) } ?: ""),
+                    price = form.parsedCost?.let { format.moneyIn(code, it) } ?: "–",
+                    color = cardColor(form.name),
+                    trial = form.freeTrial,
+                    footerLabel = if (form.freeTrial) "Trial ends" else if (editing == null) "First payment" else "Next payment",
+                    footerValue = form.date?.let { Format.date(it) } ?: "",
+                    footerEnd = form.category.trim().ifEmpty { "Other" },
+                    footerEndDetail = form.note.trim().ifEmpty { null },
+                    modifier = Modifier.widthIn(max = 440.dp),
+                )
+            }
             OutlinedTextField(
                 value = form.name,
                 onValueChange = { form = form.copy(name = it); problem = null },

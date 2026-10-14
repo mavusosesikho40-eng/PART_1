@@ -4,7 +4,6 @@ package subscriptiontracker.mobile.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,9 +26,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +33,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,16 +44,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import subscriptiontracker.mobile.data.CsvImporter
 
 /** The steps shown the first time the app is opened. */
@@ -80,7 +74,7 @@ private val CURRENCIES = listOf(
 
 /**
  * First-run setup: a welcome, then three questions (currency, budget, how
- * to start), each answered by picking a card and pressing the round arrow.
+ * to start), each answered by picking a card and pressing Next.
  * [onImport] and [onRestore] open the file pickers.
  */
 @Composable
@@ -170,10 +164,10 @@ fun SetupFlow(state: AppState, firstStep: SetupStep, onImport: () -> Unit, onRes
     }
 }
 
-/** The welcome: black, with the app's name, a picture, and a button to begin. */
+/** The welcome: the app's name, a fan of cards, and a button to begin. */
 @Composable
 private fun Welcome(onStart: () -> Unit, onRestore: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(AppColors.Ink), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier
                 .widthIn(max = 520.dp)
@@ -183,17 +177,17 @@ private fun Welcome(onStart: () -> Unit, onRestore: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "subscription\ntracker",
-                style = MaterialTheme.typography.displaySmall,
-                color = Color.White,
-                textAlign = TextAlign.Center,
+                "Subscription Tracker",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp),
             )
             Artwork(Modifier.weight(1f).fillMaxWidth().padding(vertical = 24.dp))
             Text(
                 "Every subscription,\nin one place",
                 style = MaterialTheme.typography.headlineLarge,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
@@ -201,30 +195,15 @@ private fun Welcome(onStart: () -> Unit, onRestore: () -> Unit) {
                 "Know what you pay, when it's due, and what you save by cancelling. No account, no fees: " +
                     "your list stays on this device.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFFD6D6D1),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(28.dp))
-            Button(
-                onClick = onStart,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-                shape = MaterialTheme.shapes.small,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.Ink),
-            ) {
-                Text("Get started", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.padding(start = 10.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-            }
-            Spacer(Modifier.height(18.dp))
-            Row {
-                Text("Moving from another device? ", color = Color(0xFFD6D6D1), style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    "Restore a backup",
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    textDecoration = TextDecoration.Underline,
-                    modifier = Modifier.clickable(onClick = onRestore),
-                )
+            PrimaryButton("Get started", onClick = onStart)
+            Spacer(Modifier.height(4.dp))
+            TextButton(onClick = onRestore, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Restore a backup")
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -232,47 +211,45 @@ private fun Welcome(onStart: () -> Unit, onRestore: () -> Unit) {
 }
 
 /**
- * The picture on the welcome: subscription cards and coins, drawn in the
- * app's orange, green and white.
+ * The picture on the welcome: four subscription cards fanned out like a
+ * wallet's, each with a round initial and lines standing for its text.
  */
 @Composable
 private fun Artwork(modifier: Modifier) {
+    val colors = listOf(CardColors[3], CardColors[5], CardColors[1], CardColors[0])
     Canvas(modifier) {
-        val unit = minOf(size.width, size.height) / 10f
-        val c = Offset(size.width / 2f, size.height / 2f)
-        fun card(dx: Float, dy: Float, degrees: Float, color: Color, outline: Boolean = false) {
-            val w = unit * 5.6f
-            val h = unit * 3.5f
-            val topLeft = Offset(c.x + dx * unit - w / 2f, c.y + dy * unit - h / 2f)
-            rotate(degrees, pivot = Offset(topLeft.x + w / 2f, topLeft.y + h / 2f)) {
-                if (outline) {
-                    drawRoundRect(color, topLeft, Size(w, h), CornerRadius(unit * 0.4f), style = Stroke(width = unit * 0.12f))
-                } else {
-                    drawRoundRect(color, topLeft, Size(w, h), CornerRadius(unit * 0.4f))
-                    // A stripe and two lines of "text" on the card.
-                    drawRect(AppColors.Ink.copy(alpha = 0.85f), Offset(topLeft.x, topLeft.y + h * 0.22f), Size(w, h * 0.14f))
-                    drawRoundRect(Color.White.copy(alpha = 0.9f), Offset(topLeft.x + w * 0.1f, topLeft.y + h * 0.58f),
-                        Size(w * 0.45f, h * 0.08f), CornerRadius(h * 0.04f))
-                    drawRoundRect(Color.White.copy(alpha = 0.6f), Offset(topLeft.x + w * 0.1f, topLeft.y + h * 0.74f),
-                        Size(w * 0.28f, h * 0.08f), CornerRadius(h * 0.04f))
-                }
+        val w = minOf(size.width * 0.82f, size.height * 1.1f)
+        val h = w / 1.586f
+        val step = h * 0.3f
+        val x = (size.width - w) / 2f
+        val top = (size.height - (h + step * (colors.size - 1))) / 2f
+        val r = CornerRadius(h * 0.09f)
+        colors.forEachIndexed { i, color ->
+            val y = top + i * step
+            rotate((i - 1.5f) * -2.5f, pivot = Offset(x + w / 2f, y + h / 2f)) {
+                drawRoundRect(Color.Black.copy(alpha = 0.10f), Offset(x, y + h * 0.04f), Size(w, h), r)
+                drawRoundRect(
+                    Brush.linearGradient(listOf(color, lerp(color, Color.Black, 0.28f)), Offset(x, y), Offset(x + w, y + h)),
+                    Offset(x, y), Size(w, h), r,
+                )
+                val pad = h * 0.09f
+                val dot = h * 0.11f
+                drawCircle(Color.White, radius = dot, center = Offset(x + pad + dot, y + pad + dot))
+                val line = h * 0.07f
+                drawRoundRect(Color.White.copy(alpha = 0.9f), Offset(x + pad * 2 + dot * 2, y + pad + dot * 0.35f),
+                    Size(w * 0.34f, line), CornerRadius(line / 2f))
+                drawRoundRect(Color.White.copy(alpha = 0.55f), Offset(x + pad * 2 + dot * 2, y + pad + dot * 1.15f),
+                    Size(w * 0.2f, line * 0.8f), CornerRadius(line / 2f))
+                drawRoundRect(Color.White.copy(alpha = 0.9f), Offset(x + w - pad - w * 0.2f, y + pad + dot * 0.35f),
+                    Size(w * 0.2f, line), CornerRadius(line / 2f))
             }
         }
-        card(-0.9f, -1.2f, -14f, Color.White, outline = true)
-        card(-0.6f, -0.4f, -9f, AppColors.Green)
-        card(0.8f, 0.9f, 7f, AppColors.Orange)
-        // Coins.
-        drawCircle(Color.White, radius = unit * 0.95f, center = Offset(c.x + unit * 3.1f, c.y - unit * 2.2f))
-        drawCircle(AppColors.Ink, radius = unit * 0.55f, center = Offset(c.x + unit * 3.1f, c.y - unit * 2.2f),
-            style = Stroke(width = unit * 0.14f))
-        drawCircle(AppColors.Orange, radius = unit * 0.6f, center = Offset(c.x - unit * 3.4f, c.y + unit * 2.4f))
-        drawCircle(AppColors.Green, radius = unit * 0.38f, center = Offset(c.x + unit * 3.6f, c.y + unit * 2.9f))
     }
 }
 
 /**
- * One setup question: a black strip with the step and a back arrow, then the
- * question, an explanation, the [choices] as cards, and the round arrow to go on.
+ * One setup question: a back arrow with the step and a progress bar, then
+ * the question, an explanation, the [choices], and a pill to go on.
  */
 @Composable
 private fun Question(
@@ -285,20 +262,17 @@ private fun Question(
     choices: @Composable ColumnScope.() -> Unit,
 ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(Modifier.fillMaxWidth().background(AppColors.Ink).windowInsetsPadding(WindowInsets.statusBars)) {
+        Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Text("Step $number of 3", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                Text("Step $number of 3", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelLarge)
             }
             LinearProgressIndicator(
                 progress = { number / 3f },
-                modifier = Modifier.fillMaxWidth().height(4.dp),
-                color = Color.White,
-                trackColor = Color(0xFF3A3A38),
-                gapSize = 0.dp,
-                drawStopIndicator = {},
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
             )
         }
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -307,11 +281,10 @@ private fun Question(
                     .widthIn(max = 600.dp)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 112.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 104.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(title, style = TextStyle(fontSize = 30.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onBackground)
+                Text(title, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
                 Text(explanation, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 choices()
@@ -319,6 +292,7 @@ private fun Question(
             NextButton(
                 onClick = onNext,
                 enabled = canGoOn,
+                text = if (number == 3) "Done" else "Next",
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .windowInsetsPadding(WindowInsets.navigationBars)
