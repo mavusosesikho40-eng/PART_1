@@ -25,11 +25,13 @@ Every change that reaches `master` and passes its checks is published on the
 monthly budget, and how you'd like to start: add your first subscription, import a CSV, restore a
 backup, or just look around. (It doesn't appear again once there's data.)
 
-Then four tabs (along the bottom on a phone, down the side in a wide window):
+Then four tabs (along the bottom on a phone, down the side in a wide window). Each subscription
+gets its own card colour, picked from its name, so it looks the same on every device and in every
+list.
 
 | Tab | What it shows |
 | --- | --- |
-| **Subscriptions** | A reminder when a free trial ends this week, your monthly spending against your budget, what's due in the next 7 days and your yearly total. Then every subscription, with search, a billing-cycle filter and sorting (next payment, name, cost per month, category). Tap one to edit, cancel or remove it; **Add** puts in a new one. |
+| **Subscriptions** | A reminder when a free trial ends this week, your monthly spending against your budget, what's due in the next 7 days and your yearly total. Then every subscription as a card in a stack, like a wallet: each card's top shows its name, how often it's billed, when it's due and its cost, and the front card shows the rest. Search, filter by billing cycle and sort (next payment, name, cost per month, category). Tap a card to edit, cancel or remove it; **Add** puts in a new one. |
 | **Upcoming** | Every payment due in the next 7, 14, 30 or 90 days with the total, and your free trials, which you can keep or cancel. **Paid…** records what you actually paid for a payment due this week. |
 | **Spending** | Monthly and yearly totals, the monthly budget, how much price changes in the last 12 months have added, a chart of what you actually spent in each of the last 12 months against your budget (tap a month to read it, or switch to a table), your recent payments, spending per category, exchange rates and the price history. |
 | **Cancelled** | What cancelling has saved you, and your cancelled subscriptions, which you can restore or remove. |
@@ -164,12 +166,8 @@ composeApp/src/
   iosMain/       MainViewController, reminders (local notifications)
   desktopMain/   main() for the desktop app
   desktopTest/   Draws every screen to PNG files
-  commonMain/composeResources/font/   DM Serif Display, the headline font
 iosApp/          The Xcode project that wraps it for iPhone
 scripts/         The Android emulator screenshots
 ```
 
 Amounts are kept as whole cents and rounded half up, so totals are exact.
-
-The headline font, [DM Serif Display](https://fonts.google.com/specimen/DM+Serif+Display), is
-included under the SIL Open Font License (`licenses/OFL-DMSerifDisplay.txt`).

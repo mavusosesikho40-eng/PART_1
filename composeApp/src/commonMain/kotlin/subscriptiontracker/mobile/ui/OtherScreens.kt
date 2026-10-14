@@ -2,7 +2,7 @@
 
 package subscriptiontracker.mobile.ui
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,15 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,7 +27,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.DateTimeUnit
@@ -85,10 +81,8 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
 
     ScreenList(padding) {
         item(key = "range") {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RANGES.forEach { d ->
-                    FilterChip(selected = days == d, onClick = { days = d }, label = { Text("$d days") })
-                }
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RANGES.forEach { d -> Chip("$d days", selected = days == d, onClick = { days = d }) }
             }
         }
         item(key = "total") {
@@ -102,33 +96,23 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
         }
         item(key = "payments-title") { SectionTitle("Payments") }
         if (payments.isEmpty()) item(key = "no-payments") { EmptyNote("Nothing is due in the next $days days.") }
-        items(payments, key = { "p-${it.subscription.id}-${it.date}" }) { p ->
-            AppCard(Modifier.fillMaxWidth().clickable { state.editing = AppState.Editing(p.subscription) }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.width(76.dp)) {
-                        Text(Format.shortDate(p.date), fontWeight = FontWeight.Bold)
-                        Text(Format.dueIn(p.date, today), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(p.subscription.name, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false))
-                            if (p.subscription.freeTrial) {
-                                Spacer(Modifier.width(8.dp))
-                                TrialBadge()
-                            }
+        if (payments.isNotEmpty()) item(key = "payments") {
+            ListGroup(payments) { p ->
+                val sub = p.subscription
+                GroupRow(
+                    headline = sub.name,
+                    supporting = Format.shortDate(p.date) + " · " + Format.dueIn(p.date, today),
+                    leading = { Monogram(sub.name, cardColor(sub.name)) },
+                    trailing = {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(format.moneyIn(sub.currency, sub.cost), style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface)
+                            if (p in payable) TextButton(onClick = { paying = sub }) { Text("Paid…") }
                         }
-                        Text(p.subscription.category, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(format.moneyIn(p.subscription.currency, p.subscription.cost), fontWeight = FontWeight.SemiBold)
-                        if (p in payable) {
-                            TextButton(onClick = { paying = p.subscription }) { Text("Paid…") }
-                        }
-                    }
-                }
+                    },
+                    badge = sub.freeTrial,
+                    onClick = { state.editing = AppState.Editing(sub) },
+                )
             }
         }
         item(key = "trials-title") { SectionTitle("Free trials") }
@@ -137,22 +121,24 @@ fun UpcomingScreen(state: AppState, padding: PaddingValues) {
                 EmptyNote("No free trials. Turn on \"Free trial\" when adding one to be reminded before it ends.")
             }
         }
-        items(trials, key = { "t-${it.id}" }) { trial ->
-            val soon = trial.nextPayment <= today.plus(7, DateTimeUnit.DAY)
-            AppCard(Modifier.fillMaxWidth()) {
-                Text(trial.name, fontWeight = FontWeight.Bold)
-                Text(
-                    "Ends ${Format.date(trial.nextPayment)} (${Format.dueIn(trial.nextPayment, today)}), " +
-                        "then ${format.moneyIn(trial.currency, trial.cost)} ${trial.cycle.per}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (soon) StatusColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = {
-                        trial.freeTrial = false
-                        state.changed("${trial.name} is no longer a trial. First payment: ${Format.date(trial.nextPayment)}.")
-                    }) { Text("Keep it (I'll pay)") }
-                    TextButton(onClick = { cancelling = trial }) { Text("Cancel trial", color = StatusColors.danger) }
+        if (trials.isNotEmpty()) item(key = "trials") {
+            ListGroup(trials) { trial ->
+                val soon = trial.nextPayment <= today.plus(7, DateTimeUnit.DAY)
+                Column {
+                    GroupRow(
+                        headline = trial.name,
+                        supporting = "Ends ${Format.date(trial.nextPayment)} (${Format.dueIn(trial.nextPayment, today)}), " +
+                            "then ${format.moneyIn(trial.currency, trial.cost)} ${trial.cycle.per}",
+                        supportingColor = if (soon) StatusColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
+                        leading = { Monogram(trial.name, cardColor(trial.name)) },
+                    )
+                    Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 4.dp), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = {
+                            trial.freeTrial = false
+                            state.changed("${trial.name} is no longer a trial. First payment: ${Format.date(trial.nextPayment)}.")
+                        }) { Text("Keep it (I'll pay)") }
+                        TextButton(onClick = { cancelling = trial }) { Text("Cancel trial", color = StatusColors.danger) }
+                    }
                 }
             }
         }
@@ -257,7 +243,7 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
         }
         item(key = "categories") {
             AppCard(Modifier.fillMaxWidth()) {
-                Text("Per month by category", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Per month by category", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 if (categories.isEmpty()) EmptyNote("Add subscriptions to see where your money goes.")
                 categories.forEach { (name, amount) ->
@@ -288,38 +274,32 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
             item(key = "no-recent") { EmptyNote("No payments yet. They're recorded as their dates pass.") }
         } else {
             item(key = "recent") {
-                AppCard(Modifier.fillMaxWidth()) {
-                    recent.forEachIndexed { i, entry ->
-                        if (i > 0) HorizontalDivider(Modifier.padding(vertical = 6.dp))
-                        Row(Modifier.fillMaxWidth().clickable { correcting = entry }.padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(entry.subscription.name, fontWeight = FontWeight.Bold)
-                                Text(Format.date(entry.paid.date) + if (entry.paid.confirmed) "" else " · list price",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Text(format.moneyIn(entry.subscription.currency, entry.paid.amount))
-                        }
-                    }
+                ListGroup(recent) { entry ->
+                    val sub = entry.subscription
+                    GroupRow(
+                        headline = sub.name,
+                        supporting = Format.date(entry.paid.date) + if (entry.paid.confirmed) "" else " · list price",
+                        leading = { Monogram(sub.name, cardColor(sub.name)) },
+                        trailing = {
+                            Text(format.moneyIn(sub.currency, entry.paid.amount), style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface)
+                        },
+                        onClick = { correcting = entry },
+                    )
                 }
             }
         }
         if (currencies.isNotEmpty()) {
+            item(key = "rates-title") { SectionTitle("Exchange rates") }
             item(key = "rates") {
-                AppCard(Modifier.fillMaxWidth()) {
-                    Text("Exchange rates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    currencies.forEach { code ->
-                        val rate = manager.rates[code]
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                if (rate == null) "1 $code: no rate yet, counted 1 to 1"
-                                else "1 $code = ${format.moneyRate(rate)}",
-                                color = if (rate == null) StatusColors.warning else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f),
-                            )
-                            TextButton(onClick = { editingRate = code }) { Text(if (rate == null) "Set" else "Change") }
-                        }
-                    }
+                ListGroup(currencies) { code ->
+                    val rate = manager.rates[code]
+                    GroupRow(
+                        headline = if (rate == null) "1 $code: no rate yet" else "1 $code = ${format.moneyRate(rate)}",
+                        supporting = if (rate == null) "Counted 1 to 1 until you set one" else null,
+                        supportingColor = StatusColors.warning,
+                        trailing = { TextButton(onClick = { editingRate = code }) { Text(if (rate == null) "Set" else "Change") } },
+                    )
                 }
             }
         }
@@ -330,16 +310,13 @@ fun SpendingScreen(state: AppState, padding: PaddingValues) {
             }
         } else {
             item(key = "history") {
-                AppCard(Modifier.fillMaxWidth()) {
-                    history.forEachIndexed { i, entry ->
-                        if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                        Row {
-                            Text(entry.subscription.name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            Text(Format.date(entry.change.date), style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Text(format.describe(entry.change, entry.subscription.currency), style = MaterialTheme.typography.bodyMedium)
-                    }
+                ListGroup(history) { entry ->
+                    GroupRow(
+                        headline = entry.subscription.name,
+                        supporting = format.describe(entry.change, entry.subscription.currency),
+                        leading = { Monogram(entry.subscription.name, cardColor(entry.subscription.name)) },
+                        trailing = { Text(Format.date(entry.change.date), style = MaterialTheme.typography.bodySmall) },
+                    )
                 }
             }
         }
@@ -433,27 +410,30 @@ fun CancelledScreen(state: AppState, padding: PaddingValues) {
                 EmptyNote("Nothing cancelled yet. Cancel a subscription and what it saves you shows up here.")
             }
         }
-        items(cancelled, key = { it.id }) { sub ->
-            AppCard(Modifier.fillMaxWidth()) {
-                Row {
-                    Column(Modifier.weight(1f)) {
-                        Text(sub.name, fontWeight = FontWeight.Bold)
-                        Text("${sub.category} · cancelled ${Format.date(sub.cancelledOn!!)}",
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (cancelled.isNotEmpty()) item(key = "cancelled") {
+            ListGroup(cancelled) { sub ->
+                Column {
+                    GroupRow(
+                        headline = sub.name,
+                        supporting = "${sub.category} · was ${format.moneyIn(sub.currency, sub.monthlyCost)} a month\n" +
+                            "Cancelled ${Format.date(sub.cancelledOn!!)}",
+                        leading = { Monogram(sub.name, CancelledCardColor) },
+                        trailing = {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(format.money(manager.toHome(sub.currency, sub.savedSoFar(today))),
+                                    style = MaterialTheme.typography.titleSmall, color = StatusColors.saved)
+                                Text("saved", style = MaterialTheme.typography.bodySmall)
+                            }
+                        },
+                    )
+                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                        TextButton(onClick = { removing = sub }) { Text("Remove", color = StatusColors.danger) }
+                        FilledTonalButton(onClick = {
+                            sub.reactivate(today)
+                            state.changed("Restored ${sub.name}. Next payment: ${Format.date(sub.nextPayment)}.")
+                        }) { Text("Restore") }
                     }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(format.money(manager.toHome(sub.currency, sub.savedSoFar(today))), fontWeight = FontWeight.SemiBold, color = StatusColors.saved)
-                        Text("was ${format.moneyIn(sub.currency, sub.monthlyCost)} a month", style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = {
-                        sub.reactivate(today)
-                        state.changed("Restored ${sub.name}. Next payment: ${Format.date(sub.nextPayment)}.")
-                    }) { Text("Restore") }
-                    DangerButton("Remove", onClick = { removing = sub })
                 }
             }
         }
