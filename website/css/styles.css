@@ -26,6 +26,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -983,6 +987,52 @@ input.invalid, select.invalid, textarea.invalid {
   background: #e7f5ec;
   color: var(--success);
   border: 1px solid #bfe4cd;
+}
+
+.qa-success-info {
+  margin-top: 20px;
+  padding: 18px 20px;
+  background: #f3faf6;
+  border: 1px solid #bfe4cd;
+  border-left: 4px solid var(--success);
+  border-radius: var(--radius);
+}
+.qa-success-info h4 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: var(--black);
+}
+.qa-success-info ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.qa-success-info li { margin-bottom: 4px; }
+.qa-success-info a {
+  font-weight: 700;
+  color: var(--orange-dark);
+}
+
+/* Progressive-disclosure toggle for optional form fields */
+.disclosure-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 102, 0, 0.1);
+  color: var(--orange-dark);
+  border: 1px solid rgba(255, 102, 0, 0.3);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.disclosure-toggle:hover {
+  background: rgba(255, 102, 0, 0.18);
+  border-color: var(--orange);
 }
 
 /* Info blocks (contact) */

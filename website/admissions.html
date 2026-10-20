@@ -210,7 +210,10 @@
             </div>
           </div>
 
-          <div class="form-row">
+          <p>
+            <button type="button" id="app-more-toggle" class="disclosure-toggle" aria-expanded="false" aria-controls="app-more-panel" data-open-label="&#8722; Hide optional details" data-closed-label="&#43; Add more details (optional)">&#43; Add more details (optional)</button>
+          </p>
+          <div class="form-row" id="app-more-panel" hidden>
             <div>
               <label for="app-message">Anything else we should know?</label>
               <textarea id="app-message" name="message" rows="4"></textarea>
