@@ -68,6 +68,7 @@
           <a class="btn btn-primary" href="admissions.html#apply">Start Your Application</a>
           <a class="btn btn-outline" href="academics.html">Explore Programmes</a>
         </div>
+        <a class="hero-subcta" href="#quick-apply">Or send us your details in 2 minutes &rarr;</a>
       </div>
       <div class="hero-card">
         <h3>Why students choose RTC</h3>
@@ -115,6 +116,115 @@
       </form>
     </div>
   </div>
+
+  <section aria-label="Accreditation and trust" class="trust-strip">
+    <div class="container">
+      <div class="trust-row">
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">&#10003;</span>
+          <div>
+            <strong>DHET Registered</strong>
+            <span>Registration No. 2016/FE07/031</span>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">&#10003;</span>
+          <div>
+            <strong>QCTO Accredited</strong>
+            <span>Skills development provider</span>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">&#10003;</span>
+          <div>
+            <strong>Umalusi Quality Assured</strong>
+            <span>External assessment moderation</span>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">&#10003;</span>
+          <div>
+            <strong>SETA-Aligned Curricula</strong>
+            <span>merSETA &middot; FASSET &middot; HWSETA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="quick-apply" class="section-alt">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Fast-track</span>
+        <h2>Quick Apply &mdash; 2 minutes, no documents needed yet</h2>
+        <p>Tell us who you are and what you're interested in. We'll follow up by WhatsApp and email with entry requirements, fees and next steps &mdash; no documents required at this stage.</p>
+      </div>
+      <div class="form-card" style="max-width:640px; margin:0 auto;">
+        <div class="form-status" role="status"></div>
+        <form id="quick-apply-form" novalidate action="https://formspree.io/f/xaenkkkb" method="POST">
+          <input type="hidden" name="_subject" value="Quick Apply — Homepage">
+          <input type="hidden" name="form_source" value="Quick Apply (homepage)">
+          <div class="form-row two">
+            <div>
+              <label for="qa-name">Full name <span class="required">*</span></label>
+              <input type="text" id="qa-name" name="name" required>
+              <div class="field-error" id="qa-name-error">Please enter your name.</div>
+            </div>
+            <div>
+              <label for="qa-whatsapp">WhatsApp number <span class="required">*</span></label>
+              <input type="tel" id="qa-whatsapp" name="whatsapp" required pattern="^[0-9+\s()-]{7,}$">
+              <div class="field-error" id="qa-whatsapp-error">Please enter a valid WhatsApp number.</div>
+            </div>
+          </div>
+          <div class="form-row two">
+            <div>
+              <label for="qa-email">Email address <span class="required">*</span></label>
+              <input type="email" id="qa-email" name="email" required>
+              <div class="field-error" id="qa-email-error">Please enter a valid email address.</div>
+            </div>
+            <div>
+              <label for="qa-intake">Preferred intake</label>
+              <select id="qa-intake" name="intake">
+                <option>February 2027</option>
+                <option>July 2027</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="qa-programme">Programme of interest <span class="required">*</span></label>
+              <select id="qa-programme" name="programme" required>
+                <option value="">Select a programme</option>
+                <optgroup label="Business &amp; Commerce">
+                  <option>Diploma in Financial Accounting</option>
+                  <option>Certificate in Office Administration</option>
+                  <option>Diploma in Marketing &amp; Entrepreneurship</option>
+                </optgroup>
+                <optgroup label="Information Technology">
+                  <option>Diploma in Software Development</option>
+                  <option>Certificate in Network Administration</option>
+                  <option>Certificate in IT Support &amp; Technical Helpdesk</option>
+                </optgroup>
+                <optgroup label="Engineering Trades">
+                  <option>Certificate in Electrical Installation</option>
+                  <option>Diploma in Mechanical Engineering</option>
+                  <option>Certificate in Civil Engineering Technology</option>
+                </optgroup>
+                <optgroup label="Health Sciences">
+                  <option>Certificate in Nursing Auxiliary Studies</option>
+                  <option>Certificate in Primary Health Care</option>
+                  <option>Certificate in Community Health Work</option>
+                </optgroup>
+              </select>
+              <div class="field-error" id="qa-programme-error">Please select a programme.</div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Send My Details</button>
+          <p class="form-note">This isn't your full application &mdash; it just gets the conversation started. We'll be in touch shortly with what to do next.</p>
+        </form>
+      </div>
+    </div>
+  </section>
 
   <section aria-label="College highlights" class="stat-row-wrap">
     <div class="container">

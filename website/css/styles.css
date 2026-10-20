@@ -337,6 +337,16 @@ img { max-width: 100%; display: block; }
   margin-top: 26px;
 }
 
+.hero-subcta {
+  display: inline-block;
+  margin-top: 16px;
+  color: #fff;
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hero-subcta:hover { color: var(--orange-light); }
+
 .hero-card {
   position: relative;
   z-index: 2;
@@ -418,6 +428,54 @@ img { max-width: 100%; display: block; }
 @media (max-width: 560px) {
   .quick-finder-inner { grid-template-columns: 1fr; }
   .quick-finder { margin-top: -40px; }
+}
+
+/* Trust / accreditation strip */
+.trust-strip {
+  background: #fff;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 28px 0;
+}
+.trust-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.trust-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--black);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+.trust-item strong {
+  display: block;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.88rem;
+  color: var(--black);
+}
+.trust-item span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+@media (max-width: 900px) {
+  .trust-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .trust-row { grid-template-columns: 1fr; }
 }
 
 /* Buttons */
