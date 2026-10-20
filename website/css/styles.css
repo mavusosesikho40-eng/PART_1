@@ -26,6 +26,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -338,14 +342,40 @@ img { max-width: 100%; display: block; }
 }
 
 .hero-subcta {
-  display: inline-block;
-  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 9px 18px;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 999px;
   color: #fff;
-  font-size: 0.88rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-.hero-subcta:hover { color: var(--orange-light); }
+.hero-subcta:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--black);
+  transform: translateY(-1px);
+}
+
+/* Small reassurance pill, e.g. next to a form or CTA */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 102, 0, 0.1);
+  color: var(--orange-dark);
+  border: 1px solid rgba(255, 102, 0, 0.3);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
 
 .hero-card {
   position: relative;
@@ -433,27 +463,36 @@ img { max-width: 100%; display: block; }
 /* Trust / accreditation strip */
 .trust-strip {
   background: #fff;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 28px 0;
+  padding: 36px 0 40px;
 }
 .trust-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: 16px;
 }
 .trust-item {
   display: flex;
   align-items: center;
   gap: 12px;
+  background: var(--paper-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.trust-item:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+  border-color: var(--orange-light);
 }
 .trust-icon {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--black);
   color: var(--orange);
+  border: 2px solid var(--orange-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -948,6 +987,52 @@ input.invalid, select.invalid, textarea.invalid {
   background: #e7f5ec;
   color: var(--success);
   border: 1px solid #bfe4cd;
+}
+
+.qa-success-info {
+  margin-top: 20px;
+  padding: 18px 20px;
+  background: #f3faf6;
+  border: 1px solid #bfe4cd;
+  border-left: 4px solid var(--success);
+  border-radius: var(--radius);
+}
+.qa-success-info h4 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: var(--black);
+}
+.qa-success-info ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.qa-success-info li { margin-bottom: 4px; }
+.qa-success-info a {
+  font-weight: 700;
+  color: var(--orange-dark);
+}
+
+/* Progressive-disclosure toggle for optional form fields */
+.disclosure-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 102, 0, 0.1);
+  color: var(--orange-dark);
+  border: 1px solid rgba(255, 102, 0, 0.3);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.disclosure-toggle:hover {
+  background: rgba(255, 102, 0, 0.18);
+  border-color: var(--orange);
 }
 
 /* Info blocks (contact) */
