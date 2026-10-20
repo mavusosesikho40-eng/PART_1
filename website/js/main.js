@@ -153,6 +153,10 @@ document.addEventListener("DOMContentLoaded", function () {
     "application-form",
     "Thank you — your application has been received. Check your email for confirmation and next steps."
   );
+  wireForm(
+    "quick-apply-form",
+    "Thanks! We've got your details and will be in touch on WhatsApp and email shortly with programme info and next steps."
+  );
 
   var yearEl = document.getElementById("current-year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
