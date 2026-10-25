@@ -57,7 +57,7 @@ function validateForm(form) {
   return valid;
 }
 
-function wireForm(formId, statusMessage) {
+function wireForm(formId, statusMessage, onSuccess) {
   var form = document.getElementById(formId);
   if (!form) return;
 
@@ -97,6 +97,7 @@ function wireForm(formId, statusMessage) {
         if (response.ok) {
           showStatus(statusMessage, true);
           form.reset();
+          if (typeof onSuccess === "function") onSuccess();
           return;
         }
         return response.json().catch(function () { return null; }).then(function (data) {
@@ -143,6 +144,22 @@ function wireQuickFinder() {
   });
 }
 
+// Progressive disclosure: a "+ Add more details" toggle that reveals an
+// optional block of fields only when the user actually wants them, instead
+// of showing every field — required and optional — all at once.
+function wireDisclosureToggle(toggleId, panelId) {
+  var toggle = document.getElementById(toggleId);
+  var panel = document.getElementById(panelId);
+  if (!toggle || !panel) return;
+
+  toggle.addEventListener("click", function () {
+    var expanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!expanded));
+    panel.hidden = expanded;
+    toggle.textContent = expanded ? toggle.dataset.closedLabel : toggle.dataset.openLabel;
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   wireQuickFinder();
   wireForm(
@@ -155,8 +172,13 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   wireForm(
     "quick-apply-form",
-    "Thanks! We've got your details and will be in touch on WhatsApp and email shortly with programme info and next steps."
+    "Thanks! We've got your details and will be in touch on WhatsApp and email shortly with programme info and next steps.",
+    function () {
+      var info = document.getElementById("qa-success-info");
+      if (info) info.hidden = false;
+    }
   );
+  wireDisclosureToggle("app-more-toggle", "app-more-panel");
 
   var yearEl = document.getElementById("current-year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
