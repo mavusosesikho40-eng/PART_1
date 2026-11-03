@@ -127,17 +127,8 @@ img { max-width: 100%; display: block; }
 }
 
 .brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius);
-  background: var(--orange);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "Poppins", sans-serif;
-  font-weight: 800;
-  color: var(--black);
-  font-size: 1.05rem;
+  height: 48px;
+  width: auto;
   flex-shrink: 0;
 }
 
