@@ -363,21 +363,6 @@ img { max-width: 100%; display: block; }
   transform: translateY(-1px);
 }
 
-/* Small reassurance pill, e.g. next to a form or CTA */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 102, 0, 0.1);
-  color: var(--orange-dark);
-  border: 1px solid rgba(255, 102, 0, 0.3);
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-}
-
 .hero-card {
   position: relative;
   z-index: 2;
@@ -548,13 +533,6 @@ img { max-width: 100%; display: block; }
 }
 .btn-outline:hover { background: var(--black); color: #fff; border-color: var(--black); }
 
-.btn-dark {
-  background: var(--black);
-  color: #fff;
-  border-color: var(--black);
-}
-.btn-dark:hover { background: transparent; color: var(--black); box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18); }
-
 /* Sections */
 section { padding: 72px 0; }
 .section-alt { background: var(--paper-alt); }
@@ -563,6 +541,62 @@ section { padding: 72px 0; }
   max-width: 640px;
   margin: 0 auto 44px;
   text-align: center;
+}
+.section-head.left {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
+}
+
+/* Faculty list (homepage) — an editorial index rather than a card grid */
+.faculty-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+.faculty-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 20px;
+  align-items: start;
+  padding: 30px 12px;
+  margin: 0 -12px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius);
+  transition: background 0.15s ease;
+}
+.faculty-row:hover {
+  background: #fff;
+}
+.faculty-row:hover .card-cta {
+  color: var(--orange);
+  text-decoration: underline;
+}
+.faculty-num {
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--orange-dark);
+  padding-top: 2px;
+}
+.faculty-row h3 { margin-bottom: 6px; }
+.faculty-row p { margin: 0; max-width: 56ch; }
+.faculty-row .card-cta {
+  margin-top: 0;
+  align-self: center;
+  white-space: nowrap;
+}
+.faculty-outro {
+  margin-top: 24px;
+}
+@media (max-width: 700px) {
+  .faculty-row {
+    grid-template-columns: 40px 1fr;
+  }
+  .faculty-row .card-cta { display: none; }
 }
 
 .eyebrow {
@@ -1014,23 +1048,19 @@ input.invalid, select.invalid, textarea.invalid {
 
 /* Progressive-disclosure toggle for optional form fields */
 .disclosure-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 102, 0, 0.1);
+  background: none;
+  border: none;
+  padding: 0;
   color: var(--orange-dark);
-  border: 1px solid rgba(255, 102, 0, 0.3);
-  border-radius: 999px;
-  padding: 7px 16px;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .disclosure-toggle:hover {
-  background: rgba(255, 102, 0, 0.18);
-  border-color: var(--orange);
+  color: var(--orange);
 }
 
 /* Info blocks (contact) */
@@ -1086,22 +1116,7 @@ input.invalid, select.invalid, textarea.invalid {
 .breadcrumb a { color: var(--orange-dark); text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 
-/* Quote / leadership */
-.quote-block {
-  border-left: 4px solid var(--orange);
-  padding-left: 22px;
-  font-style: italic;
-  color: var(--ink);
-  font-size: 1.08rem;
-}
-.quote-block cite {
-  display: block;
-  font-style: normal;
-  margin-top: 12px;
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-
+/* Leadership */
 .people-card {
   text-align: center;
 }
