@@ -8,7 +8,7 @@
   --black: #0d0d0d;
   --black-soft: #1c1c1c;
   --orange: #ff6600;
-  --orange-dark: #d94e00;
+  --orange-dark: #b34000;
   --orange-light: #ffb27a;
   --ink: #171717;
   --ink-soft: #5c5c5c;
@@ -169,15 +169,13 @@ img { max-width: 100%; display: block; }
 .nav-toggle span::after {
   content: "";
   position: absolute;
-  left: 9px;
-  right: 9px;
   height: 2px;
   background: var(--black);
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.nav-toggle span { top: 18px; }
-.nav-toggle span::before { top: -7px; }
-.nav-toggle span::after { top: 7px; }
+.nav-toggle span { left: 9px; right: 9px; top: 18px; }
+.nav-toggle span::before { left: 0; right: 0; top: -7px; }
+.nav-toggle span::after { left: 0; right: 0; top: 7px; }
 
 .nav-toggle[aria-expanded="true"] span { background: transparent; }
 .nav-toggle[aria-expanded="true"] span::before { transform: translateY(7px) rotate(45deg); }
@@ -693,9 +691,11 @@ a.program-card {
 }
 .program-meta {
   display: flex;
+  align-content: flex-start;
   gap: 10px;
   flex-wrap: wrap;
   margin: 12px 0 16px;
+  min-height: 56px;
 }
 .tag {
   background: var(--black);
