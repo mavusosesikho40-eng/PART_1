@@ -281,9 +281,8 @@ img { max-width: 100%; display: block; }
   right: -8%;
   width: 55%;
   height: 140%;
-  background: var(--orange);
+  background: linear-gradient(160deg, rgba(255, 102, 0, 0.45), rgba(217, 78, 0, 0.5)), url("../images/hero/home-hero.jpg") center/cover no-repeat;
   clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
-  opacity: 0.94;
 }
 
 .hero::before {
@@ -393,7 +392,7 @@ img { max-width: 100%; display: block; }
 @media (max-width: 860px) {
   .hero .container { grid-template-columns: 1fr; }
   .hero { padding: 56px 0 108px; }
-  .hero::after { width: 80%; opacity: 0.5; }
+  .hero::after { width: 80%; opacity: 0.5; background: var(--orange); }
 }
 
 /* Quick finder bar — overlaps the bottom of the hero */
