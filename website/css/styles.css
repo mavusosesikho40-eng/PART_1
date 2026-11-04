@@ -231,6 +231,7 @@ img { max-width: 100%; display: block; }
   background: var(--orange);
   color: var(--black) !important;
   font-weight: 700;
+  border-radius: 999px;
 }
 .nav-cta:hover { background: var(--orange-light); color: var(--black) !important; }
 
