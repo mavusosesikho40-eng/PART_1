@@ -12,7 +12,8 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         sun: "rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary-hover hover:-translate-y-0.5 transition-all",
         soft: "rounded-full border border-border bg-card text-foreground font-semibold hover:border-foreground/30 hover:-translate-y-0.5 transition-all",
-        night: "rounded-full border border-night-border bg-transparent text-night-foreground font-semibold hover:bg-night-card transition-all",
+        night:
+          "rounded-full border border-night-border bg-transparent text-night-foreground font-semibold hover:bg-night-card transition-all",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",

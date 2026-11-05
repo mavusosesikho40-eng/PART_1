@@ -30,7 +30,9 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: BillingCycle }) {
       aria-labelledby={`plan-${plan.id}`}
       className={cn(
         "relative flex flex-col rounded-2xl p-6 transition-transform",
-        popular ? "sunrise-border shadow-[var(--shadow-warm)] xl:-translate-y-3" : "border border-border bg-card",
+        popular
+          ? "sunrise-border shadow-[var(--shadow-warm)] xl:-translate-y-3"
+          : "border border-border bg-card",
       )}
     >
       {popular && (
@@ -38,14 +40,18 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: BillingCycle }) {
           {plan.badge}
         </span>
       )}
-      <h3 id={`plan-${plan.id}`} className="text-2xl">{plan.name}</h3>
+      <h3 id={`plan-${plan.id}`} className="text-2xl">
+        {plan.name}
+      </h3>
       <p className="mt-1 min-h-12 text-sm text-muted-foreground">{plan.tagline}</p>
 
       <div className="mt-5 min-h-[5.5rem]">
         {price ? (
           <>
             <p className="flex items-baseline gap-1">
-              <span className="font-display text-4xl font-bold tracking-tight">{formatZAR(price.perMonth)}</span>
+              <span className="font-display text-4xl font-bold tracking-tight">
+                {formatZAR(price.perMonth)}
+              </span>
               <span className="text-muted-foreground">/month</span>
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -64,9 +70,13 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: BillingCycle }) {
 
       <Button asChild variant={popular ? "sun" : "soft"} size="pill" className="mt-4 w-full">
         {custom ? (
-          <Link to="/contact" search={{ topic: "enterprise" }}>Talk to sales</Link>
+          <Link to="/contact" search={{ topic: "enterprise" }}>
+            Talk to sales
+          </Link>
         ) : (
-          <Link to="/checkout" search={{ plan: plan.id, billing }}>Choose {plan.name}</Link>
+          <Link to="/checkout" search={{ plan: plan.id, billing }}>
+            Choose {plan.name}
+          </Link>
         )}
       </Button>
 

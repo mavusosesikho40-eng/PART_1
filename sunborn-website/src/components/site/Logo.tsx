@@ -31,7 +31,12 @@ export function Logo({ className, tone = "ink" }: { className?: string; tone?: "
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <SunMark className="h-9 w-9" />
-      <span className={cn("text-xl leading-none", tone === "light" ? "text-night-foreground" : "text-foreground")}>
+      <span
+        className={cn(
+          "text-xl leading-none",
+          tone === "light" ? "text-night-foreground" : "text-foreground",
+        )}
+      >
         <span className="font-display font-bold tracking-tight">SunBorn</span>{" "}
         <span className="font-serif italic">&amp;Co</span>
       </span>

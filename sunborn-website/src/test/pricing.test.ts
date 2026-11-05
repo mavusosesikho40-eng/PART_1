@@ -1,12 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { computeOrder, formatZAR, generateReference, getAddOnPrice, getPlanPrice } from "@/lib/pricing";
+import {
+  computeOrder,
+  formatZAR,
+  generateReference,
+  getAddOnPrice,
+  getPlanPrice,
+} from "@/lib/pricing";
 
 describe("getPlanPrice", () => {
   it("monthly Golden Hour is R5,999", () => {
-    expect(getPlanPrice("golden-hour", "monthly")).toEqual({ charge: 5999, perMonth: 5999, savings: 0 });
+    expect(getPlanPrice("golden-hour", "monthly")).toEqual({
+      charge: 5999,
+      perMonth: 5999,
+      savings: 0,
+    });
   });
   it("annual Golden Hour is R59,990, R4,999/mo, saves R11,998", () => {
-    expect(getPlanPrice("golden-hour", "annual")).toEqual({ charge: 59990, perMonth: 4999, savings: 11998 });
+    expect(getPlanPrice("golden-hour", "annual")).toEqual({
+      charge: 59990,
+      perMonth: 4999,
+      savings: 11998,
+    });
   });
   it("annual Dawn shows R2,083/mo and Zenith R9,999/mo", () => {
     expect(getPlanPrice("dawn", "annual").perMonth).toBe(2083);

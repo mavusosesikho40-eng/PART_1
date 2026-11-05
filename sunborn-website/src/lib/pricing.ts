@@ -1,5 +1,11 @@
 import { site } from "@/config/site";
-import { addOns, getPlan, type AddOnId, type BillingCycle, type PurchasablePlanId } from "@/data/plans";
+import {
+  addOns,
+  getPlan,
+  type AddOnId,
+  type BillingCycle,
+  type PurchasablePlanId,
+} from "@/data/plans";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -54,7 +60,11 @@ export interface Order {
   renewalLabel: string;
 }
 
-export function computeOrder(planId: PurchasablePlanId, billing: BillingCycle, selected: AddOnId[]): Order {
+export function computeOrder(
+  planId: PurchasablePlanId,
+  billing: BillingCycle,
+  selected: AddOnId[],
+): Order {
   const plan = getPlan(planId);
   const price = getPlanPrice(planId, billing);
   const period = billing === "annual" ? "per year" : "per month";
@@ -70,7 +80,16 @@ export function computeOrder(planId: PurchasablePlanId, billing: BillingCycle, s
   for (const a of addOns) {
     if (!selected.includes(a.id)) continue;
     const amount = getAddOnPrice(a.id, billing);
-    lines.push({ id: a.id, label: a.name, detail: a.recurring ? (billing === "annual" ? "Recurring · yearly" : "Recurring · monthly") : "Once-off", amount });
+    lines.push({
+      id: a.id,
+      label: a.name,
+      detail: a.recurring
+        ? billing === "annual"
+          ? "Recurring · yearly"
+          : "Recurring · monthly"
+        : "Once-off",
+      amount,
+    });
     if (a.recurring) renewal += amount;
   }
   const subtotal = round2(lines.reduce((s, l) => s + l.amount, 0));

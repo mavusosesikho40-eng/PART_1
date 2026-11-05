@@ -17,7 +17,9 @@ const topics = [
 ] as const;
 
 export const Route = createFileRoute("/contact")({
-  validateSearch: zodValidator(z.object({ topic: fallback(z.string(), "strategy-call").default("strategy-call") })),
+  validateSearch: zodValidator(
+    z.object({ topic: fallback(z.string(), "strategy-call").default("strategy-call") }),
+  ),
   head: () => ({
     meta: [
       { title: "Contact — SunBorn &Co" },
@@ -53,7 +55,9 @@ function Contact() {
     }
     setErrors({});
     setState("sending");
-    const { error } = await supabase.from("contact_messages").insert({ ...parsed.data, company: parsed.data.company || null });
+    const { error } = await supabase
+      .from("contact_messages")
+      .insert({ ...parsed.data, company: parsed.data.company || null });
     if (error) {
       setState("idle");
       toast.error("We couldn't send that just now. Please try again.");
@@ -66,37 +70,81 @@ function Contact() {
   const field = "mt-1 w-full rounded-xl border border-input bg-card px-4 py-3";
   return (
     <>
-      <PageHero title={<>Let's make something worth <span className="accent-serif">stopping for</span>.</>} />
+      <PageHero
+        title={
+          <>
+            Let's make something worth <span className="accent-serif">stopping for</span>.
+          </>
+        }
+      />
       <section className="container-site grid gap-8 pb-20 lg:grid-cols-[1.6fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           {state === "done" ? (
-            <div role="status"><h2 className="text-3xl">Thanks — message received.</h2><p className="mt-3 text-muted-foreground">We reply within one business day.</p></div>
+            <div role="status">
+              <h2 className="text-3xl">Thanks — message received.</h2>
+              <p className="mt-3 text-muted-foreground">We reply within one business day.</p>
+            </div>
           ) : (
             <form onSubmit={submit} noValidate className="grid gap-5">
-              <input type="text" name="company_website" tabIndex={-1} autoComplete="off" className="sr-only" aria-hidden />
-              {[["name", "Name*", "text"], ["email", "Email*", "email"], ["company", "Company (optional)", "text"]].map(([n, l, t]) => (
-                <label key={n} className="font-medium">{l}
+              <input
+                type="text"
+                name="company_website"
+                tabIndex={-1}
+                autoComplete="off"
+                className="sr-only"
+                aria-hidden
+              />
+              {(
+                [
+                  ["name", "Name*", "text"],
+                  ["email", "Email*", "email"],
+                  ["company", "Company (optional)", "text"],
+                ] as const
+              ).map(([n, l, t]) => (
+                <label key={n} className="font-medium">
+                  {l}
                   <input name={n} type={t} className={field} aria-invalid={!!errors[n]} />
                   {errors[n] && <span className="text-sm text-destructive">{errors[n]}</span>}
                 </label>
               ))}
-              <label className="font-medium">Topic*
-                <select name="topic" defaultValue={topics.some((t) => t[0] === topic) ? topic : "strategy-call"} className={field}>
-                  {topics.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              <label className="font-medium">
+                Topic*
+                <select
+                  name="topic"
+                  defaultValue={topics.some((t) => t[0] === topic) ? topic : "strategy-call"}
+                  className={field}
+                >
+                  {topics.map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
                 </select>
               </label>
-              <label className="font-medium">Message*
-                <textarea name="message" rows={5} className={field} aria-invalid={!!errors.message} />
-                {errors.message && <span className="text-sm text-destructive">{errors.message}</span>}
+              <label className="font-medium">
+                Message*
+                <textarea
+                  name="message"
+                  rows={5}
+                  className={field}
+                  aria-invalid={!!errors["message"]}
+                />
+                {errors["message"] && (
+                  <span className="text-sm text-destructive">{errors["message"]}</span>
+                )}
               </label>
-              <Button type="submit" variant="sun" size="pill" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Send message"}</Button>
+              <Button type="submit" variant="sun" size="pill" disabled={state === "sending"}>
+                {state === "sending" ? "Sending…" : "Send message"}
+              </Button>
             </form>
           )}
         </div>
         <aside className="h-fit rounded-2xl border border-border bg-card p-6">
           <h2 className="text-xl">Get in touch</h2>
           <ul className="mt-4 space-y-2 text-muted-foreground">
-            <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+            <li>
+              <a href={`mailto:${site.email}`}>{site.email}</a>
+            </li>
             <li>{site.phone} (phone & WhatsApp)</li>
             <li>{site.location}</li>
             <li>{site.hours}</li>

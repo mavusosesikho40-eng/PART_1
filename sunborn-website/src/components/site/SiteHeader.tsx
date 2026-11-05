@@ -30,7 +30,9 @@ export function SiteHeader() {
     <header
       className={cn(
         "sticky top-0 z-40 bg-background transition-shadow",
-        scrolled ? "border-b border-border shadow-[var(--shadow-lift)]" : "border-b border-transparent",
+        scrolled
+          ? "border-b border-border shadow-[var(--shadow-lift)]"
+          : "border-b border-transparent",
       )}
     >
       <div className="container-site flex h-16 items-center justify-between gap-4 md:h-20">
@@ -43,9 +45,10 @@ export function SiteHeader() {
               <li key={n.label}>
                 <Link
                   to={n.to}
-                  hash={n.hash}
+                  {...(n.hash
+                    ? { hash: n.hash }
+                    : { activeProps: { className: "text-foreground" } })}
                   className="rounded-full px-3 py-2 text-[0.95rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  activeProps={n.hash ? undefined : { className: "text-foreground" }}
                   activeOptions={{ includeHash: true }}
                 >
                   {n.label}
@@ -60,7 +63,12 @@ export function SiteHeader() {
           </Button>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="soft" size="icon" className="h-10 w-10 lg:hidden" aria-label="Open menu">
+              <Button
+                variant="soft"
+                size="icon"
+                className="h-10 w-10 lg:hidden"
+                aria-label="Open menu"
+              >
                 <Menu />
               </Button>
             </SheetTrigger>
@@ -73,7 +81,7 @@ export function SiteHeader() {
                     <li key={n.label}>
                       <Link
                         to={n.to}
-                        hash={n.hash}
+                        {...(n.hash ? { hash: n.hash } : {})}
                         onClick={() => setOpen(false)}
                         className="block rounded-xl px-3 py-3 font-display text-xl font-semibold hover:bg-muted"
                       >

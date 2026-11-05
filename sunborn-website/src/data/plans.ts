@@ -95,10 +95,34 @@ export interface AddOn {
 }
 
 export const addOns: AddOn[] = [
-  { id: "extra-platform", name: "Extra platform", description: "Add one more social channel to your plan.", price: 1200, recurring: true },
-  { id: "reels-boost", name: "Reels boost", description: "4 extra Reels/TikToks every month.", price: 1800, recurring: true },
-  { id: "photoshoot", name: "Brand photoshoot", description: "A half-day shoot for fresh, on-brand content.", price: 4500, recurring: false },
-  { id: "influencer-campaign", name: "Influencer campaign", description: "A one-off creator campaign, planned and managed.", price: 7500, recurring: false },
+  {
+    id: "extra-platform",
+    name: "Extra platform",
+    description: "Add one more social channel to your plan.",
+    price: 1200,
+    recurring: true,
+  },
+  {
+    id: "reels-boost",
+    name: "Reels boost",
+    description: "4 extra Reels/TikToks every month.",
+    price: 1800,
+    recurring: true,
+  },
+  {
+    id: "photoshoot",
+    name: "Brand photoshoot",
+    description: "A half-day shoot for fresh, on-brand content.",
+    price: 4500,
+    recurring: false,
+  },
+  {
+    id: "influencer-campaign",
+    name: "Influencer campaign",
+    description: "A one-off creator campaign, planned and managed.",
+    price: 7500,
+    recurring: false,
+  },
 ];
 
 export type AddOnId = AddOn["id"];
@@ -122,12 +146,20 @@ export const compareGroups: { title: string; rows: CompareRow[] }[] = [
   },
   {
     title: "Community",
-    rows: [{ label: "Community management", values: ["Mon–Fri", "7 days", "7 days, priority", "24/7 with SLA"] }],
+    rows: [
+      {
+        label: "Community management",
+        values: ["Mon–Fri", "7 days", "7 days, priority", "24/7 with SLA"],
+      },
+    ],
   },
   {
     title: "Growth",
     rows: [
-      { label: "Paid ads management", values: [false, "1 campaign", "Multi-platform, up to R30k spend", "Custom"] },
+      {
+        label: "Paid ads management",
+        values: [false, "1 campaign", "Multi-platform, up to R30k spend", "Custom"],
+      },
       { label: "Influencer & UGC", values: [false, false, "Up to 3 creators a month", "Custom"] },
     ],
   },
@@ -137,7 +169,10 @@ export const compareGroups: { title: string; rows: CompareRow[] }[] = [
       { label: "Reports", values: ["Monthly", "Bi-weekly", "Weekly + live dashboard", "Custom"] },
       { label: "Strategy calls", values: [false, "Monthly", "Bi-weekly", "Weekly"] },
       { label: "Account manager", values: [false, "Dedicated", "Dedicated", "Dedicated team"] },
-      { label: "Support", values: ["Email", "Email & phone", "Priority WhatsApp", "Dedicated Slack channel"] },
+      {
+        label: "Support",
+        values: ["Email", "Email & phone", "Priority WhatsApp", "Dedicated Slack channel"],
+      },
     ],
   },
 ];
