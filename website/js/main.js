@@ -160,70 +160,8 @@ function wireDisclosureToggle(toggleId, panelId) {
   });
 }
 
-function wireTrustCarousel() {
-  var track = document.getElementById("trust-track");
-  if (!track) return;
-  var items = Array.prototype.slice.call(track.querySelectorAll(".trust-item"));
-  var prevBtn = document.querySelector(".trust-prev");
-  var nextBtn = document.querySelector(".trust-next");
-  var dotsWrap = document.getElementById("trust-dots");
-  if (!items.length || !prevBtn || !nextBtn) return;
-
-  var dots = items.map(function (item, i) {
-    var dot = document.createElement("button");
-    dot.type = "button";
-    dot.className = "trust-dot";
-    dot.setAttribute("aria-label", "Go to accreditation " + (i + 1));
-    dot.addEventListener("click", function () {
-      track.scrollTo({ left: item.offsetLeft - track.offsetLeft, behavior: "smooth" });
-    });
-    if (dotsWrap) dotsWrap.appendChild(dot);
-    return dot;
-  });
-
-  function step() {
-    return items[0].offsetWidth + 16;
-  }
-
-  function update() {
-    var maxScroll = track.scrollWidth - track.clientWidth;
-    prevBtn.disabled = track.scrollLeft <= 4;
-    nextBtn.disabled = track.scrollLeft >= maxScroll - 4;
-
-    var closest = 0;
-    if (track.scrollLeft >= maxScroll - 4) {
-      closest = items.length - 1;
-    } else if (track.scrollLeft > 4) {
-      var closestDist = Infinity;
-      items.forEach(function (item, i) {
-        var dist = Math.abs(item.offsetLeft - track.offsetLeft - track.scrollLeft);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = i;
-        }
-      });
-    }
-    dots.forEach(function (dot, i) {
-      dot.classList.toggle("active", i === closest);
-    });
-  }
-
-  prevBtn.addEventListener("click", function () {
-    track.scrollBy({ left: -step(), behavior: "smooth" });
-  });
-  nextBtn.addEventListener("click", function () {
-    track.scrollBy({ left: step(), behavior: "smooth" });
-  });
-  track.addEventListener("scroll", function () {
-    window.requestAnimationFrame(update);
-  });
-  window.addEventListener("resize", update);
-  update();
-}
-
 document.addEventListener("DOMContentLoaded", function () {
   wireQuickFinder();
-  wireTrustCarousel();
   wireForm(
     "contact-form",
     "Thank you — your message has been received. Our office will reply within two working days."
