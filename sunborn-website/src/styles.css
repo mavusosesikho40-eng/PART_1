@@ -94,7 +94,8 @@
   --destructive: hsl(4 70% 42%);
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(31 37% 87%);
-  --input: hsl(31 37% 82%);
+  /* Form field borders: at least 3:1 against white and cream (WCAG 1.4.11). */
+  --input: hsl(28 14% 55%);
   --ring: hsl(13 80% 54%);
   --sun-1: hsl(42 100% 65%);
   --sun-2: hsl(24 100% 62%);
@@ -121,9 +122,14 @@
   * {
     border-color: var(--color-border);
   }
+  /*
+   * clip, not hidden: overflow-x: hidden on both html and body makes body a scroll
+   * container, and then nothing with position: sticky (header, order summary, table
+   * header) sticks.
+   */
   html {
     scroll-behavior: smooth;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
   body {
     background-color: var(--color-background);
@@ -131,7 +137,7 @@
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.6;
-    overflow-x: hidden;
+    overflow-x: clip;
     -webkit-font-smoothing: antialiased;
   }
   h1,
@@ -142,6 +148,7 @@
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.1;
+    text-wrap: balance;
   }
   :focus-visible {
     outline: 2px solid var(--ring);

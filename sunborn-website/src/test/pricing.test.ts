@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeOrder,
+  describeAddOnPrice,
   formatZAR,
   generateReference,
   getAddOnPrice,
@@ -36,6 +37,21 @@ describe("add-ons", () => {
   });
   it("once-off add-ons don't change with billing", () => {
     expect(getAddOnPrice("photoshoot", "annual")).toBe(4500);
+  });
+  it("labels recurring add-ons for the billing cycle", () => {
+    expect(describeAddOnPrice("extra-platform", "monthly")).toEqual({ price: "R1,200/mo" });
+    expect(describeAddOnPrice("extra-platform", "annual")).toEqual({
+      price: "R12,000/yr",
+      note: "R1,200/mo × 10",
+    });
+  });
+  it("labels once-off add-ons the same on either cycle", () => {
+    expect(describeAddOnPrice("influencer-campaign", "annual")).toEqual({
+      price: "R7,500 once-off",
+    });
+    expect(describeAddOnPrice("influencer-campaign", "monthly")).toEqual({
+      price: "R7,500 once-off",
+    });
   });
 });
 

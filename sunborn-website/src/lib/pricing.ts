@@ -44,6 +44,24 @@ export function getAddOnPrice(id: AddOnId, billing: BillingCycle): number {
   return billing === "annual" ? a.price * 10 : a.price;
 }
 
+export interface AddOnPriceLabel {
+  /** e.g. "R12,000/yr", "R1,200/mo" or "R4,500 once-off" */
+  price: string;
+  /** How an annual price is made up, e.g. "R1,200/mo × 10" */
+  note?: string;
+}
+
+/** The price to show for an add-on on the chosen billing cycle. */
+export function describeAddOnPrice(id: AddOnId, billing: BillingCycle): AddOnPriceLabel {
+  const a = addOns.find((x) => x.id === id)!;
+  if (!a.recurring) return { price: `${formatZAR(a.price)} once-off` };
+  if (billing === "monthly") return { price: `${formatZAR(a.price)}/mo` };
+  return {
+    price: `${formatZAR(getAddOnPrice(id, billing))}/yr`,
+    note: `${formatZAR(a.price)}/mo × 10`,
+  };
+}
+
 export interface LineItem {
   id: string;
   label: string;
