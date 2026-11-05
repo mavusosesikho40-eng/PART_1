@@ -668,6 +668,23 @@ section { padding: 72px 0; }
   color: var(--orange-dark);
   font-variant-numeric: tabular-nums;
 }
+.why-strip {
+  background: var(--black);
+  padding: 48px 0;
+}
+.why-strip-title {
+  color: #fff;
+  text-align: center;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin: 0 0 30px;
+}
+.why-stat-row .num { color: var(--orange); }
+.why-stat-row .label { color: #d8d8d8; }
+@media (min-width: 701px) {
+  .why-stat-row > div:not(:last-child) { border-right-color: rgba(255, 255, 255, 0.16); }
+}
 .stat-row .label {
   color: var(--ink-soft);
   font-size: 0.85rem;
