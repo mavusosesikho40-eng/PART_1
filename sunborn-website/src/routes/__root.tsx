@@ -6,7 +6,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -14,6 +14,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 
 function NotFoundComponent() {
+  useEffect(() => {
+    document.title = "Page not found — SunBorn &Co";
+  }, []);
   return (
     <section className="container-site py-28 text-center">
       <p className="eyebrow">404</p>
@@ -40,7 +43,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "SunBorn &Co plans, creates and grows your social media on simple monthly plans.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:site_name", content: "SunBorn &Co" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -60,9 +64,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en-ZA">
       <head>
         <HeadContent />
+        {/* Sections fade in with JavaScript; without it, show them straight away. */}
+        <noscript>
+          <style>{".reveal{opacity:1!important;transform:none!important}"}</style>
+        </noscript>
       </head>
       <body>
         {children}

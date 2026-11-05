@@ -1,11 +1,25 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, Camera, Megaphone, MessageCircleHeart, PenTool, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  Camera,
+  Eye,
+  HeartHandshake,
+  Megaphone,
+  MessageCircleHeart,
+  PenLine,
+  PenTool,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
 import { BillingToggle } from "@/components/pricing/BillingToggle";
 import { PricingCards } from "@/components/pricing/PricingCards";
 import { FaqList } from "@/components/site/FaqList";
+import { HeroVisual } from "@/components/home/HeroVisual";
+import { PlatformsStrip } from "@/components/home/PlatformsStrip";
+import { CaseStudyVisual } from "@/components/home/CaseStudyVisual";
 import { caseStudies, faqs, stats, testimonials } from "@/data/content";
 import type { BillingCycle } from "@/data/plans";
 
@@ -49,21 +63,50 @@ const services = [
     body: "Plain-English reports on what's working.",
   },
 ];
+
 const steps = [
-  ["01", "Free discovery call", "30 minutes to learn your brand and goals."],
-  ["02", "Strategy & onboarding", "Brand voice, content pillars and calendar within 7 days."],
-  ["03", "Create & publish", "We produce, you approve in one click."],
-  ["04", "Grow & report", "A monthly report and strategy session."],
+  { n: "01", title: "Free discovery call", body: "30 minutes to learn your brand and goals." },
+  {
+    n: "02",
+    title: "Strategy & onboarding",
+    body: "Brand voice, content pillars and calendar within 7 days.",
+  },
+  { n: "03", title: "Create & publish", body: "We produce, you approve in one click." },
+  { n: "04", title: "Grow & report", body: "A monthly report and strategy session." },
 ];
+
+const values = [
+  {
+    icon: HeartHandshake,
+    title: "Warmth",
+    body: "Real conversations, not bots. We talk to your audience the way you would.",
+  },
+  {
+    icon: PenLine,
+    title: "Craft",
+    body: "Every post is designed and written by people who care how it looks and reads.",
+  },
+  {
+    icon: Eye,
+    title: "Clarity",
+    body: "Honest reporting and plain pricing. You always know what's working and what it costs.",
+  },
+];
+
+const initials = (name: string) =>
+  name
+    .split(" ")
+    .map((part) => part[0] ?? "")
+    .join("");
 
 function Home() {
   const [billing, setBilling] = useState<BillingCycle>("annual");
   return (
     <>
       <section className="relative overflow-hidden">
-        <div className="container-site grid items-center gap-12 py-16 md:py-24 lg:grid-cols-2">
+        <div className="container-site grid items-center gap-10 py-14 md:py-20 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
           <div>
-            <p className="inline-flex rounded-full border border-border bg-card px-3 py-1 text-sm font-medium">
+            <p className="inline-flex rounded-full border border-border bg-card px-3 py-1 text-xs font-medium sm:text-sm">
               Social media studio · South Africa &amp; worldwide
             </p>
             <h1 className="mt-6 text-5xl sm:text-6xl">
@@ -87,22 +130,11 @@ function Home() {
               No setup fees · Cancel monthly plans anytime
             </p>
           </div>
-          <div className="relative mx-auto w-full max-w-sm">
-            <div aria-hidden className="sun-glow absolute -inset-16" />
-            <div className="relative rounded-[2.5rem] border-8 border-foreground bg-card p-4 shadow-[var(--shadow-warm)]">
-              <p className="text-sm font-semibold">@emberandbean</p>
-              <div className="mt-3 aspect-square rounded-2xl bg-sunrise" />
-              <p className="mt-3 text-sm">♥ 2,481 likes · Golden hour flat whites ☕</p>
-            </div>
-            <div className="animate-float absolute -left-6 top-10 rounded-2xl border border-border bg-card p-3 text-sm font-semibold shadow-[var(--shadow-lift)]">
-              Reach <span className="text-ember">+312%</span>
-            </div>
-            <div className="animate-float absolute -right-4 bottom-12 rounded-2xl border border-border bg-card p-3 text-sm shadow-[var(--shadow-lift)]">
-              New follower 🎉
-            </div>
-          </div>
+          <HeroVisual />
         </div>
       </section>
+
+      <PlatformsStrip />
 
       <section className="border-y border-border bg-card">
         <div className="container-site grid grid-cols-2 gap-6 py-10 md:grid-cols-4">
@@ -116,14 +148,16 @@ function Home() {
       </section>
 
       <section id="services" className="container-site py-20">
-        <SectionHeading
-          eyebrow="Services"
-          title={
-            <>
-              Everything your feed needs to <span className="accent-serif">shine</span>
-            </>
-          }
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="Services"
+            title={
+              <>
+                Everything your feed needs to <span className="accent-serif">shine</span>
+              </>
+            }
+          />
+        </Reveal>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((s, i) => (
             <Reveal key={s.title} delay={i * 60}>
@@ -138,42 +172,50 @@ function Home() {
       </section>
 
       <section className="container-site pb-20">
-        <SectionHeading
-          eyebrow="How it works"
-          title="From first call to first post in about 10 days"
-        />
-        <ol className="mt-12 grid gap-6 md:grid-cols-4">
-          {steps.map(([n, t, b]) => (
-            <li key={n} className="rounded-2xl border border-border bg-card p-6">
-              <p className="font-display text-3xl font-bold text-ember">{n}</p>
-              <h3 className="mt-3 text-lg">{t}</h3>
-              <p className="mt-2 text-muted-foreground">{b}</p>
-            </li>
-          ))}
-        </ol>
+        <Reveal>
+          <SectionHeading
+            eyebrow="How it works"
+            title="From first call to first post in about 10 days"
+          />
+        </Reveal>
+        <Reveal delay={80}>
+          <ol className="mt-12 grid gap-6 md:grid-cols-4">
+            {steps.map((s) => (
+              <li key={s.n} className="rounded-2xl border border-border bg-card p-6">
+                <p className="font-display text-3xl font-bold text-ember">{s.n}</p>
+                <h3 className="mt-3 text-lg">{s.title}</h3>
+                <p className="mt-2 text-muted-foreground">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
       </section>
 
       <section id="work" className="bg-night py-20">
         <div className="container-site">
-          <SectionHeading tone="light" eyebrow="Work" title="Results that rise" />
+          <Reveal>
+            <SectionHeading tone="light" eyebrow="Work" title="Results that rise" />
+          </Reveal>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {caseStudies.map((c) => (
-              <article
-                key={c.client}
-                className="rounded-2xl border border-night-border bg-night-card p-6"
-              >
-                <p className="text-sm text-night-muted">{c.industry}</p>
-                <h3 className="mt-1 text-xl text-night-foreground">{c.client}</h3>
-                <p className="mt-6 font-display text-5xl font-bold text-primary">{c.metric}</p>
-                <p className="mt-2 text-night-muted">{c.headline}</p>
-              </article>
+            {caseStudies.map((c, i) => (
+              <Reveal key={c.client} delay={i * 80}>
+                <article className="h-full rounded-2xl border border-night-border bg-night-card p-6">
+                  <CaseStudyVisual kind={c.visual} />
+                  <p className="mt-6 text-sm text-night-muted">{c.industry}</p>
+                  <h3 className="mt-1 text-xl text-night-foreground">{c.client}</h3>
+                  <p className="mt-5 font-display text-5xl font-bold text-primary">{c.metric}</p>
+                  <p className="mt-2 text-night-muted">{c.headline}</p>
+                </article>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
       <section id="pricing" className="container-site py-20">
-        <SectionHeading eyebrow="Payment plans" title="Simple plans, warm results" />
+        <Reveal>
+          <SectionHeading eyebrow="Payment plans" title="Simple plans, warm results" />
+        </Reveal>
         <div className="mt-8 flex justify-center">
           <BillingToggle value={billing} onChange={setBilling} />
         </div>
@@ -183,49 +225,70 @@ function Home() {
         <p className="mt-6 text-center">
           <Link
             to="/pricing"
-            className="font-semibold text-ember underline-offset-4 hover:underline"
+            hash="compare"
+            className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline"
           >
-            Compare every feature →
+            Compare every feature
+            <ArrowRight aria-hidden className="h-4 w-4 text-ember" />
           </Link>
         </p>
       </section>
 
-      <section className="container-site pb-20">
+      <section aria-label="What clients say" className="container-site pb-20">
         <div className="grid gap-6 md:grid-cols-3">
-          {testimonials.map((t) => (
-            <figure key={t.name} className="rounded-2xl border border-border bg-card p-6">
-              <blockquote className="text-lg">“{t.quote}”</blockquote>
-              <figcaption className="mt-6 flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-sun-soft font-semibold">
-                  {t.name
-                    .split(" ")
-                    .map((x) => x[0])
-                    .join("")}
-                </span>
-                <span>
-                  <span className="block font-semibold">{t.name}</span>
-                  <span className="text-sm text-muted-foreground">{t.role}</span>
-                </span>
-              </figcaption>
-            </figure>
+          {testimonials.map((t, i) => (
+            <Reveal key={t.name} delay={i * 80}>
+              <figure className="h-full rounded-2xl border border-border bg-card p-6">
+                <blockquote className="text-lg">“{t.quote}”</blockquote>
+                <figcaption className="mt-6 flex items-center gap-3">
+                  <span
+                    aria-hidden
+                    className="grid h-10 w-10 place-items-center rounded-full bg-sun-soft font-semibold"
+                  >
+                    {initials(t.name)}
+                  </span>
+                  <span>
+                    <span className="block font-semibold">{t.name}</span>
+                    <span className="text-sm text-muted-foreground">{t.role}</span>
+                  </span>
+                </figcaption>
+              </figure>
+            </Reveal>
           ))}
         </div>
       </section>
 
       <section id="about" className="container-site pb-20">
-        <SectionHeading
-          eyebrow="About"
-          title={
-            <>
-              Every brand deserves to <span className="accent-serif">shine</span>
-            </>
-          }
-          intro="We're a small team of strategists, creators and community managers. Warmth, craft and clarity in everything we post."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="About"
+            title={
+              <>
+                Every brand deserves to <span className="accent-serif">shine</span>
+              </>
+            }
+            intro="We're a small team of strategists, creators and community managers who believe every brand deserves its moment in the sun."
+          />
+        </Reveal>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {values.map((v, i) => (
+            <Reveal key={v.title} delay={i * 80}>
+              <div className="h-full rounded-2xl border border-border bg-card p-6">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-sun-soft">
+                  <v.icon aria-hidden className="h-5 w-5 text-ember" />
+                </span>
+                <h3 className="mt-4 text-xl">{v.title}</h3>
+                <p className="mt-2 text-muted-foreground">{v.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       <section id="faq" className="container-site max-w-3xl pb-20">
-        <SectionHeading eyebrow="FAQ" title="Questions, answered" />
+        <Reveal>
+          <SectionHeading eyebrow="FAQ" title="Questions, answered" />
+        </Reveal>
         <div className="mt-10">
           <FaqList items={faqs} />
         </div>
@@ -236,7 +299,7 @@ function Home() {
           aria-hidden
           className="sun-glow absolute -bottom-40 left-1/2 h-80 w-[40rem] max-w-[140vw] -translate-x-1/2"
         />
-        <div className="container-site relative">
+        <Reveal className="container-site relative">
           <h2 className="text-4xl text-night-foreground sm:text-5xl">
             Ready to <span className="accent-serif">rise</span>?
           </h2>
@@ -248,7 +311,7 @@ function Home() {
               <Link to="/contact">Talk to us</Link>
             </Button>
           </div>
-        </div>
+        </Reveal>
       </section>
     </>
   );
