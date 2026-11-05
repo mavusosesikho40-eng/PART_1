@@ -73,7 +73,7 @@ export function SiteFooter() {
           <Link to="/contact" search={{ topic: "enterprise" }} className={linkCls}>
             Solstice
           </Link>
-          <Link to="/pricing" className={linkCls}>
+          <Link to="/pricing" hash="compare" className={linkCls}>
             Compare plans
           </Link>
         </FooterCol>

@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Minus } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { BillingToggle } from "@/components/pricing/BillingToggle";
+import { ComparisonTable } from "@/components/pricing/ComparisonTable";
 import { PricingCards } from "@/components/pricing/PricingCards";
+import { Reassurance } from "@/components/pricing/Reassurance";
 import { FaqList } from "@/components/site/FaqList";
-import { addOns, compareGroups, plans, type BillingCycle } from "@/data/plans";
+import { addOns, type BillingCycle } from "@/data/plans";
 import { faqs } from "@/data/content";
-import { formatZAR } from "@/lib/pricing";
+import { describeAddOnPrice } from "@/lib/pricing";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -24,15 +25,6 @@ export const Route = createFileRoute("/pricing")({
   }),
   component: Pricing,
 });
-
-const cell = (v: string | boolean) =>
-  v === true ? (
-    <Check className="mx-auto h-4 w-4 text-ember" aria-label="Included" />
-  ) : v === false ? (
-    <Minus className="mx-auto h-4 w-4 text-muted-foreground" aria-label="Not included" />
-  ) : (
-    v
-  );
 
 function Pricing() {
   const [billing, setBilling] = useState<BillingCycle>("annual");
@@ -52,55 +44,39 @@ function Pricing() {
       <section className="container-site pb-20">
         <PricingCards billing={billing} />
       </section>
-      <section className="container-site pb-20">
+      <section id="compare" className="container-site pb-20">
         <h2 className="text-center text-3xl sm:text-4xl">Compare every feature</h2>
-        <table className="mt-10 w-full border-collapse text-sm">
-          <thead className="sticky top-16 bg-background md:top-20">
-            <tr>
-              <th className="p-3 text-left">Feature</th>
-              {plans.map((p) => (
-                <th key={p.id} className="p-3">
-                  {p.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          {compareGroups.map((g) => (
-            <tbody key={g.title}>
-              <tr>
-                <th colSpan={5} className="bg-muted p-3 text-left font-display">
-                  {g.title}
-                </th>
-              </tr>
-              {g.rows.map((r) => (
-                <tr key={r.label} className="border-b border-border">
-                  <th scope="row" className="p-3 text-left font-medium">
-                    {r.label}
-                  </th>
-                  {r.values.map((v, i) => (
-                    <td key={i} className="p-3 text-center">
-                      {cell(v)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
-      </section>
-      <section className="container-site pb-20">
-        <h2 className="text-center text-3xl">Add-ons</h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {addOns.map((a) => (
-            <div key={a.id} className="rounded-2xl border border-border bg-card p-6">
-              <h3 className="text-lg">{a.name}</h3>
-              <p className="mt-2 text-muted-foreground">{a.description}</p>
-              <p className="mt-4 font-semibold">
-                {formatZAR(a.price)} {a.recurring ? "/month" : "once-off"}
-              </p>
-            </div>
-          ))}
+        <div className="mt-10">
+          <ComparisonTable />
         </div>
+      </section>
+      <section className="container-site pb-16">
+        <h2 className="text-center text-3xl">Add-ons</h2>
+        <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
+          Add them at checkout. Monthly add-ons follow your plan's billing, so on an annual plan
+          they're 10 months' price for 12.
+        </p>
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {addOns.map((a) => {
+            const { price, note } = describeAddOnPrice(a.id, billing);
+            return (
+              <div
+                key={a.id}
+                className="flex flex-col rounded-2xl border border-border bg-card p-6"
+              >
+                <h3 className="text-lg">{a.name}</h3>
+                <p className="mt-2 text-muted-foreground">{a.description}</p>
+                <p className="mt-auto pt-4">
+                  <span className="font-semibold tabular-nums">{price}</span>
+                  {note && <span className="block text-sm text-muted-foreground">{note}</span>}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+      <section aria-label="Why it's easy to start" className="container-site pb-20">
+        <Reassurance />
       </section>
       <section className="container-site max-w-3xl pb-20">
         <h2 className="mb-8 text-center text-3xl">Billing questions</h2>
