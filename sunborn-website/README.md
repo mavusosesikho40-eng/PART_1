@@ -2,13 +2,20 @@
 
 The website for **SunBorn &Co**, a social media management and marketing agency: the home page,
 payment plans, a plan checkout, a contact form and the legal pages. It was built with
-[Lovable](https://lovable.dev) and this folder is a copy of that project's code.
+[Lovable](https://lovable.dev), then finished here.
 
 - **Lovable editor:** https://lovable.dev/projects/64ed2554-6b6d-499e-99e8-5bf0902cb4ed
 - **Preview** (sign in to Lovable to open it): https://id-preview--64ed2554-6b6d-499e-99e8-5bf0902cb4ed.lovable.app
 
-Changes made in the Lovable editor don't appear here by themselves, and changes made here don't go
-back to Lovable. Copy them across by hand, or pick one place to keep working in.
+**This folder is ahead of the Lovable project.** After Lovable's first build, the rest was done
+here: the type errors, the checkout and contact forms, the payment plans comparison on phones, the
+home page's hero, platforms strip, case-study pictures and About values, the sticky header and
+the contrast fixes. The Lovable editor and preview still show the earlier version.
+
+To work in Lovable again with these changes, connect the Lovable project to GitHub (in the
+editor). Lovable creates a repository and keeps it in sync both ways. Copy this folder's files over
+that repository's files, keeping its `.lovable` folder and `AGENTS.md`, then commit and push.
+Lovable picks the changes up. After that, make changes in one place at a time.
 
 ## Pages
 
@@ -95,16 +102,20 @@ bun run dev
 
 then open the address it prints. Other commands:
 
-| Command         | Does                                                                 |
-| --------------- | -------------------------------------------------------------------- |
-| `bun run test`  | Runs the unit tests (Vitest)                                         |
-| `bun run build` | Builds the site for production into `.output/` (a Cloudflare Worker) |
-| `bun run lint`  | Checks the code with ESLint and Prettier                             |
+| Command             | Does                                                                 |
+| ------------------- | -------------------------------------------------------------------- |
+| `bun run test`      | Runs the unit tests (Vitest)                                         |
+| `bun run typecheck` | Checks the TypeScript                                                |
+| `bun run lint`      | Checks the code with ESLint and Prettier                             |
+| `bun run format`    | Formats the code with Prettier                                       |
+| `bun run build`     | Builds the site for production into `.output/` (a Cloudflare Worker) |
 
-The `sunborn-website` GitHub workflow runs the tests and the build on every change to this folder.
+The `sunborn-website` GitHub workflow runs the type check, lint, tests and build on every change to
+this folder.
 
 ## Publishing
 
-Use **Publish** in the Lovable editor, which hosts the site and can add a custom domain. To host it
-yourself, `bun run build` produces a Cloudflare Worker in `.output/`; deploy it with
-`npx nitro deploy --prebuilt`.
+**Publish** in the Lovable editor hosts the site and can add a custom domain, but it publishes the
+Lovable project's version. Bring this folder's changes into Lovable first (see the top of this
+file), or the earlier version goes live. To host it yourself instead, `bun run build` produces a
+Cloudflare Worker in `.output/`; deploy it with `npx nitro deploy --prebuilt`.
