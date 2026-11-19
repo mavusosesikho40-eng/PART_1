@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Baseflow Dashboard</title>
-  <meta name="description" content="Baseflow's live operating screen: check-ins, areas, sessions and floor teams in one view.">
+  <title>Founder Command Centre</title>
+  <meta name="description" content="Baseflow's Founder Command Centre: projects, tasks, clients, decisions and business health in one workspace. Concept with sample data.">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#161936" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="images/baseflow-app-icon.svg" type="image/svg+xml">
@@ -26,247 +26,123 @@
   <script src="js/dashboard.js" defer></script>
 </head>
 <body>
-  <!-- Lucide icons (lucide.dev, ISC licence), as the brand kit specifies. -->
+  <!-- Lucide icons (lucide.dev, ISC licence), as the brand guidelines specify. -->
   <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
-    <symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol>
+    <symbol id="i-layout-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+    <symbol id="i-list-todo" viewBox="0 0 24 24"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><rect x="3" y="4" width="6" height="6" rx="1"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/></symbol>
+    <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></symbol>
+    <symbol id="i-ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></symbol>
-    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
     <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
     <symbol id="i-octagon-alert" viewBox="0 0 24 24"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/></symbol>
-    <symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol>
-    <symbol id="i-arrow-right-left" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol>
-    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
-    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol>
-    <symbol id="i-user-check" viewBox="0 0 24 24"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
-    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
-    <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
-    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></symbol>
-    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
-    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/></symbol>
-    <symbol id="i-scan-line" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol>
-    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
-    <symbol id="i-list-checks" viewBox="0 0 24 24"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></symbol>
-    <symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol>
-    <symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-message-square" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
   </svg>
 
-  <a class="skip-link" href="#main">Skip to the dashboard</a>
+  <a class="skip-link" href="#main">Skip to the content</a>
 
-  <header class="topbar">
-    <div class="topbar__inner">
-      <div class="brand">
-        <!-- The logo is artwork: one file per ground, never re-typed. -->
-        <span class="brand__lockup">
-          <img class="logo--light" src="images/baseflow-lockup-gradient.svg" alt="Baseflow Technologies" width="128" height="42">
-          <img class="logo--floor" src="images/baseflow-lockup-reversed.svg" alt="Baseflow Technologies" width="128" height="42">
-        </span>
-        <span class="brand__wordmark">
-          <img class="logo--light" src="images/baseflow-wordmark-gradient.svg" alt="Baseflow" width="96" height="21">
-          <img class="logo--floor" src="images/baseflow-wordmark-reversed.svg" alt="Baseflow" width="96" height="21">
-        </span>
+  <div class="app" id="app">
+
+    <!-- Sidebar 240 from 1280px wide, an 84px rail from 600px, bottom tabs below that. -->
+    <nav class="sidenav" aria-label="Main">
+      <a class="sidenav__brand" href="#overview" aria-label="Baseflow, overview">
+        <img class="sidenav__wordmark logo--light" src="images/baseflow-wordmark-gradient.svg" alt="" width="104" height="22">
+        <img class="sidenav__wordmark logo--floor" src="images/baseflow-wordmark-reversed.svg" alt="" width="104" height="22">
+        <img class="sidenav__appicon" src="images/baseflow-app-icon.svg" alt="" width="40" height="40">
+      </a>
+      <ul class="navlist">
+        <li><a class="navitem" href="#overview" data-nav="overview"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layout-grid"/></svg></span><span class="navitem__label">Overview</span></a></li>
+        <li><a class="navitem" href="#projects" data-nav="projects"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-folder"/></svg></span><span class="navitem__label">Projects</span></a></li>
+        <li><a class="navitem" href="#tasks" data-nav="tasks"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list-todo"/></svg></span><span class="navitem__label">Tasks</span></a></li>
+        <li><a class="navitem" href="#clients" data-nav="clients"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></span><span class="navitem__label">Clients</span></a></li>
+        <li><a class="navitem" href="#finance" data-nav="finance"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-wallet"/></svg></span><span class="navitem__label">Finance</span></a></li>
+        <li><a class="navitem" href="#decisions" data-nav="decisions"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-scale"/></svg></span><span class="navitem__label">Decisions</span></a></li>
+        <li><a class="navitem" href="#knowledge" data-nav="knowledge"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book-open"/></svg></span><span class="navitem__label">Knowledge</span></a></li>
+      </ul>
+      <div class="sidenav__foot">
+        <div class="viewer" role="group" aria-labelledby="viewer-label">
+          <p class="viewer__label" id="viewer-label">Viewing as</p>
+          <div class="viewer__options" id="viewer-options"></div>
+        </div>
+        <p class="sidenav__note"><span class="bf-status bf-status--neutral bf-status--compact">Concept</span><span>Sample data</span></p>
+      </div>
+    </nav>
+
+    <div class="app__body">
+      <header class="topbar">
+        <a class="topbar__brand" href="#overview" aria-label="Baseflow, overview">
+          <img class="logo--light" src="images/baseflow-wordmark-gradient.svg" alt="" width="88" height="19">
+          <img class="logo--floor" src="images/baseflow-wordmark-reversed.svg" alt="" width="88" height="19">
+        </a>
+
+        <div class="search" role="search">
+          <svg class="icon search__icon" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+          <input class="search__input" id="search" type="search" autocomplete="off" spellcheck="false"
+                 placeholder="Search projects, tasks, clients, notes" aria-label="Search projects, tasks, clients and notes"
+                 role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list">
+          <div class="search__results" id="search-results" role="listbox" aria-label="Search results" hidden></div>
+        </div>
+
+        <div class="topbar__end">
+          <p class="topbar__date" id="today-label">Thu 19 Nov</p>
+          <button class="bf-btn bf-btn--quiet bf-btn--icon bf-btn--toggle" id="mode-toggle" type="button" aria-pressed="false" aria-label="Floor mode" title="Floor mode">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+          </button>
+          <button class="bf-btn bf-btn--primary topbar__action" id="new-task" type="button">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>
+            New task
+          </button>
+        </div>
+      </header>
+
+      <div class="offline" id="offline" role="status" hidden>
+        <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-wifi-off"/></svg>
+        <p>You’re offline. We’ll keep saving and sync when you’re back.</p>
       </div>
 
-      <!-- Shown on the wall screen, where the page head is hidden. -->
-      <div class="topbar__event">
-        <p class="topbar__event-name" id="wall-event">Careers Expo · Day 2 of 3</p>
-        <p class="topbar__event-note" id="wall-note">Main venue · Sample event, figures are illustrative</p>
-      </div>
-
-      <p class="topbar__live">
-        <span class="bf-status bf-status--live">Live</span>
-        <span class="topbar__updated"><span class="topbar__updated-word">Updated </span><time class="num" id="updated-at">14:05</time></span>
-      </p>
-
-      <div class="topbar__actions">
-        <button class="bf-btn bf-btn--quiet bf-btn--toggle" id="mode-toggle" type="button" aria-pressed="false">
-          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
-          <span class="btn-label">Floor mode</span>
-        </button>
-        <button class="bf-btn bf-btn--quiet bf-btn--toggle" id="wall-toggle" type="button" aria-pressed="false">
-          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-monitor"/></svg>
-          <span class="btn-label">Wall screen</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="page" id="main" tabindex="-1">
-    <section class="pagehead" aria-labelledby="event-title">
-      <div class="pagehead__text">
-        <p class="eyebrow" id="event-venue">Main venue · Day 2 of 3</p>
-        <h1 id="event-title">Careers Expo</h1>
-        <p class="pagehead__meta">
-          <span class="meta-item"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg><span id="event-date">Thursday 19 Nov 2026</span></span>
-          <span class="meta-item"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-map-pin"/></svg><span id="event-places">6 areas · 4 entry points</span></span>
-          <span class="meta-item meta-item--sample"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg>Sample event. Figures are illustrative.</span>
-        </p>
-      </div>
-      <button class="bf-btn bf-btn--primary" id="open-update" type="button">
-        <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>
-        Send update
-      </button>
-    </section>
-
-    <div class="alerts" id="alerts"></div>
-
-    <section class="kpis" aria-labelledby="kpis-title">
-      <h2 class="visually-hidden" id="kpis-title">Today at a glance</h2>
-
-      <article class="bf-tile" id="kpi-checked-in">
-        <h3 class="bf-tile__label">Checked in</h3>
-        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
-        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
-        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
-      </article>
-
-      <article class="bf-tile" id="kpi-on-site">
-        <h3 class="bf-tile__label">On site now</h3>
-        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
-        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
-        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
-      </article>
-
-      <article class="bf-tile" id="kpi-sessions">
-        <h3 class="bf-tile__label">Sessions on time</h3>
-        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
-        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
-        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
-      </article>
-
-      <article class="bf-tile" id="kpi-entries">
-        <h3 class="bf-tile__label">Entry points online</h3>
-        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
-        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
-        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
-      </article>
-    </section>
-
-    <div class="board">
-      <section class="panel panel--areas" id="areas" aria-labelledby="areas-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="areas-title">Areas</h2>
-          <p class="panel__meta num" id="areas-meta"></p>
-        </div>
-        <div class="areas" id="areas-grid"></div>
-      </section>
-
-      <section class="panel panel--schedule" id="schedule" aria-labelledby="schedule-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="schedule-title">Now and next</h2>
-          <p class="panel__meta num" id="schedule-meta"></p>
-        </div>
-        <ol class="sessions" id="sessions"></ol>
-        <p class="panel__foot" id="sessions-done"></p>
-      </section>
-
-      <section class="panel panel--arrivals" id="arrivals" aria-labelledby="arrivals-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="arrivals-title">Arrivals today</h2>
-          <p class="panel__meta">Check-ins per 30 minutes</p>
-        </div>
-        <p class="panel__lead" id="arrivals-lead"></p>
-        <div class="chart chart--fill" id="arrivals-chart"></div>
-        <details class="table-toggle">
-          <summary>Show as a table</summary>
-          <div class="table-wrap">
-            <table class="data-table">
-              <caption class="visually-hidden">Check-ins per 30 minutes today</caption>
-              <thead><tr><th scope="col">Time</th><th scope="col" class="is-num">Check-ins</th></tr></thead>
-              <tbody id="arrivals-table"></tbody>
-            </table>
-          </div>
-        </details>
-      </section>
-
-      <section class="panel panel--entries" id="entries" aria-labelledby="entries-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="entries-title">Entry points</h2>
-          <p class="panel__meta num" id="entries-meta"></p>
-        </div>
-        <ul class="entries" id="entries-list"></ul>
-        <h3 class="subhead">Latest check-ins</h3>
-        <ol class="checkins" id="checkins"></ol>
-      </section>
-
-      <section class="panel panel--teams" id="teams" aria-labelledby="teams-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="teams-title">Floor teams</h2>
-          <p class="panel__meta num" id="teams-meta"></p>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table teams">
-            <caption class="visually-hidden">Floor teams on shift and their task progress</caption>
-            <thead>
-              <tr>
-                <th scope="col">Team</th>
-                <th scope="col" class="is-num">On shift</th>
-                <th scope="col">Tasks done</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody id="teams-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel panel--activity" id="activity" aria-labelledby="activity-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="activity-title">Activity</h2>
-          <p class="panel__meta">Newest first</p>
-        </div>
-        <ol class="activity" id="activity-list"></ol>
-      </section>
-
-      <section class="panel panel--week" id="week" aria-labelledby="week-title">
-        <div class="panel__head">
-          <h2 class="eyebrow" id="week-title">Last 7 days</h2>
-          <p class="panel__meta">Venue check-ins per day</p>
-        </div>
-        <div class="week">
-          <div class="week__chart">
-            <div class="chart" id="week-chart"></div>
-            <details class="table-toggle">
-              <summary>Show as a table</summary>
-              <div class="table-wrap">
-                <table class="data-table">
-                  <caption class="visually-hidden">Venue check-ins per day, last 7 days</caption>
-                  <thead><tr><th scope="col">Day</th><th scope="col" class="is-num">Check-ins</th></tr></thead>
-                  <tbody id="week-table"></tbody>
-                </table>
-              </div>
-            </details>
-          </div>
-          <div class="week__summary">
-            <p class="bf-tile__value"><span id="week-total">—</span><small>check-ins</small></p>
-            <p class="week__change" id="week-change"></p>
-            <dl class="facts">
-              <div><dt>Busiest day</dt><dd class="num" id="week-busiest">—</dd></div>
-              <div><dt>Daily average</dt><dd class="num" id="week-average">—</dd></div>
-            </dl>
-            <p class="caption">Recorded automatically at check-in.</p>
-            <button class="bf-btn bf-btn--secondary" id="copy-report" type="button">
-              <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-copy"/></svg>
-              Copy report
-            </button>
-          </div>
-        </div>
-      </section>
+      <!-- Each view is drawn here from the records in js/sample-data.js. -->
+      <main class="page" id="main" tabindex="-1"></main>
     </div>
 
-    <footer class="page-foot">
-      <p>Baseflow Technologies · One view. Every team. Right now.</p>
-      <p>Sample event. Figures are illustrative.</p>
-    </footer>
-  </main>
+    <!-- Phones: the screen's primary action, in the thumb zone above the tabs. -->
+    <div class="sticky-action" id="sticky-action" hidden></div>
 
-  <dialog class="dialog" id="update-dialog" aria-labelledby="update-title" aria-describedby="update-desc">
-    <form class="dialog__form" id="update-form" novalidate>
+    <nav class="tabbar" aria-label="Main">
+      <a class="navitem" href="#overview" data-nav="overview"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layout-grid"/></svg></span><span class="navitem__label">Overview</span></a>
+      <a class="navitem" href="#projects" data-nav="projects"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-folder"/></svg></span><span class="navitem__label">Projects</span></a>
+      <a class="navitem" href="#tasks" data-nav="tasks"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list-todo"/></svg></span><span class="navitem__label">Tasks</span></a>
+      <a class="navitem" href="#clients" data-nav="clients"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></span><span class="navitem__label">Clients</span></a>
+      <a class="navitem" href="#more" data-nav="more"><span class="navitem__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-ellipsis"/></svg></span><span class="navitem__label">More</span></a>
+    </nav>
+  </div>
+
+  <dialog class="dialog" id="task-dialog" aria-labelledby="task-dialog-title" aria-describedby="task-dialog-desc">
+    <form class="dialog__form" id="task-form" novalidate>
       <div class="dialog__head">
         <div>
-          <h2 id="update-title">Send update</h2>
-          <p class="dialog__desc" id="update-desc">Floor teams see it on their phones straight away.</p>
+          <h2 id="task-dialog-title">New task</h2>
+          <p class="dialog__desc" id="task-dialog-desc">One owner, a deadline and a clear outcome.</p>
         </div>
         <button class="bf-btn bf-btn--quiet bf-btn--icon" type="button" data-close aria-label="Close">
           <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>
@@ -274,73 +150,55 @@
       </div>
 
       <div class="dialog__body">
+        <div class="field">
+          <label class="field__label" for="f-title">Task</label>
+          <input class="input" id="f-title" name="title" type="text" maxlength="80" autocomplete="off" aria-describedby="f-title-hint f-title-error">
+          <p class="field__hint" id="f-title-hint">Start with a verb and name the thing, like “Draft pilot scope for coordinators”.</p>
+          <p class="field__error" id="f-title-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="f-outcome">Outcome</label>
+          <textarea class="input" id="f-outcome" name="outcome" rows="2" maxlength="160" aria-describedby="f-outcome-hint f-outcome-error"></textarea>
+          <p class="field__hint" id="f-outcome-hint">What does done look like?</p>
+          <p class="field__error" id="f-outcome-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="f-project">Project</label>
+          <div class="select">
+            <select class="input" id="f-project" name="project"></select>
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
+          </div>
+        </div>
+
         <fieldset class="field">
-          <legend class="field__label">What changed</legend>
-          <div class="segmented">
-            <input type="radio" name="kind" id="kind-room" value="room" checked>
-            <label for="kind-room"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-right-left"/></svg>Room change</label>
-            <input type="radio" name="kind" id="kind-late" value="late">
-            <label for="kind-late"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Running late</label>
-            <input type="radio" name="kind" id="kind-notice" value="notice">
-            <label for="kind-notice"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-megaphone"/></svg>Notice</label>
-          </div>
+          <legend class="field__label">Owner</legend>
+          <div class="segmented" id="f-owner"></div>
         </fieldset>
 
-        <div class="field" data-for="room late">
-          <label class="field__label" for="u-session">Session</label>
-          <div class="select">
-            <select id="u-session" name="session"></select>
-            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" for="f-due">Due</label>
+            <input class="input" id="f-due" name="due" type="date" aria-describedby="f-due-error">
+            <p class="field__error" id="f-due-error" hidden></p>
           </div>
-        </div>
-
-        <div class="field" data-for="room">
-          <label class="field__label" for="u-room">New room</label>
-          <div class="select">
-            <select id="u-room" name="room" aria-describedby="u-room-error"></select>
-            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
-          </div>
-          <p class="field__error" id="u-room-error" hidden></p>
-        </div>
-
-        <div class="field" data-for="late" hidden>
-          <label class="field__label" for="u-minutes">How late</label>
-          <div class="select">
-            <select id="u-minutes" name="minutes">
-              <option value="5">5 min</option>
-              <option value="10" selected>10 min</option>
-              <option value="15">15 min</option>
-              <option value="20">20 min</option>
-              <option value="30">30 min</option>
-            </select>
-            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
-          </div>
-        </div>
-
-        <div class="field" data-for="notice" hidden>
-          <label class="field__label" for="u-message">Message</label>
-          <textarea id="u-message" name="message" rows="3" maxlength="140" aria-describedby="u-message-hint u-message-error"></textarea>
-          <p class="field__hint" id="u-message-hint">Say what changed, then what to do. Up to 140 characters.</p>
-          <p class="field__error" id="u-message-error" hidden></p>
-        </div>
-
-        <fieldset class="field" aria-describedby="u-teams-error">
-          <legend class="field__label">Send to</legend>
-          <div class="checks" id="u-teams"></div>
-          <p class="field__error" id="u-teams-error" hidden></p>
-        </fieldset>
-
-        <div class="preview">
-          <p class="eyebrow">Floor teams will see</p>
-          <p class="notice" id="u-preview"></p>
+          <fieldset class="field">
+            <legend class="field__label">Priority</legend>
+            <div class="segmented segmented--fill">
+              <input type="radio" name="priority" id="f-priority-high" value="high"><label for="f-priority-high">High</label>
+              <input type="radio" name="priority" id="f-priority-medium" value="medium" checked><label for="f-priority-medium">Medium</label>
+              <input type="radio" name="priority" id="f-priority-low" value="low"><label for="f-priority-low">Low</label>
+            </div>
+          </fieldset>
         </div>
       </div>
 
       <div class="dialog__foot">
         <button class="bf-btn bf-btn--quiet" type="button" data-close>Cancel</button>
-        <button class="bf-btn bf-btn--primary" type="submit" id="u-submit">
-          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>
-          <span id="u-submit-label">Send update</span>
+        <button class="bf-btn bf-btn--primary" type="submit">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>
+          Add task
         </button>
       </div>
     </form>
