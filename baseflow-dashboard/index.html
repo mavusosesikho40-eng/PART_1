@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Baseflow Dashboard</title>
+  <meta name="description" content="Baseflow's live operating screen: check-ins, areas, sessions and floor teams in one view.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161936" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="images/baseflow-app-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="images/baseflow-app-icon-512.png">
+  <link rel="preload" href="fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/atkinson-hyperlegible-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/dashboard.css">
+  <script>
+    /* Apply the saved screen mode before the first paint, so Floor mode never flashes light. */
+    (function () {
+      try {
+        var mode = window.localStorage.getItem('baseflow-mode');
+        if (mode === 'floor' || mode === 'light') document.documentElement.setAttribute('data-mode', mode);
+      } catch (e) { /* Storage is blocked: follow the system setting. */ }
+    })();
+  </script>
+  <script src="js/sample-data.js" defer></script>
+  <script src="js/dashboard.js" defer></script>
+</head>
+<body>
+  <!-- Lucide icons (lucide.dev, ISC licence), as the brand kit specifies. -->
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-octagon-alert" viewBox="0 0 24 24"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/></symbol>
+    <symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol>
+    <symbol id="i-arrow-right-left" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/></symbol>
+    <symbol id="i-scan-line" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-list-checks" viewBox="0 0 24 24"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></symbol>
+    <symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol>
+    <symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to the dashboard</a>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <!-- The logo is artwork: one file per ground, never re-typed. -->
+        <span class="brand__lockup">
+          <img class="logo--light" src="images/baseflow-lockup-gradient.svg" alt="Baseflow Technologies" width="128" height="42">
+          <img class="logo--floor" src="images/baseflow-lockup-reversed.svg" alt="Baseflow Technologies" width="128" height="42">
+        </span>
+        <span class="brand__wordmark">
+          <img class="logo--light" src="images/baseflow-wordmark-gradient.svg" alt="Baseflow" width="96" height="21">
+          <img class="logo--floor" src="images/baseflow-wordmark-reversed.svg" alt="Baseflow" width="96" height="21">
+        </span>
+      </div>
+
+      <!-- Shown on the wall screen, where the page head is hidden. -->
+      <div class="topbar__event">
+        <p class="topbar__event-name" id="wall-event">Careers Expo · Day 2 of 3</p>
+        <p class="topbar__event-note" id="wall-note">Main venue · Sample event, figures are illustrative</p>
+      </div>
+
+      <p class="topbar__live">
+        <span class="bf-status bf-status--live">Live</span>
+        <span class="topbar__updated"><span class="topbar__updated-word">Updated </span><time class="num" id="updated-at">14:05</time></span>
+      </p>
+
+      <div class="topbar__actions">
+        <button class="bf-btn bf-btn--quiet bf-btn--toggle" id="mode-toggle" type="button" aria-pressed="false">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+          <span class="btn-label">Floor mode</span>
+        </button>
+        <button class="bf-btn bf-btn--quiet bf-btn--toggle" id="wall-toggle" type="button" aria-pressed="false">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-monitor"/></svg>
+          <span class="btn-label">Wall screen</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page" id="main" tabindex="-1">
+    <section class="pagehead" aria-labelledby="event-title">
+      <div class="pagehead__text">
+        <p class="eyebrow" id="event-venue">Main venue · Day 2 of 3</p>
+        <h1 id="event-title">Careers Expo</h1>
+        <p class="pagehead__meta">
+          <span class="meta-item"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg><span id="event-date">Thursday 19 Nov 2026</span></span>
+          <span class="meta-item"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-map-pin"/></svg><span id="event-places">6 areas · 4 entry points</span></span>
+          <span class="meta-item meta-item--sample"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg>Sample event. Figures are illustrative.</span>
+        </p>
+      </div>
+      <button class="bf-btn bf-btn--primary" id="open-update" type="button">
+        <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>
+        Send update
+      </button>
+    </section>
+
+    <div class="alerts" id="alerts"></div>
+
+    <section class="kpis" aria-labelledby="kpis-title">
+      <h2 class="visually-hidden" id="kpis-title">Today at a glance</h2>
+
+      <article class="bf-tile" id="kpi-checked-in">
+        <h3 class="bf-tile__label">Checked in</h3>
+        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
+        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
+        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
+      </article>
+
+      <article class="bf-tile" id="kpi-on-site">
+        <h3 class="bf-tile__label">On site now</h3>
+        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
+        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
+        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
+      </article>
+
+      <article class="bf-tile" id="kpi-sessions">
+        <h3 class="bf-tile__label">Sessions on time</h3>
+        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
+        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
+        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
+      </article>
+
+      <article class="bf-tile" id="kpi-entries">
+        <h3 class="bf-tile__label">Entry points online</h3>
+        <p class="bf-tile__value"><span data-value>—</span><small data-of></small></p>
+        <div class="bf-tile__bar" aria-hidden="true"><span data-bar></span></div>
+        <div class="bf-tile__foot"><span data-badge></span><span data-updated></span></div>
+      </article>
+    </section>
+
+    <div class="board">
+      <section class="panel panel--areas" id="areas" aria-labelledby="areas-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="areas-title">Areas</h2>
+          <p class="panel__meta num" id="areas-meta"></p>
+        </div>
+        <div class="areas" id="areas-grid"></div>
+      </section>
+
+      <section class="panel panel--schedule" id="schedule" aria-labelledby="schedule-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="schedule-title">Now and next</h2>
+          <p class="panel__meta num" id="schedule-meta"></p>
+        </div>
+        <ol class="sessions" id="sessions"></ol>
+        <p class="panel__foot" id="sessions-done"></p>
+      </section>
+
+      <section class="panel panel--arrivals" id="arrivals" aria-labelledby="arrivals-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="arrivals-title">Arrivals today</h2>
+          <p class="panel__meta">Check-ins per 30 minutes</p>
+        </div>
+        <p class="panel__lead" id="arrivals-lead"></p>
+        <div class="chart chart--fill" id="arrivals-chart"></div>
+        <details class="table-toggle">
+          <summary>Show as a table</summary>
+          <div class="table-wrap">
+            <table class="data-table">
+              <caption class="visually-hidden">Check-ins per 30 minutes today</caption>
+              <thead><tr><th scope="col">Time</th><th scope="col" class="is-num">Check-ins</th></tr></thead>
+              <tbody id="arrivals-table"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel panel--entries" id="entries" aria-labelledby="entries-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="entries-title">Entry points</h2>
+          <p class="panel__meta num" id="entries-meta"></p>
+        </div>
+        <ul class="entries" id="entries-list"></ul>
+        <h3 class="subhead">Latest check-ins</h3>
+        <ol class="checkins" id="checkins"></ol>
+      </section>
+
+      <section class="panel panel--teams" id="teams" aria-labelledby="teams-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="teams-title">Floor teams</h2>
+          <p class="panel__meta num" id="teams-meta"></p>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table teams">
+            <caption class="visually-hidden">Floor teams on shift and their task progress</caption>
+            <thead>
+              <tr>
+                <th scope="col">Team</th>
+                <th scope="col" class="is-num">On shift</th>
+                <th scope="col">Tasks done</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="teams-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel panel--activity" id="activity" aria-labelledby="activity-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="activity-title">Activity</h2>
+          <p class="panel__meta">Newest first</p>
+        </div>
+        <ol class="activity" id="activity-list"></ol>
+      </section>
+
+      <section class="panel panel--week" id="week" aria-labelledby="week-title">
+        <div class="panel__head">
+          <h2 class="eyebrow" id="week-title">Last 7 days</h2>
+          <p class="panel__meta">Venue check-ins per day</p>
+        </div>
+        <div class="week">
+          <div class="week__chart">
+            <div class="chart" id="week-chart"></div>
+            <details class="table-toggle">
+              <summary>Show as a table</summary>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <caption class="visually-hidden">Venue check-ins per day, last 7 days</caption>
+                  <thead><tr><th scope="col">Day</th><th scope="col" class="is-num">Check-ins</th></tr></thead>
+                  <tbody id="week-table"></tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+          <div class="week__summary">
+            <p class="bf-tile__value"><span id="week-total">—</span><small>check-ins</small></p>
+            <p class="week__change" id="week-change"></p>
+            <dl class="facts">
+              <div><dt>Busiest day</dt><dd class="num" id="week-busiest">—</dd></div>
+              <div><dt>Daily average</dt><dd class="num" id="week-average">—</dd></div>
+            </dl>
+            <p class="caption">Recorded automatically at check-in.</p>
+            <button class="bf-btn bf-btn--secondary" id="copy-report" type="button">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-copy"/></svg>
+              Copy report
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="page-foot">
+      <p>Baseflow Technologies · One view. Every team. Right now.</p>
+      <p>Sample event. Figures are illustrative.</p>
+    </footer>
+  </main>
+
+  <dialog class="dialog" id="update-dialog" aria-labelledby="update-title" aria-describedby="update-desc">
+    <form class="dialog__form" id="update-form" novalidate>
+      <div class="dialog__head">
+        <div>
+          <h2 id="update-title">Send update</h2>
+          <p class="dialog__desc" id="update-desc">Floor teams see it on their phones straight away.</p>
+        </div>
+        <button class="bf-btn bf-btn--quiet bf-btn--icon" type="button" data-close aria-label="Close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>
+        </button>
+      </div>
+
+      <div class="dialog__body">
+        <fieldset class="field">
+          <legend class="field__label">What changed</legend>
+          <div class="segmented">
+            <input type="radio" name="kind" id="kind-room" value="room" checked>
+            <label for="kind-room"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-right-left"/></svg>Room change</label>
+            <input type="radio" name="kind" id="kind-late" value="late">
+            <label for="kind-late"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Running late</label>
+            <input type="radio" name="kind" id="kind-notice" value="notice">
+            <label for="kind-notice"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-megaphone"/></svg>Notice</label>
+          </div>
+        </fieldset>
+
+        <div class="field" data-for="room late">
+          <label class="field__label" for="u-session">Session</label>
+          <div class="select">
+            <select id="u-session" name="session"></select>
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
+          </div>
+        </div>
+
+        <div class="field" data-for="room">
+          <label class="field__label" for="u-room">New room</label>
+          <div class="select">
+            <select id="u-room" name="room" aria-describedby="u-room-error"></select>
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
+          </div>
+          <p class="field__error" id="u-room-error" hidden></p>
+        </div>
+
+        <div class="field" data-for="late" hidden>
+          <label class="field__label" for="u-minutes">How late</label>
+          <div class="select">
+            <select id="u-minutes" name="minutes">
+              <option value="5">5 min</option>
+              <option value="10" selected>10 min</option>
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="30">30 min</option>
+            </select>
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
+          </div>
+        </div>
+
+        <div class="field" data-for="notice" hidden>
+          <label class="field__label" for="u-message">Message</label>
+          <textarea id="u-message" name="message" rows="3" maxlength="140" aria-describedby="u-message-hint u-message-error"></textarea>
+          <p class="field__hint" id="u-message-hint">Say what changed, then what to do. Up to 140 characters.</p>
+          <p class="field__error" id="u-message-error" hidden></p>
+        </div>
+
+        <fieldset class="field" aria-describedby="u-teams-error">
+          <legend class="field__label">Send to</legend>
+          <div class="checks" id="u-teams"></div>
+          <p class="field__error" id="u-teams-error" hidden></p>
+        </fieldset>
+
+        <div class="preview">
+          <p class="eyebrow">Floor teams will see</p>
+          <p class="notice" id="u-preview"></p>
+        </div>
+      </div>
+
+      <div class="dialog__foot">
+        <button class="bf-btn bf-btn--quiet" type="button" data-close>Cancel</button>
+        <button class="bf-btn bf-btn--primary" type="submit" id="u-submit">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>
+          <span id="u-submit-label">Send update</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+</body>
+</html>
