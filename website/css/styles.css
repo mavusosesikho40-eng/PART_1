@@ -474,19 +474,6 @@ img { max-width: 100%; display: block; }
   width: auto;
   object-fit: contain;
 }
-.trust-logo-text {
-  width: 100%;
-  background: var(--paper-alt);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.trust-logo-text .trust-logo-label {
-  font-family: "Poppins", sans-serif;
-  font-weight: 700;
-  font-size: 0.82rem;
-  letter-spacing: 0.6px;
-  color: var(--black);
-}
 .trust-item strong {
   display: block;
   font-family: "Poppins", sans-serif;
