@@ -1,0 +1,83 @@
+{
+  "name": "RiftArena",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterPlayer": {
+      "$properties": {
+        "EnableMouseLockOption": false,
+        "CharacterUseJumpPower": false,
+        "CharacterJumpHeight": 7.2,
+        "AutoJumpEnabled": false
+      },
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    },
+
+    "Workspace": {
+      "Map": {
+        "$path": "map/Map.rbxm"
+      }
+    },
+
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "ClockTime": 15.2,
+        "Brightness": 2.6,
+        "Ambient": [0.235, 0.235, 0.282],
+        "OutdoorAmbient": [0.49, 0.49, 0.549],
+        "EnvironmentDiffuseScale": 0.6,
+        "EnvironmentSpecularScale": 0.7,
+        "GlobalShadows": true
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.3,
+          "Offset": 0.25,
+          "Color": [0.78, 0.725, 0.667],
+          "Decay": [0.431, 0.353, 0.549],
+          "Glare": 0.2,
+          "Haze": 1.4
+        }
+      },
+      "Bloom": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.7,
+          "Size": 24,
+          "Threshold": 1.5
+        }
+      },
+      "ColorGrading": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Contrast": 0.08,
+          "Saturation": 0.12
+        }
+      }
+    },
+
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    }
+  }
+}

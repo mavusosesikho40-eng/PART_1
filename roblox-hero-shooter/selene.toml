@@ -1,0 +1,4 @@
+std = "roblox"
+
+# tools/ holds Lune scripts (they run outside Roblox), so lint only the game code.
+exclude = ["tools/*"]
