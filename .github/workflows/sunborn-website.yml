@@ -1,0 +1,46 @@
+name: SunBorn website
+
+# Checks the SunBorn &Co website in sunborn-website/. The apps' own workflow
+# (build.yml) ignores this folder.
+on:
+  push:
+    paths:
+      - "sunborn-website/**"
+      - ".github/workflows/sunborn-website.yml"
+  pull_request:
+    paths:
+      - "sunborn-website/**"
+      - ".github/workflows/sunborn-website.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Tests and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sunborn-website
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check types
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Run the unit tests
+        run: bun run test
+
+      - name: Build the site
+        run: bun run build
