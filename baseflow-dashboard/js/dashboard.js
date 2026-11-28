@@ -24,15 +24,11 @@
      ------------------------------------------------------------------------ */
 
   var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   function parseDate(iso) {
     var p = iso.split('-').map(Number);
     return new Date(p[0], p[1] - 1, p[2]);
-  }
-
-  function isoDate(d) {
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
 
   function pad(n) {
@@ -50,15 +46,16 @@
   var TODAY = parseDate(S.today);
 
   function dayMonth(d) {
-    return d.getDate() + ' ' + MONTHS[d.getMonth()];
+    return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3);
   }
 
   function shortDate(d) {
     return DAYS[d.getDay()].slice(0, 3) + ' ' + dayMonth(d);
   }
 
-  function longDate(d) {
-    return DAYS[d.getDay()] + ' ' + dayMonth(d) + ' ' + d.getFullYear();
+  // "Thursday 19 November"
+  function fullDate(d) {
+    return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
   }
 
   function dueText(iso) {
@@ -86,10 +83,9 @@
     return d >= week[0] && d <= week[1];
   }
 
-  // The sample's clock starts at S.now and runs in real time.
+  // The sample's clock starts at S.now and runs in real time. It stamps updates.
   var START = Number(S.now.split(':')[0]) * 3600 + Number(S.now.split(':')[1]) * 60;
   var openedAt = performance.now();
-  var updatedAt = START;
 
   function nowSec() {
     return START + Math.floor((performance.now() - openedAt) / 1000);
@@ -97,15 +93,6 @@
 
   function clockText(sec) {
     return pad(Math.floor(sec / 3600) % 24) + ':' + pad(Math.floor(sec / 60) % 60);
-  }
-
-  function greeting() {
-    var hour = Math.floor(nowSec() / 3600);
-    return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  }
-
-  function stamp() {
-    updatedAt = nowSec();
   }
 
   function plural(n, one, many) {
@@ -221,6 +208,10 @@
     return founders.filter(function (f) { return f.id !== id; })[0];
   }
 
+  function first(id) {
+    return founderById[id].first;
+  }
+
   function openTasks() {
     return tasks.filter(function (t) { return t.status !== 'done'; });
   }
@@ -254,6 +245,12 @@
     return { done: (p.checks[p.stage] || new Set()).size, total: total };
   }
 
+  function upcoming(list) {
+    return list
+      .filter(function (m) { return dayDiff(TODAY, parseDate(m.date)) >= 0; })
+      .sort(function (a, b) { return parseDate(a.date) - parseDate(b.date); });
+  }
+
   function milestones() {
     var list = [];
     projects.forEach(function (p) {
@@ -261,230 +258,7 @@
         list.push({ title: m.title, date: m.date, project: p.id });
       });
     });
-    return list
-      .filter(function (m) { return dayDiff(TODAY, parseDate(m.date)) >= 0; })
-      .sort(function (a, b) { return parseDate(a.date) - parseDate(b.date); });
-  }
-
-  /* ------------------------------------------------------------------------
-     Small pieces used across views
-     ------------------------------------------------------------------------ */
-
-  function statusBadge(status, compact) {
-    var s = STATUS[status];
-    return h('span', { 'class': 'bf-status bf-status--' + s[0] + (compact ? ' bf-status--compact' : '') }, s[1]);
-  }
-
-  function badge(kind, text, compact) {
-    return h('span', { 'class': 'bf-status bf-status--' + kind + (compact ? ' bf-status--compact' : '') }, text);
-  }
-
-  function avatar(founder, small) {
-    return h('span', {
-      'class': 'avatar' + (founder.id === 'sm' ? ' avatar--sm' : '') + (small ? ' avatar--small' : ''),
-      role: 'img',
-      'aria-label': founder.name,
-      title: founder.name
-    }, founder.initials);
-  }
-
-  function person(founder) {
-    return h('span', { 'class': 'person' }, avatar(founder, true), founder.name);
-  }
-
-  function dueLabel(t) {
-    var cls = 'row__date';
-    if (t.status !== 'done') {
-      var diff = dayDiff(TODAY, parseDate(t.due));
-      if (diff < 0) return h('span', { 'class': cls + ' due--overdue' }, icon('triangle-alert', 'arrow'), 'Overdue · ' + shortDate(parseDate(t.due)));
-      if (diff === 0) return h('span', { 'class': cls + ' due--today' }, 'Today');
-    }
-    return h('span', { 'class': cls }, dueText(t.due));
-  }
-
-  function emptyState(title, text, action) {
-    return h('div', { 'class': 'empty' }, h('p', { 'class': 'empty__title' }, title), h('p', null, text), action || null);
-  }
-
-  function card(cls, titleId, title, headExtra, body) {
-    return h('section', { 'class': 'card ' + (cls || ''), 'aria-labelledby': titleId },
-      h('div', { 'class': 'card__head' }, h('h2', { 'class': 'card__title', id: titleId }, title), headExtra || null),
-      body);
-  }
-
-  function pageHead(o) {
-    return h('div', { 'class': 'pagehead' },
-      h('div', { 'class': 'pagehead__text' },
-        o.back ? h('a', { 'class': 'link back', href: o.back.href }, icon('chevron-left', 'arrow'), o.back.label) : null,
-        o.eyebrow ? h('p', { 'class': 'eyebrow' }, o.eyebrow) : null,
-        h('h1', { id: 'page-title' }, o.title),
-        o.sub ? h('p', { 'class': 'pagehead__sub' }, o.sub) : null),
-      h('p', { 'class': 'pagehead__fresh' }, 'Sample data · Updated ', h('time', null, clockText(updatedAt))));
-  }
-
-  function taskRow(t) {
-    return h('a', { 'class': 'row', href: '#task-' + t.id, 'data-find': 'task-' + t.id },
-      h('span', { 'class': 'row__main' },
-        h('span', { 'class': 'row__title' }, t.title),
-        h('span', { 'class': 'row__meta' }, projectById[t.project].name)),
-      h('span', { 'class': 'row__side' }, dueLabel(t), statusBadge(t.status, true)));
-  }
-
-  /* ------------------------------------------------------------------------
-     A · Business overview
-     ------------------------------------------------------------------------ */
-
-  function kpiTile(label, value, caption, href) {
-    return h('a', { 'class': 'bf-tile', href: href },
-      h('p', { 'class': 'bf-tile__label' }, label),
-      h('p', { 'class': 'bf-tile__value' }, value),
-      h('p', { 'class': 'bf-tile__caption' }, caption));
-  }
-
-  function kpis() {
-    var open = openTasks();
-    var dueThisWeek = open.filter(function (t) { return inThisWeek(t.due); }).length;
-    var discover = projects.filter(function (p) { return p.stage === 'discover'; }).length;
-    var opportunities = openOpportunities();
-    var nextFollowUp = opportunities
-      .map(function (c) { return c.followUp; })
-      .filter(Boolean)
-      .sort()[0];
-    var pending = pendingDecisions();
-
-    return h('section', { 'class': 'kpis', 'aria-labelledby': 'kpis-title' },
-      h('h2', { 'class': 'visually-hidden', id: 'kpis-title' }, 'Business health'),
-      kpiTile('Active projects', String(activeProjects().length), discover ? discover + ' more in Discover' : 'None in Discover', '#projects'),
-      kpiTile('Open opportunities', String(opportunities.length), nextFollowUp ? 'Next follow-up ' + dueInline(nextFollowUp) : 'No follow-ups booked', '#clients'),
-      kpiTile('Outstanding tasks', String(open.length), dueThisWeek + ' due this week', '#tasks'),
-      kpiTile('Pending decisions', String(pending.length), pending.length ? 'Need both founders' : 'Nothing waiting', '#decisions'),
-      h('a', { 'class': 'bf-tile bf-tile--empty', href: '#finance' },
-        h('p', { 'class': 'bf-tile__label' }, 'Financial snapshot'),
-        h('p', { 'class': 'bf-tile__empty-title' }, 'No figures yet'),
-        h('p', { 'class': 'bf-tile__caption' }, 'Link the finance sheet to show real numbers.')));
-  }
-
-  function stageColumn(key, large, richCards) {
-    var stage = S.stages[key];
-    var list = projects.filter(function (p) { return p.stage === key; });
-    return h('div', { 'class': 'stage' },
-      h('h3', { 'class': 'stage__head' },
-        h('span', { 'class': 'stage__mark stage__mark--' + key, 'aria-hidden': 'true' }),
-        h('span', { 'class': 'eyebrow' }, stage.name),
-        h('span', { 'class': 'stage__count' }, String(list.length), h('span', { 'class': 'visually-hidden' }, list.length === 1 ? ' project' : ' projects'))),
-      large ? h('p', { 'class': 'stage__desc' }, stage.covers) : null,
-      list.length
-        ? h('ul', { 'class': 'stage__list' }, list.map(function (p) { return h('li', null, projectCard(p, large || richCards)); }))
-        : h('p', { 'class': 'stage__empty' }, 'Nothing in ' + stage.name + ' right now.'));
-  }
-
-  function projectCard(p, large) {
-    var lead = founderById[p.lead];
-    var progress = checklistProgress(p);
-    var next = (p.milestones || []).filter(function (m) { return dayDiff(TODAY, parseDate(m.date)) >= 0; })[0];
-    var openCount = tasks.filter(function (t) { return t.project === p.id && t.status !== 'done'; }).length;
-    return h('a', { 'class': 'project-card' + (large ? ' project-card--large' : ''), href: '#project-' + p.id, 'data-find': 'project-' + p.id },
-      h('span', { 'class': 'project-card__name' }, p.name),
-      h('span', { 'class': 'project-card__meta' }, large ? clientById[p.client].name + ' · ' + p.status : p.status),
-      large ? h('span', { 'class': 'progress' },
-        h('span', { 'class': 'bf-tile__bar', 'aria-hidden': 'true' }, h('span', { style: { width: Math.round(progress.done / progress.total * 100) + '%' } })),
-        h('span', null, progress.done + ' of ' + progress.total + ' checks')) : null,
-      large && next ? h('span', { 'class': 'project-card__meta' }, 'Next: ' + next.title + ' · ' + dueText(next.date)) : null,
-      h('span', { 'class': 'project-card__foot' },
-        p.illustrative ? badge('attention', 'Illustrative', true) : (large ? h('span', { 'class': 'project-card__meta' }, plural(openCount, 'open task', 'open tasks')) : h('span')),
-        avatar(lead, true)));
-  }
-
-  function pipelineCard(cls, large, richCards) {
-    return h('section', { 'class': 'card pipeline ' + cls, 'aria-labelledby': 'pipeline-title' },
-      h('div', { 'class': 'card__head' },
-        h('h2', { 'class': 'card__title', id: 'pipeline-title' }, large ? 'Pipeline by stage' : 'Project pipeline'),
-        h('p', { 'class': 'card__meta' }, arrowed(['Discover', 'Design', 'Develop']))),
-      h('div', { 'class': 'stages' }, STAGE_ORDER.map(function (key) { return stageColumn(key, large, richCards); })));
-  }
-
-  function myTasksCard(cls) {
-    var mine = tasks.filter(function (t) { return t.owner === me && t.status !== 'done'; }).sort(byDue);
-    return card(cls, 'mytasks-title', 'My tasks',
-      h('a', { 'class': 'link', href: '#tasks', 'data-scope': 'mine' }, 'View all'),
-      mine.length
-        ? h('ul', { 'class': 'rows' }, mine.slice(0, 4).map(function (t) { return h('li', null, taskRow(t)); }))
-        : emptyState('Nothing on your list', 'Tasks you own will appear here.'));
-  }
-
-  function approvalLine(d) {
-    return h('p', { 'class': 'approvals' }, founders.map(function (f) {
-      var yes = d.approvals.indexOf(f.id) !== -1;
-      return h('span', { 'class': 'approval ' + (yes ? 'approval--yes' : 'approval--no') },
-        icon(yes ? 'circle-check' : 'clock'),
-        f.first + (yes ? ' approved' : ' to approve'));
-    }));
-  }
-
-  function decisionBlock(d) {
-    var mine = d.approvals.indexOf(me) !== -1;
-    return h('div', { 'class': 'decision-row', 'data-find': 'decision-' + d.id },
-      h('p', { 'class': 'row__title' }, d.title),
-      h('p', { 'class': 'row__meta' }, d.context),
-      approvalLine(d),
-      mine
-        ? h('p', { 'class': 'row__meta' }, 'Waiting on ' + other(me).first + '.')
-        : h('button', { 'class': 'bf-btn bf-btn--secondary bf-btn--compact', type: 'button', 'data-approve': d.id, 'data-key': 'approve-' + d.id }, icon('check'), 'Approve'));
-  }
-
-  function approvalSummary(d) {
-    var mine = d.approvals.indexOf(me) !== -1;
-    var others = d.approvals.filter(function (id) { return id !== me; }).map(function (id) { return founderById[id].first; });
-    if (mine) return [icon('circle-check', 'arrow'), 'You approved · waiting on ' + other(me).first];
-    if (others.length) return [icon('circle-check', 'arrow'), others.join(' and ') + ' approved · waiting on you'];
-    return [icon('clock', 'arrow'), 'Waiting on both of you'];
-  }
-
-  function decisionCompact(d) {
-    var mine = d.approvals.indexOf(me) !== -1;
-    return h('div', { 'class': 'row', 'data-find': 'decision-' + d.id },
-      h('span', { 'class': 'row__main' },
-        h('span', { 'class': 'row__title' }, d.title),
-        h('span', { 'class': 'row__meta' }, d.context),
-        h('span', { 'class': 'row__meta row__meta--status' }, approvalSummary(d))),
-      mine ? null : h('span', { 'class': 'row__side' },
-        h('button', { 'class': 'bf-btn bf-btn--secondary bf-btn--compact', type: 'button', 'data-approve': d.id, 'data-key': 'approve-' + d.id, 'aria-label': 'Approve: ' + d.title }, icon('check'), 'Approve')));
-  }
-
-  function bothFoundersCard(cls) {
-    var pending = pendingDecisions();
-    return h('section', { 'class': 'card card--soft ' + cls, 'aria-labelledby': 'both-title' },
-      h('div', { 'class': 'card__head' },
-        h('h2', { 'class': 'eyebrow', id: 'both-title' }, 'Needs both founders'),
-        h('a', { 'class': 'link', href: '#decisions' }, 'Decisions')),
-      pending.length
-        ? h('ul', { 'class': 'rows' }, pending.map(function (d) { return h('li', null, decisionCompact(d)); }))
-        : h('p', null, 'Nothing is waiting on both of you.'));
-  }
-
-  function deadlinesCard(cls) {
-    var list = milestones().slice(0, 5);
-    return card(cls, 'deadlines-title', 'Upcoming deadlines', null,
-      list.length
-        ? h('ul', { 'class': 'rows' }, list.map(function (m) {
-          return h('li', null, h('a', { 'class': 'row', href: '#project-' + m.project },
-            icon('calendar', 'row__icon'),
-            h('span', { 'class': 'row__main' },
-              h('span', { 'class': 'row__title' }, m.title),
-              h('span', { 'class': 'row__meta' }, projectById[m.project].name)),
-            h('span', { 'class': 'row__date' }, dueText(m.date))));
-        }))
-        : emptyState('No deadlines ahead', 'Milestones you add to projects will appear here.'));
-  }
-
-  function decisionStatus(d) {
-    return d.status === 'decided' ? badge('ok', 'Decided', true) : badge('attention', 'Open', true);
-  }
-
-  function decisionMeta(d) {
-    return d.status === 'decided'
-      ? d.by + ' · ' + dayMonth(parseDate(d.decidedOn))
-      : 'Both founders · due ' + dueInline(d.due);
+    return upcoming(list);
   }
 
   function sortedDecisions() {
@@ -495,16 +269,246 @@
     });
   }
 
-  function decisionLogCard(cls) {
-    var list = sortedDecisions().slice(0, 4);
-    return card(cls, 'log-title', 'Decision log', h('a', { 'class': 'link', href: '#decisions' }, 'View all'),
-      h('ul', { 'class': 'rows' }, list.map(function (d) {
-        return h('li', null, h('div', { 'class': 'row' },
-          h('span', { 'class': 'row__main' },
-            h('span', { 'class': 'row__title' }, d.title),
-            h('span', { 'class': 'row__meta' }, decisionMeta(d))),
-          h('span', { 'class': 'row__side' }, decisionStatus(d))));
+  /* ------------------------------------------------------------------------
+     Small pieces used across views
+     ------------------------------------------------------------------------ */
+
+  // In lists and tables a status is a dot and a word; the badge is kept for
+  // the one task you have open.
+  function state(kind, text) {
+    return h('span', { 'class': 'state state--' + kind }, text);
+  }
+
+  function taskState(status) {
+    return state(STATUS[status][0], STATUS[status][1]);
+  }
+
+  function decisionState(d) {
+    return d.status === 'decided' ? state('ok', 'Decided') : state('attention', 'Open');
+  }
+
+  function statusBadge(status) {
+    return h('span', { 'class': 'bf-status bf-status--' + STATUS[status][0] }, STATUS[status][1]);
+  }
+
+  function avatar(founder) {
+    return h('span', {
+      'class': 'avatar' + (founder.id === 'sm' ? ' avatar--sm' : ''),
+      'aria-hidden': 'true'
+    }, founder.initials);
+  }
+
+  function dueEl(t) {
+    var d = parseDate(t.due);
+    if (t.status !== 'done') {
+      var diff = dayDiff(TODAY, d);
+      if (diff < 0) return h('span', { 'class': 'due due--overdue' }, 'Overdue · ' + dayMonth(d));
+      if (diff <= 1) return h('span', { 'class': 'due due--soon' }, dueText(t.due));
+    }
+    return h('span', { 'class': 'due' }, dueText(t.due));
+  }
+
+  function emptyState(title, text, action) {
+    return h('div', { 'class': 'empty' },
+      h('p', { 'class': 'empty__title' }, title),
+      text ? h('p', null, text) : null,
+      action || null);
+  }
+
+  function pageHead(o) {
+    return h('header', { 'class': 'pagehead' },
+      o.back ? h('a', { 'class': 'link back', href: o.back.href }, icon('chevron-left', 'arrow'), o.back.label) : null,
+      o.kicker ? h('p', { 'class': 'pagehead__kicker' }, o.kicker) : null,
+      h('h1', { id: 'page-title' }, o.title),
+      o.sub ? h('p', { 'class': 'pagehead__sub' + (o.lead ? ' pagehead__sub--lead' : '') }, o.sub) : null);
+  }
+
+  function section(o) {
+    var body = Array.prototype.slice.call(arguments, 1);
+    return h('section', { 'class': 'section' + (o.cls ? ' ' + o.cls : ''), 'aria-labelledby': o.id },
+      h('div', { 'class': 'section__head' },
+        h('h2', { 'class': 'section__title', id: o.id }, o.title,
+          o.count !== undefined ? h('span', { 'class': 'count' }, String(o.count)) : null),
+        o.aside || null),
+      o.note ? h('p', { 'class': 'section__note' }, o.note) : null,
+      body);
+  }
+
+  function fact(label, value) {
+    return h('div', null, h('dt', null, label), h('dd', null, value));
+  }
+
+  function taskRow(t, meta) {
+    return h('a', { 'class': 'item item--task', href: '#task-' + t.id, 'data-find': 'task-' + t.id },
+      h('span', { 'class': 'item__main' },
+        h('span', { 'class': 'item__title' }, t.title),
+        h('span', { 'class': 'item__meta' }, meta || projectById[t.project].name)),
+      dueEl(t),
+      taskState(t.status));
+  }
+
+  // A date block for agendas: "Fri" over "20", read out in full.
+  function agendaItem(iso, title, meta, href) {
+    var d = parseDate(iso);
+    var diff = dayDiff(TODAY, d);
+    var when = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : null;
+    var inner = [
+      h('span', { 'class': 'date' + (diff < 0 ? ' date--past' : ''), 'aria-hidden': 'true' },
+        h('span', { 'class': 'date__day' }, DAYS[d.getDay()].slice(0, 3)),
+        h('span', { 'class': 'date__num' }, String(d.getDate())),
+        d.getMonth() !== TODAY.getMonth() ? h('span', { 'class': 'date__month' }, MONTHS[d.getMonth()].slice(0, 3)) : null),
+      h('span', { 'class': 'item__main' },
+        h('span', { 'class': 'visually-hidden' }, shortDate(d) + ': '),
+        h('span', { 'class': 'item__title' }, title),
+        meta || when ? h('span', { 'class': 'item__meta' }, [meta, when].filter(Boolean).join(' · ')) : null)
+    ];
+    return h('li', null, href
+      ? h('a', { 'class': 'agenda__item', href: href }, inner)
+      : h('div', { 'class': 'agenda__item' }, inner));
+  }
+
+  function pageFoot() {
+    return h('footer', { 'class': 'pagefoot' }, 'Concept with sample data. These are examples, not business results.');
+  }
+
+  /* ------------------------------------------------------------------------
+     A · Business overview
+     ------------------------------------------------------------------------ */
+
+  // One plain sentence about what is waiting on the founder viewing.
+  function overviewLead() {
+    var soon = tasks.filter(function (t) {
+      return t.owner === me && t.status !== 'done' && dayDiff(TODAY, parseDate(t.due)) <= 1;
+    }).length;
+    var waiting = pendingDecisions().filter(function (d) { return d.approvals.indexOf(me) === -1; }).length;
+    var name = first(me);
+    var taskPart = soon ? plural(soon, 'task', 'tasks') + ' due by tomorrow' : '';
+    var decisionPart = waiting ? plural(waiting, 'decision', 'decisions') + ' to approve' : '';
+    if (taskPart && decisionPart) return name + ', you have ' + taskPart + ' and ' + decisionPart + '.';
+    if (taskPart) return name + ', you have ' + taskPart + '. No decisions are waiting on you.';
+    if (decisionPart) return name + ', nothing of yours is due by tomorrow. You have ' + decisionPart + '.';
+    return name + ', nothing of yours is due by tomorrow and no decisions are waiting on you.';
+  }
+
+  function stat(href, label, value, note, extraClass) {
+    return h('a', { 'class': 'stat' + (extraClass ? ' ' + extraClass : ''), href: href },
+      h('span', { 'class': 'stat__label' }, label),
+      h('span', { 'class': 'stat__value' }, value),
+      h('span', { 'class': 'stat__note' }, note));
+  }
+
+  function stats() {
+    var open = openTasks();
+    var dueThisWeek = open.filter(function (t) { return inThisWeek(t.due); }).length;
+    var discover = projects.filter(function (p) { return p.stage === 'discover'; }).length;
+    var opportunities = openOpportunities();
+    var nextFollowUp = opportunities.map(function (c) { return c.followUp; }).filter(Boolean).sort()[0];
+    var pending = pendingDecisions();
+
+    return h('section', { 'class': 'stats', 'aria-labelledby': 'stats-title' },
+      h('h2', { 'class': 'visually-hidden', id: 'stats-title' }, 'Business health'),
+      stat('#projects', 'Active projects', String(activeProjects().length), discover ? discover + ' more in Discover' : 'None in Discover'),
+      stat('#clients', 'Open opportunities', String(opportunities.length), nextFollowUp ? 'Next follow-up ' + dueInline(nextFollowUp) : 'No follow-ups booked'),
+      stat('#tasks', 'Outstanding tasks', String(open.length), dueThisWeek + ' due this week'),
+      stat('#decisions', 'Pending decisions', String(pending.length), pending.length ? 'Need both founders' : 'Nothing waiting'),
+      stat('#finance', 'Financial snapshot', 'Not linked yet', 'No real figures to show', 'stat--empty'));
+  }
+
+  function approvalText(d) {
+    var mine = d.approvals.indexOf(me) !== -1;
+    var others = d.approvals.filter(function (id) { return id !== me; }).map(first);
+    if (mine) return 'You approved, waiting on ' + other(me).first;
+    if (others.length) return others.join(' and ') + ' approved, waiting on you';
+    return 'Waiting on both of you';
+  }
+
+  function decisionItem(d) {
+    var mine = d.approvals.indexOf(me) !== -1;
+    return h('li', { 'class': 'decision', 'data-find': 'decision-' + d.id },
+      h('div', { 'class': 'decision__text' },
+        h('p', { 'class': 'decision__title', id: 'dec-' + d.id }, d.title),
+        h('p', null, d.context),
+        h('p', { 'class': 'decision__meta' }, approvalText(d) + ' · due ' + dueInline(d.due))),
+      mine ? null : h('button', {
+        'class': 'bf-btn bf-btn--secondary bf-btn--compact',
+        type: 'button',
+        'data-approve': d.id,
+        'data-key': 'approve-' + d.id,
+        'aria-describedby': 'dec-' + d.id
+      }, 'Approve'));
+  }
+
+  // The one tinted block on a screen: what can't move without both founders.
+  function bothFounders() {
+    var pending = pendingDecisions();
+    return h('section', { 'class': 'callout', 'aria-labelledby': 'both-title' },
+      h('div', { 'class': 'section__head' },
+        h('h2', { 'class': 'section__title', id: 'both-title' }, 'Needs both founders',
+          h('span', { 'class': 'count' }, String(pending.length)))),
+      h('p', { 'class': 'section__note' }, 'Scope, major costs and stage changes need you both.'),
+      pending.length
+        ? h('ul', { 'class': 'decisions' }, pending.map(decisionItem))
+        : h('p', null, 'Nothing is waiting on both of you.'));
+  }
+
+  function myTasks() {
+    var mine = tasks.filter(function (t) { return t.owner === me && t.status !== 'done'; }).sort(byDue);
+    var shown = mine.slice(0, 5);
+    return section({
+      id: 'mytasks-title',
+      title: 'My tasks',
+      count: mine.length,
+      aside: mine.length > shown.length ? h('a', { 'class': 'link', href: '#tasks', 'data-scope': 'mine' }, 'See all ' + mine.length) : null
+    }, mine.length
+      ? h('ul', { 'class': 'list' }, shown.map(function (t) { return h('li', null, taskRow(t)); }))
+      : emptyState('Nothing on your list', 'Tasks you own will show here.'));
+  }
+
+  function flow() {
+    return section({ id: 'pipeline-title', title: 'Pipeline', cls: 'pipeline' },
+      h('div', { 'class': 'flow' }, STAGE_ORDER.map(function (key) {
+        var stage = S.stages[key];
+        var list = projects.filter(function (p) { return p.stage === key; });
+        return h('div', { 'class': 'flow__stage' },
+          h('h3', { 'class': 'flow__name' },
+            h('span', { 'class': 'mark mark--' + key, 'aria-hidden': 'true' }),
+            stage.name,
+            h('span', { 'class': 'count' }, String(list.length), h('span', { 'class': 'visually-hidden' }, list.length === 1 ? ' project' : ' projects'))),
+          list.length
+            ? h('ul', { 'class': 'flow__list' }, list.map(function (p) {
+              return h('li', null,
+                h('a', { 'class': 'flow__project', href: '#project-' + p.id, 'data-find': 'project-' + p.id }, p.name),
+                h('span', { 'class': 'item__meta' }, p.status + (p.illustrative ? ' · Illustrative' : '')));
+            }))
+            : h('p', { 'class': 'item__meta' }, 'Nothing here right now.'));
       })));
+  }
+
+  function comingUp() {
+    var list = milestones().slice(0, 5);
+    return section({ id: 'deadlines-title', title: 'Coming up' },
+      list.length
+        ? h('ul', { 'class': 'agenda' }, list.map(function (m) {
+          return agendaItem(m.date, m.title, projectById[m.project].name, '#project-' + m.project);
+        }))
+        : emptyState('No deadlines ahead', 'Milestones you add to projects will show here.'));
+  }
+
+  function recentDecisions() {
+    var list = decisions
+      .filter(function (d) { return d.status === 'decided'; })
+      .sort(function (a, b) { return parseDate(b.decidedOn) - parseDate(a.decidedOn); })
+      .slice(0, 3);
+    return section({
+      id: 'log-title',
+      title: 'Decision log',
+      aside: h('a', { 'class': 'link', href: '#decisions' }, 'Full log')
+    }, h('ul', { 'class': 'list' }, list.map(function (d) {
+      return h('li', null, h('div', { 'class': 'item' },
+        h('span', { 'class': 'item__main' },
+          h('span', { 'class': 'item__title' }, d.title),
+          h('span', { 'class': 'item__meta' }, d.by + ' · ' + dayMonth(parseDate(d.decidedOn))))));
+    })));
   }
 
   function viewOverview() {
@@ -512,14 +516,11 @@
       title: 'Overview',
       sticky: 'new-task',
       nodes: [
-        pageHead({ eyebrow: 'Founder Command Centre', title: greeting() + ', ' + founderById[me].first }),
-        kpis(),
-        h('div', { 'class': 'grid' },
-          pipelineCard('ov-pipeline', false, true),
-          myTasksCard('ov-mytasks'),
-          bothFoundersCard('ov-both'),
-          deadlinesCard('ov-deadlines'),
-          decisionLogCard('ov-decisions'))
+        pageHead({ title: fullDate(TODAY), sub: overviewLead(), lead: true }),
+        stats(),
+        h('div', { 'class': 'columns' },
+          h('div', { 'class': 'columns__main' }, bothFounders(), myTasks(), flow()),
+          h('div', { 'class': 'columns__side' }, comingUp(), recentDecisions()))
       ]
     };
   }
@@ -528,6 +529,36 @@
      B · Project pipeline and workspaces
      ------------------------------------------------------------------------ */
 
+  function projectCard(p) {
+    var progress = checklistProgress(p);
+    var next = upcoming(p.milestones || [])[0];
+    var openCount = tasks.filter(function (t) { return t.project === p.id && t.status !== 'done'; }).length;
+    return h('a', { 'class': 'pcard', href: '#project-' + p.id, 'data-find': 'project-' + p.id },
+      h('span', { 'class': 'pcard__name' }, p.name),
+      h('span', { 'class': 'pcard__meta' }, clientById[p.client].name + ' · ' + p.status),
+      h('span', { 'class': 'meter' },
+        h('span', { 'class': 'meter__bar', 'aria-hidden': 'true' }, h('span', { style: { width: Math.round(progress.done / progress.total * 100) + '%' } })),
+        h('span', null, progress.done + ' of ' + progress.total + ' checks')),
+      next ? h('span', { 'class': 'pcard__next' }, 'Next: ' + next.title + ', ' + dueInline(next.date)) : null,
+      h('span', { 'class': 'pcard__meta' }, first(p.lead) + ' leads · ' + plural(openCount, 'open task', 'open tasks')),
+      p.illustrative ? h('span', { 'class': 'pcard__flag' }, 'Illustrative example') : null);
+  }
+
+  function board() {
+    return h('div', { 'class': 'board-wrap' }, h('div', { 'class': 'board' }, STAGE_ORDER.map(function (key) {
+      var stage = S.stages[key];
+      var list = projects.filter(function (p) { return p.stage === key; });
+      return h('section', { 'class': 'lane', 'aria-labelledby': 'lane-' + key },
+        h('div', { 'class': 'lane__head' },
+          h('h2', { 'class': 'lane__name', id: 'lane-' + key }, h('span', { 'class': 'mark mark--' + key, 'aria-hidden': 'true' }), stage.name),
+          h('span', { 'class': 'count' }, String(list.length), h('span', { 'class': 'visually-hidden' }, list.length === 1 ? ' project' : ' projects'))),
+        h('p', { 'class': 'lane__covers' }, stage.covers),
+        list.length
+          ? h('ul', { 'class': 'lane__list' }, list.map(function (p) { return h('li', null, projectCard(p)); }))
+          : h('p', { 'class': 'lane__empty' }, 'Nothing in ' + stage.name + ' right now.'));
+    })));
+  }
+
   function viewProjects() {
     var discover = projects.filter(function (p) { return p.stage === 'discover'; }).length;
     return {
@@ -535,11 +566,10 @@
       sticky: 'new-task',
       nodes: [
         pageHead({
-          eyebrow: 'Founder Command Centre',
           title: 'Projects',
-          sub: plural(activeProjects().length, 'active project', 'active projects') + ' and ' + discover + ' in Discover. No building without agreement.'
+          sub: plural(activeProjects().length, 'active project', 'active projects') + ' and ' + discover + ' in Discover. Each stage ends at a gate both founders approve.'
         }),
-        pipelineCard('', true)
+        board()
       ]
     };
   }
@@ -549,33 +579,32 @@
     return i >= 0 && i < STAGE_ORDER.length - 1 ? STAGE_ORDER[i + 1] : null;
   }
 
-  function stageCard(p) {
+  function stageSection(p) {
     var stage = S.stages[p.stage];
     var checks = p.checks[p.stage] || (p.checks[p.stage] = new Set());
     var progress = checklistProgress(p);
     var d = p.decision ? decisionById[p.decision] : null;
-    var decisionLink = d && d.status === 'open' && S.stages[p.stage].gate.indexOf(stage.name) === 0;
 
-    return card('', 'stage-title', 'Stage and checklist', h('p', { 'class': 'card__meta' }, progress.done + ' of ' + progress.total + ' checks'),
-      h('div', { 'class': 'stack' },
-        h('div', { 'class': 'gate' },
-          h('p', { 'class': 'eyebrow' }, 'Approval gate'),
-          h('p', null, h('strong', null, gateText(stage.gate))),
-          h('p', { 'class': 'gate__question' }, stage.question),
-          h('p', { 'class': 'caption' }, 'Deliverable: ' + stage.deliverable + '. Both founders agree before the stage changes.'),
-          decisionLink ? h('p', null, h('a', { 'class': 'link', href: '#decisions' }, d.title + ' · ', d.approvals.length + ' of 2 approved')) : null),
-        h('div', { 'class': 'checklist' }, stage.groups.map(function (g, gi) {
-          return h('div', { 'class': 'checklist__group' },
-            h('h3', null, g.name),
-            h('ul', null, g.items.map(function (item, ii) {
-              var key = gi + ':' + ii;
-              var done = checks.has(key);
-              var id = 'chk-' + p.id + '-' + p.stage + '-' + gi + '-' + ii;
-              return h('li', null, h('label', { 'class': 'check' + (done ? ' check--done' : ''), 'for': id },
-                h('input', { type: 'checkbox', id: id, 'data-check': p.id + '|' + key, 'data-key': id, checked: done }),
-                h('span', null, item)));
-            })));
-        }))));
+    return section({ id: 'stage-title', title: stage.name + ' checklist', count: progress.done + ' of ' + progress.total },
+      h('div', { 'class': 'gate' },
+        h('p', { 'class': 'gate__label' }, 'Approval gate: ', gateText(stage.gate)),
+        h('p', { 'class': 'gate__question' }, stage.question),
+        h('p', { 'class': 'gate__note' }, 'Deliverable: ' + stage.deliverable + '. Both founders agree before the stage changes.'),
+        d && d.status === 'open'
+          ? h('p', { 'class': 'gate__note' }, h('a', { 'class': 'link', href: '#decisions' }, d.title), ' · ' + d.approvals.length + ' of 2 approved')
+          : null),
+      h('div', { 'class': 'checklist' }, stage.groups.map(function (g, gi) {
+        return h('div', { 'class': 'checklist__group' },
+          h('h3', null, g.name),
+          h('ul', null, g.items.map(function (item, ii) {
+            var key = gi + ':' + ii;
+            var done = checks.has(key);
+            var id = 'chk-' + p.id + '-' + p.stage + '-' + gi + '-' + ii;
+            return h('li', null, h('label', { 'class': 'check' + (done ? ' check--done' : ''), 'for': id },
+              h('input', { type: 'checkbox', id: id, 'data-check': p.id + '|' + key, 'data-key': id, checked: done }),
+              h('span', null, item)));
+          })));
+      })));
   }
 
   function viewProject(id) {
@@ -583,67 +612,59 @@
     var stage = S.stages[p.stage];
     var client = clientById[p.client];
     var projectTasks = tasks.filter(function (t) { return t.project === id; }).sort(byStatusThenDue);
-    var owners = founders.map(function (f) {
-      return { founder: f, open: projectTasks.filter(function (t) { return t.owner === f.id && t.status !== 'done'; }).length };
-    });
+    var openCount = projectTasks.filter(function (t) { return t.status !== 'done'; }).length;
     var docs = (p.docs || []).map(function (docId) { return docById[docId]; }).filter(Boolean);
 
-    var about = card('', 'about-title', 'Client and project', p.illustrative ? badge('attention', 'Illustrative', true) : null,
-      h('dl', { 'class': 'facts' },
-        h('div', null, h('dt', null, 'Client'), h('dd', null, client.name)),
-        h('div', null, h('dt', null, 'Solution line'), h('dd', null, p.line)),
+    var about = section({ id: 'about-title', title: 'About' },
+      h('dl', { 'class': 'about' },
         h('div', null, h('dt', null, 'What it is'), h('dd', null, p.summary)),
         h('div', null, h('dt', null, 'The problem'), h('dd', null, p.problem))));
 
-    var taskCard = card('', 'ptasks-title', 'Tasks', h('button', { 'class': 'bf-btn bf-btn--secondary bf-btn--compact', type: 'button', 'data-new-task': p.id, 'data-key': 'new-task-' + p.id }, icon('plus'), 'Add task'),
-      projectTasks.length
-        ? h('ul', { 'class': 'rows' }, projectTasks.map(function (t) {
-          return h('li', null, h('a', { 'class': 'row', href: '#task-' + t.id },
-            avatar(founderById[t.owner], true),
-            h('span', { 'class': 'row__main' },
-              h('span', { 'class': 'row__title' }, t.title),
-              h('span', { 'class': 'row__meta' }, founderById[t.owner].first + ' · ' + t.outcome)),
-            h('span', { 'class': 'row__side' }, dueLabel(t), statusBadge(t.status, true))));
-        }))
-        : emptyState('No tasks yet', 'Add the first task, with one owner, a deadline and an outcome.'));
+    var taskSection = section({
+      id: 'ptasks-title',
+      title: 'Tasks',
+      count: openCount + ' open',
+      aside: h('button', { 'class': 'bf-btn bf-btn--secondary bf-btn--compact', type: 'button', 'data-new-task': p.id, 'data-key': 'new-task-' + p.id }, icon('plus'), 'Add task')
+    }, projectTasks.length
+      ? taskTable(projectTasks, { hideProject: true, caption: 'Tasks for ' + p.name })
+      : emptyState('No tasks yet', 'Add the first one, with an owner, a deadline and an outcome.'));
 
-    var people = card('', 'people-title', 'Founder and owners', null,
+    var details = section({ id: 'facts-title', title: 'Details' },
       h('dl', { 'class': 'facts' },
-        h('div', null, h('dt', null, 'Lead'), h('dd', null, person(founderById[p.lead]))),
-        owners.map(function (o) {
-          return h('div', null, h('dt', null, o.founder.first), h('dd', null, plural(o.open, 'open task', 'open tasks')));
-        })));
+        fact('Client', client.name),
+        fact('Lead', founderById[p.lead].name),
+        fact('Solution line', p.line),
+        fact('Budget', p.budget),
+        fact('Open tasks', founders.map(function (f) {
+          return f.first + ' ' + projectTasks.filter(function (t) { return t.owner === f.id && t.status !== 'done'; }).length;
+        }).join(', '))));
 
-    var dates = card('', 'dates-title', 'Deadlines and milestones', null,
+    var dates = section({ id: 'dates-title', title: 'Milestones' },
       (p.milestones || []).length
-        ? h('ul', { 'class': 'rows' }, p.milestones.map(function (m) {
-          var past = dayDiff(TODAY, parseDate(m.date)) < 0;
-          return h('li', null, h('div', { 'class': 'row' },
-            icon('calendar', 'row__icon'),
-            h('span', { 'class': 'row__main' }, h('span', { 'class': 'row__title' }, m.title)),
-            h('span', { 'class': 'row__date' + (past ? ' muted' : '') }, dueText(m.date))));
-        }))
+        ? h('ul', { 'class': 'agenda' }, p.milestones.map(function (m) { return agendaItem(m.date, m.title); }))
         : emptyState('No milestones yet', 'Add the dates this project has agreed.'));
 
-    var budget = card('', 'budget-title', 'Budget and deliverables', null,
-      h('dl', { 'class': 'facts' },
-        h('div', null, h('dt', null, 'Budget'), h('dd', null, p.budget)),
-        h('div', null, h('dt', null, 'Deliverables'), h('dd', null,
-          h('ul', { 'class': 'bullets' }, p.deliverables.map(function (x) { return h('li', null, x); }))))));
+    var deliverables = section({ id: 'deliv-title', title: 'Deliverables' },
+      h('ul', { 'class': 'bullets' }, p.deliverables.map(function (x) { return h('li', null, x); })));
 
-    var files = card('', 'files-title', 'Files and documentation', h('a', { 'class': 'link', href: '#knowledge' }, 'Knowledge'),
+    var files = section({ id: 'files-title', title: 'Files', aside: h('a', { 'class': 'link', href: '#knowledge' }, 'Knowledge') },
       docs.length
-        ? h('ul', { 'class': 'rows' }, docs.map(docRow))
-        : emptyState('No files linked', 'Briefs, designs and technical documents for this project will appear here.'));
+        ? h('ul', { 'class': 'list' }, docs.map(docRow))
+        : emptyState('No files linked', 'Briefs, designs and technical documents for this project will show here.'));
 
     return {
       title: p.name,
       sticky: 'new-task',
       nodes: [
-        pageHead({ back: { href: '#projects', label: 'Projects' }, eyebrow: p.line + ' · ' + stage.name, title: p.name, sub: client.name + ' · ' + p.status }),
-        h('div', { 'class': 'grid' },
-          h('div', { 'class': 'stack ws-main' }, about, stageCard(p), taskCard),
-          h('div', { 'class': 'stack ws-side' }, people, dates, budget, files))
+        pageHead({
+          back: { href: '#projects', label: 'Projects' },
+          kicker: client.name + ' · ' + p.line,
+          title: p.name,
+          sub: stage.name + ' stage · ' + p.status + (p.illustrative ? ' · Illustrative example' : '')
+        }),
+        h('div', { 'class': 'columns' },
+          h('div', { 'class': 'columns__main' }, about, stageSection(p), taskSection),
+          h('div', { 'class': 'columns__side' }, details, dates, deliverables, files))
       ]
     };
   }
@@ -652,8 +673,13 @@
      C · Tasks and founder responsibilities
      ------------------------------------------------------------------------ */
 
-  var filter = { owner: 'any', project: 'any', priority: 'any', due: 'any' };
+  var NO_FILTER = { owner: 'any', project: 'any', priority: 'any', due: 'any' };
+  var filter = Object.assign({}, NO_FILTER);
   var updateDraftOpen = false;
+
+  function filtering() {
+    return Object.keys(NO_FILTER).some(function (k) { return filter[k] !== 'any'; });
+  }
 
   function filteredTasks() {
     return tasks.filter(function (t) {
@@ -676,49 +702,80 @@
         icon('chevron-down')));
   }
 
-  function filtersRow() {
-    var allPressed = filter.owner === 'any' && filter.project === 'any' && filter.priority === 'any' && filter.due === 'any';
-    return h('div', { 'class': 'filters', role: 'group', 'aria-label': 'Filter tasks' },
-      h('div', { 'class': 'field field--chips' },
-        h('span', { 'class': 'field__label', id: 'quick-label' }, 'Show'),
-        h('div', { 'class': 'chips', role: 'group', 'aria-labelledby': 'quick-label' },
-          h('button', { 'class': 'chip', type: 'button', 'data-quick': 'all', 'data-key': 'quick-all', 'aria-pressed': String(allPressed) }, 'All'),
-          h('button', { 'class': 'chip', type: 'button', 'data-quick': 'mine', 'data-key': 'quick-mine', 'aria-pressed': String(filter.owner === me) }, 'Mine'),
-          h('button', { 'class': 'chip', type: 'button', 'data-quick': 'week', 'data-key': 'quick-week', 'aria-pressed': String(filter.due === 'week') }, 'This week'))),
-      selectField('flt-owner', 'Founder', filter.owner, [['any', 'Both founders']].concat(founders.map(function (f) { return [f.id, f.first]; }))),
+  function toolbar(shown) {
+    return h('div', { 'class': 'toolbar', role: 'group', 'aria-label': 'Filter tasks' },
+      selectField('flt-owner', 'Founder', filter.owner, [['any', 'Both founders']].concat(founders.map(function (f) {
+        return [f.id, f.first + (f.id === me ? ' (you)' : '')];
+      }))),
       selectField('flt-project', 'Project', filter.project, [['any', 'All projects']].concat(projects.map(function (p) { return [p.id, p.name]; }))),
       selectField('flt-priority', 'Priority', filter.priority, [['any', 'Any priority'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']]),
-      selectField('flt-due', 'Due', filter.due, [['any', 'Any time'], ['overdue', 'Overdue'], ['week', 'This week'], ['later', 'Later']]));
+      selectField('flt-due', 'Due', filter.due, [['any', 'Any time'], ['overdue', 'Overdue'], ['week', 'This week'], ['later', 'Later']]),
+      h('div', { 'class': 'toolbar__end' },
+        filtering() ? h('button', { 'class': 'bf-btn bf-btn--quiet bf-btn--compact', type: 'button', 'data-clear': '', 'data-key': 'clear-filters' }, 'Clear filters') : null,
+        h('p', { 'class': 'toolbar__count' }, plural(shown, 'task', 'tasks'))));
+  }
+
+  function noMatches() {
+    return emptyState('No tasks match these filters', 'Try another founder or project, or clear the filters.',
+      h('button', { 'class': 'bf-btn bf-btn--secondary bf-btn--compact', type: 'button', 'data-clear': '', 'data-key': 'clear-filters-empty' }, 'Clear filters'));
   }
 
   function prioritiesSection() {
     var list = S.priorities.map(function (id) { return taskById[id]; }).filter(Boolean);
-    var week = weekOf(TODAY);
-    return h('section', { 'class': 'priorities-section stack', 'aria-labelledby': 'prio-title' },
-      h('div', { 'class': 'card__head' },
-        h('h2', { 'class': 'card__title', id: 'prio-title' }, 'This week’s priorities'),
-        h('p', { 'class': 'card__meta' }, 'Set on Monday ' + dayMonth(week[0]) + ' · one owner each')),
-      h('ol', { 'class': 'priorities' }, list.map(function (t, i) {
-        return h('li', null, h('a', { 'class': 'priority', href: '#task-' + t.id },
-          h('span', { 'class': 'priority__rank' }, 'Priority ' + (i + 1)),
+    return section({
+      id: 'prio-title',
+      title: 'This week’s priorities',
+      cls: 'priorities-section',
+      aside: h('p', { 'class': 'section__aside' }, 'Set on Monday ' + dayMonth(weekOf(TODAY)[0]))
+    }, h('ol', { 'class': 'priorities' }, list.map(function (t, i) {
+      return h('li', null, h('a', { 'class': 'priority', href: '#task-' + t.id },
+        h('span', { 'class': 'priority__num', 'aria-hidden': 'true' }, String(i + 1)),
+        h('span', { 'class': 'priority__body' },
           h('span', { 'class': 'priority__title' }, t.title),
-          h('span', { 'class': 'project-card__foot' }, person(founderById[t.owner]), statusBadge(t.status, true)),
-          h('span', { 'class': 'project-card__meta' }, 'Due ' + dueInline(t.due))));
-      })));
+          h('span', { 'class': 'item__meta' }, first(t.owner) + ' · due ' + dueInline(t.due)),
+          taskState(t.status))));
+    })));
   }
 
-  function taskListItem(t, selectedId) {
-    return h('li', null, h('a', {
-      'class': 'task-item',
-      href: '#task-' + t.id,
-      'aria-current': t.id === selectedId ? 'true' : null,
-      'data-find': 'task-' + t.id
-    },
-      h('span', { 'class': 'task-item__title' }, t.title),
-      avatar(founderById[t.owner], true),
-      h('span', { 'class': 'task-item__project' }, projectById[t.project].name),
-      statusBadge(t.status, true),
-      dueLabel(t)));
+  // The shared task list as a table. Below 600px each row stacks: title, one
+  // line of detail, and the status on the right.
+  function taskTable(list, opts) {
+    opts = opts || {};
+    return h('div', { 'class': 'table-wrap' },
+      h('table', { 'class': 'table table--stack' },
+        h('caption', { 'class': 'visually-hidden' }, opts.caption || 'Tasks'),
+        h('thead', null, h('tr', null,
+          h('th', { scope: 'col' }, 'Task'),
+          h('th', { scope: 'col', 'class': 'col-owner' }, 'Owner'),
+          h('th', { scope: 'col', 'class': 'col-priority' }, 'Priority'),
+          h('th', { scope: 'col', 'class': 'col-due' }, 'Due'),
+          h('th', { scope: 'col', 'class': 'col-status' }, 'Status'))),
+        h('tbody', null, list.map(function (t) {
+          return h('tr', { 'data-href': 'task-' + t.id, 'data-find': 'task-' + t.id, 'class': t.status === 'done' ? 'is-done' : null },
+            h('td', { 'data-cell': 'title' },
+              h('a', { 'class': 'cell-link', href: '#task-' + t.id }, t.title),
+              opts.hideProject ? null : h('span', { 'class': 'item__meta' }, projectById[t.project].name)),
+            h('td', { 'data-cell': 'meta' }, first(t.owner)),
+            h('td', { 'data-cell': 'meta' }, PRIORITY[t.priority]),
+            h('td', { 'data-cell': 'meta' }, dueEl(t)),
+            h('td', { 'data-cell': 'status' }, taskState(t.status)),
+            h('td', { 'data-cell': 'mobile' }, first(t.owner) + ' · ' + PRIORITY[t.priority] + ' priority · ', dueEl(t)));
+        }))));
+  }
+
+  function compactList(list, selectedId) {
+    return h('ul', { 'class': 'list list--compact', 'aria-label': 'Tasks' }, list.map(function (t) {
+      return h('li', null, h('a', {
+        'class': 'citem' + (t.status === 'done' ? ' is-done' : ''),
+        href: '#task-' + t.id,
+        'aria-current': t.id === selectedId ? 'true' : null,
+        'data-find': 'task-' + t.id
+      },
+        h('span', { 'class': 'citem__title' }, t.title),
+        dueEl(t),
+        h('span', { 'class': 'citem__meta' }, projectById[t.project].name + ' · ' + first(t.owner)),
+        taskState(t.status)));
+    }));
   }
 
   function taskDetail(t) {
@@ -726,42 +783,49 @@
     var stage = S.stages[p.stage];
     var due = parseDate(t.due);
     var diff = dayDiff(TODAY, due);
-    var dueBadge = t.status === 'done'
-      ? badge('neutral', 'Due ' + shortDate(due))
-      : diff < 0 ? badge('critical', 'Overdue') : badge('neutral', diff === 0 ? 'Due today' : 'Due ' + shortDate(due));
+    var dueWords = shortDate(due);
+    if (t.status !== 'done') {
+      if (diff < 0) dueWords = 'Overdue, was due ' + shortDate(due);
+      else if (diff === 0) dueWords = 'Today, ' + shortDate(due);
+      else if (diff === 1) dueWords = 'Tomorrow, ' + shortDate(due);
+    }
+    var checklist = t.checklist || [];
+    var ticked = checklist.filter(function (c) { return c.done; }).length;
 
-    return h('div', { 'class': 'detail' },
+    return h('article', { 'class': 'detail', 'aria-labelledby': 'detail-title' },
       h('a', { 'class': 'link detail-back', href: '#tasks' }, icon('chevron-left', 'arrow'), 'All tasks'),
-      h('div', { 'class': 'pagehead__text' },
-        h('p', { 'class': 'eyebrow' }, p.name + ' · ' + stage.name),
-        h('h2', { 'class': 'detail__title', id: 'detail-title' }, t.title)),
-      h('div', { 'class': 'detail__badges' }, statusBadge(t.status), dueBadge, badge('neutral', PRIORITY[t.priority] + ' priority')),
+      h('header', { 'class': 'detail__head' },
+        h('a', { 'class': 'detail__project', href: '#project-' + p.id }, p.name + ' · ' + stage.name),
+        h('h2', { 'class': 'detail__title', id: 'detail-title' }, t.title),
+        statusBadge(t.status)),
       t.status === 'blocked' && t.blockedBy
         ? h('p', { 'class': 'blocked-note' }, icon('triangle-alert'), h('span', null, h('strong', null, 'Blocked. '), t.blockedBy))
         : null,
-      h('dl', { 'class': 'facts detail__text' },
-        h('div', null, h('dt', null, 'Owner'), h('dd', null, person(founderById[t.owner]))),
-        h('div', null, h('dt', null, 'Outcome'), h('dd', null, t.outcome)),
-        h('div', null, h('dt', null, 'Stage gate'), h('dd', null, gateText(stage.gate), ': ', stage.question.charAt(0).toLowerCase() + stage.question.slice(1)))),
-      t.checklist && t.checklist.length ? h('div', { 'class': 'detail__section' },
-        h('h3', { 'class': 'eyebrow' }, 'Checklist'),
-        h('ul', null, t.checklist.map(function (item, i) {
+      h('dl', { 'class': 'facts' },
+        fact('Owner', founderById[t.owner].name),
+        fact('Due', dueWords),
+        fact('Priority', PRIORITY[t.priority]),
+        fact('Outcome', t.outcome),
+        fact('Stage gate', [gateText(stage.gate), h('span', { 'class': 'facts__sub' }, stage.question)])),
+      checklist.length ? h('section', { 'class': 'detail__section', 'aria-labelledby': 'tchk-title' },
+        h('h3', { id: 'tchk-title' }, 'Checklist', h('span', { 'class': 'count' }, ticked + ' of ' + checklist.length)),
+        h('ul', null, checklist.map(function (item, i) {
           var id = 'tchk-' + t.id + '-' + i;
           return h('li', null, h('label', { 'class': 'check' + (item.done ? ' check--done' : ''), 'for': id },
             h('input', { type: 'checkbox', id: id, 'data-task-check': t.id + '|' + i, 'data-key': id, checked: item.done }),
             h('span', null, item.text)));
         }))) : null,
-      h('div', { 'class': 'field', style: { maxWidth: '20rem' } },
-        h('label', { 'class': 'field__label', 'for': 'task-status' }, 'Status'),
-        h('div', { 'class': 'select' },
-          h('select', { 'class': 'input', id: 'task-status', 'data-status-for': t.id, 'data-key': 'task-status' },
-            Object.keys(STATUS).map(function (k) { return h('option', { value: k, selected: k === t.status }, STATUS[k][1]); })),
-          icon('chevron-down'))),
-      h('div', { 'class': 'detail__actions' },
+      h('div', { 'class': 'detail__controls' },
+        h('div', { 'class': 'field' },
+          h('label', { 'class': 'field__label', 'for': 'task-status' }, 'Status'),
+          h('div', { 'class': 'select' },
+            h('select', { 'class': 'input', id: 'task-status', 'data-status-for': t.id, 'data-key': 'task-status' },
+              Object.keys(STATUS).map(function (k) { return h('option', { value: k, selected: k === t.status }, STATUS[k][1]); })),
+            icon('chevron-down'))),
         t.status !== 'done'
-          ? h('button', { 'class': 'bf-btn bf-btn--secondary js-mark-done', type: 'button', 'data-done': t.id, 'data-key': 'done-' + t.id }, icon('check'), 'Mark as done')
+          ? h('button', { 'class': 'bf-btn bf-btn--secondary js-mark-done', type: 'button', 'data-done': t.id, 'data-key': 'done-' + t.id }, 'Mark as done')
           : null,
-        h('button', { 'class': 'bf-btn bf-btn--quiet', type: 'button', 'data-toggle-update': t.id, 'data-key': 'toggle-update', 'aria-expanded': String(updateDraftOpen) }, icon('message-square'), 'Add update')),
+        h('button', { 'class': 'bf-btn bf-btn--quiet', type: 'button', 'data-toggle-update': t.id, 'data-key': 'toggle-update', 'aria-expanded': String(updateDraftOpen) }, 'Add update')),
       updateDraftOpen ? h('form', { 'class': 'update-form', 'data-update-for': t.id, novalidate: true },
         h('div', { 'class': 'field' },
           h('label', { 'class': 'field__label', 'for': 'update-text' }, 'Progress update'),
@@ -769,44 +833,42 @@
           h('p', { 'class': 'field__hint', id: 'update-hint' }, 'Done, next, blocked. Short and specific.'),
           h('p', { 'class': 'field__error', id: 'update-error', hidden: true })),
         h('div', null, h('button', { 'class': 'bf-btn bf-btn--secondary', type: 'submit', 'data-key': 'post-update' }, 'Post update'))) : null,
-      h('section', { 'aria-labelledby': 'updates-title' },
-        h('h3', { 'class': 'eyebrow', id: 'updates-title' }, 'Updates'),
+      h('section', { 'class': 'detail__section', 'aria-labelledby': 'updates-title' },
+        h('h3', { id: 'updates-title' }, 'Updates'),
         t.updates.length
           ? h('ol', { 'class': 'updates' }, t.updates.map(function (u) {
-            return h('li', null, h('span', { 'class': 'caption' }, founderById[u.by].first + ' · ' + u.when), h('span', null, u.text));
+            return h('li', null, h('span', { 'class': 'item__meta' }, first(u.by) + ' · ' + u.when), h('span', null, u.text));
           }))
-          : h('p', { 'class': 'caption' }, 'No updates yet. Wednesday’s written update goes here: done, next, blocked.')));
+          : h('p', { 'class': 'muted' }, 'No updates yet. Wednesday’s written update goes here: done, next, blocked.')));
   }
 
   function viewTasks(selectedId) {
-    var list = filteredTasks();
+    var shown = filteredTasks();
     var selected = selectedId ? taskById[selectedId] : null;
-    var open = list.filter(function (t) { return t.status !== 'done'; }).length;
+    var open = openTasks();
+    var week = open.filter(function (t) { return inThisWeek(t.due); }).length;
 
-    var listCard = h('section', { 'class': 'card workmode__list', 'aria-labelledby': 'tasklist-title' },
-      h('div', { 'class': 'card__head' },
-        h('h2', { 'class': 'card__title', id: 'tasklist-title' }, 'Shared task list'),
-        h('p', { 'class': 'card__meta' }, plural(open, 'open', 'open') + ' · ' + list.length + ' shown')),
-      list.length
-        ? h('ul', { 'class': 'task-list' }, list.map(function (t) { return taskListItem(t, selectedId); }))
-        : emptyState('No tasks match these filters', 'Try another founder or project, or show everything.',
-          h('button', { 'class': 'bf-btn bf-btn--secondary bf-btn--compact', type: 'button', 'data-quick': 'all', 'data-key': 'clear-filters' }, 'Clear filters')));
-
-    var detailCard = h('section', { 'class': 'card workmode__detail', 'aria-labelledby': selected ? 'detail-title' : 'detail-empty-title' },
-      selected ? taskDetail(selected) : h('div', { 'class': 'detail' },
-        h('h2', { 'class': 'card__title', id: 'detail-empty-title' }, 'Pick a task'),
-        h('p', { 'class': 'muted' }, 'Its owner, outcome, checklist and updates show here.')));
+    var body;
+    if (selected) {
+      body = h('div', { 'class': 'split' },
+        h('div', { 'class': 'split__list' }, shown.length ? compactList(shown, selectedId) : noMatches()),
+        h('div', { 'class': 'split__detail' }, taskDetail(selected)));
+    } else {
+      body = shown.length ? taskTable(shown, { caption: 'Shared task list' }) : noMatches();
+    }
 
     return {
       title: selected ? selected.title : 'Tasks',
       sticky: selected && selected.status !== 'done' ? 'mark-done' : (selected ? null : 'new-task'),
       stickyTask: selected ? selected.id : null,
       nodes: [
-        pageHead({ eyebrow: 'Founder Command Centre', title: 'Tasks', sub: 'Every task has one owner, a deadline and a clear outcome.' }),
+        pageHead({ title: 'Tasks', sub: plural(open.length, 'open task', 'open tasks') + ', ' + week + ' due this week' }),
         h('div', { 'class': 'tasks-view', 'data-has-detail': selected ? 'true' : 'false' },
           prioritiesSection(),
-          filtersRow(),
-          h('div', { 'class': 'workmode' }, listCard, detailCard))
+          h('section', { 'class': 'section tasklist', 'aria-labelledby': 'tasklist-title' },
+            h('div', { 'class': 'section__head' }, h('h2', { 'class': 'section__title', id: 'tasklist-title' }, 'Shared task list')),
+            toolbar(shown.length),
+            body))
       ]
     };
   }
@@ -815,24 +877,60 @@
      D · Clients and opportunities
      ------------------------------------------------------------------------ */
 
-  function clientCard(c) {
-    var dealBadge = c.deal === 'Won' ? badge('ok', 'Won', true) : c.deal === 'Lost' ? badge('neutral', 'Lost', true) : badge('progress', 'Open', true);
-    return h('article', { 'class': 'card client', 'aria-labelledby': 'client-' + c.id, 'data-find': 'client-' + c.id },
-      h('div', { 'class': 'client__head' },
-        h('h2', { 'class': 'client__name', id: 'client-' + c.id }, c.name),
-        h('span', { 'class': 'detail__badges' }, c.illustrative ? badge('attention', 'Illustrative', true) : null, dealBadge)),
-      h('dl', { 'class': 'facts' },
-        h('div', null, h('dt', null, 'Lead source'), h('dd', null, c.source)),
-        h('div', null, h('dt', null, 'Discovery'), h('dd', null, statusBadge(c.discovery, true))),
-        h('div', null, h('dt', null, 'Proposal'), h('dd', null, c.proposal)),
-        h('div', null, h('dt', null, 'Potential revenue'), h('dd', { 'class': 'muted' }, 'Not recorded yet')),
-        h('div', null, h('dt', null, 'Next follow-up'), h('dd', null, c.followUp ? h('strong', null, dueText(c.followUp)) : 'None')),
-        h('div', null, h('dt', null, 'Owner'), h('dd', null, person(founderById[c.owner])))),
-      h('details', { 'class': 'history' },
-        h('summary', null, 'Notes and history (' + c.history.length + ')'),
-        h('ol', null, c.history.map(function (e) {
-          return h('li', null, h('span', { 'class': 'caption num' }, dayMonth(parseDate(e.date))), h('span', null, e.text));
-        }))));
+  var openHistory = new Set();
+
+  function clientRows(c, closed) {
+    var isOpen = openHistory.has(c.id);
+    var soon = c.followUp && dayDiff(TODAY, parseDate(c.followUp)) <= 1;
+    var outcome = c.deal === 'Won' ? state('ok', 'Won') : state('neutral', c.deal);
+    var mobile = [c.source, 'Proposal: ' + c.proposal];
+    if (closed) mobile.push('Discovery ' + STATUS[c.discovery][1].toLowerCase());
+    else if (c.followUp) mobile.push('Follow up ' + dueInline(c.followUp));
+    mobile.push(first(c.owner));
+
+    return [
+      h('tr', { 'data-find': 'client-' + c.id, 'class': isOpen ? 'is-open' : null },
+        h('td', { 'data-cell': 'title' },
+          h('span', { 'class': 'cell-title' }, c.name),
+          c.illustrative ? h('span', { 'class': 'item__meta' }, 'Illustrative example') : null),
+        h('td', { 'data-cell': 'meta', 'class': 'col-source' }, c.source),
+        h('td', { 'data-cell': closed ? 'meta' : 'status' }, taskState(c.discovery)),
+        h('td', { 'data-cell': 'meta' }, c.proposal),
+        closed
+          ? h('td', { 'data-cell': 'status' }, outcome)
+          : h('td', { 'data-cell': 'meta' }, h('span', { 'class': 'due' + (soon ? ' due--soon' : '') }, c.followUp ? dueText(c.followUp) : 'None')),
+        h('td', { 'data-cell': 'meta' }, first(c.owner)),
+        h('td', { 'data-cell': 'mobile' }, mobile.join(' · ')),
+        h('td', { 'data-cell': 'action' },
+          h('button', {
+            'class': 'disclosure',
+            type: 'button',
+            'aria-expanded': String(isOpen),
+            'aria-controls': 'hist-' + c.id,
+            'data-history': c.id,
+            'data-key': 'hist-' + c.id
+          }, 'Notes', h('span', { 'class': 'count' }, String(c.history.length)), icon('chevron-down')))),
+      h('tr', { 'class': 'history-row', id: 'hist-' + c.id, hidden: !isOpen },
+        h('td', { colspan: '7' },
+          h('ol', { 'class': 'history', 'aria-label': 'Notes and history for ' + c.name }, c.history.map(function (e) {
+            return h('li', null, h('span', { 'class': 'item__meta' }, dayMonth(parseDate(e.date))), h('span', null, e.text));
+          }))))
+    ];
+  }
+
+  function clientTable(list, closed) {
+    return h('div', { 'class': 'table-wrap' },
+      h('table', { 'class': 'table table--stack clients-table' },
+        h('caption', { 'class': 'visually-hidden' }, closed ? 'Closed opportunities' : 'Open opportunities'),
+        h('thead', null, h('tr', null,
+          h('th', { scope: 'col' }, 'Client'),
+          h('th', { scope: 'col', 'class': 'col-source' }, 'Lead source'),
+          h('th', { scope: 'col', 'class': 'col-discovery' }, 'Discovery'),
+          h('th', { scope: 'col', 'class': 'col-proposal' }, 'Proposal'),
+          h('th', { scope: 'col', 'class': 'col-next' }, closed ? 'Outcome' : 'Next follow-up'),
+          h('th', { scope: 'col', 'class': 'col-owner' }, 'Owner'),
+          h('th', { scope: 'col', 'class': 'col-notes' }, h('span', { 'class': 'visually-hidden' }, 'Notes')))),
+        h('tbody', null, list.map(function (c) { return clientRows(c, closed); }))));
   }
 
   function viewClients() {
@@ -840,15 +938,16 @@
     var open = list.filter(function (c) { return c.deal === 'Open'; })
       .sort(function (a, b) { return (a.followUp || '9999').localeCompare(b.followUp || '9999'); });
     var closed = list.filter(function (c) { return c.deal !== 'Open'; });
+    var won = closed.filter(function (c) { return c.deal === 'Won'; }).length;
     return {
       title: 'Clients and opportunities',
       nodes: [
         pageHead({
-          eyebrow: 'Founder Command Centre',
           title: 'Clients and opportunities',
-          sub: plural(open.length, 'open opportunity', 'open opportunities') + ' · ' + closed.filter(function (c) { return c.deal === 'Won'; }).length + ' won · ' + closed.filter(function (c) { return c.deal === 'Lost'; }).length + ' lost'
+          sub: open.length + ' open, ' + won + ' won and ' + (closed.length - won) + ' lost. Potential revenue isn’t recorded for any of them yet.'
         }),
-        h('div', { 'class': 'cards-2' }, open.concat(closed).map(clientCard))
+        section({ id: 'open-title', title: 'Open', count: open.length }, clientTable(open, false)),
+        closed.length ? section({ id: 'closed-title', title: 'Closed', count: closed.length }, clientTable(closed, true)) : null
       ]
     };
   }
@@ -862,15 +961,17 @@
     return {
       title: 'Finance and business health',
       nodes: [
-        pageHead({ eyebrow: 'Founder Command Centre', title: 'Finance and business health', sub: 'Real records only. Nothing here is estimated or invented.' }),
-        emptyState('No figures yet',
-          'Link the finance sheet in Google Sheets and these six figures will come from it. Until then they stay empty.',
-          task ? h('a', { 'class': 'link', href: '#task-' + task.id }, icon('link', 'arrow'), task.title + ' · ' + founderById[task.owner].first + ' · due ' + dueInline(task.due)) : null),
-        h('div', { 'class': 'cards-3' }, S.finance.map(function (f) {
-          return h('div', { 'class': 'bf-tile finance-tile' },
-            h('p', { 'class': 'bf-tile__label' }, f.name),
-            h('p', { 'class': 'bf-tile__value', 'aria-label': 'No figure yet' }, '—'),
-            h('p', { 'class': 'bf-tile__caption' }, f.purpose));
+        pageHead({ title: 'Finance and business health', sub: 'Real records only. Nothing here is estimated.' }),
+        h('div', { 'class': 'notice' },
+          h('h2', { 'class': 'notice__title' }, 'No figures yet'),
+          h('p', null, 'These six figures will come from the finance sheet in Google Sheets once it’s linked. Until then they stay empty.'),
+          task ? h('p', { 'class': 'notice__task' },
+            h('a', { 'class': 'link', href: '#task-' + task.id }, task.title),
+            h('span', { 'class': 'muted' }, ' · ' + first(task.owner) + ', due ' + dueInline(task.due))) : null),
+        h('dl', { 'class': 'ledger', 'aria-label': 'Finance indicators' }, S.finance.map(function (f) {
+          return h('div', { 'class': 'ledger__row' },
+            h('dt', null, h('span', { 'class': 'ledger__name' }, f.name), h('span', { 'class': 'item__meta' }, f.purpose)),
+            h('dd', { 'class': 'ledger__value' }, h('span', { 'aria-hidden': 'true' }, '—'), h('span', { 'class': 'visually-hidden' }, 'No figure yet')));
         }))
       ]
     };
@@ -880,57 +981,49 @@
      F · Decisions and shared knowledge
      ------------------------------------------------------------------------ */
 
+  function decisionTable() {
+    return h('div', { 'class': 'table-wrap' },
+      h('table', { 'class': 'table table--stack' },
+        h('caption', { 'class': 'visually-hidden' }, 'Decision log: what was decided, by whom and when'),
+        h('thead', null, h('tr', null,
+          h('th', { scope: 'col' }, 'Decision'),
+          h('th', { scope: 'col', 'class': 'col-by' }, 'Who and when'),
+          h('th', { scope: 'col', 'class': 'col-state' }, 'Status'))),
+        h('tbody', null, sortedDecisions().map(function (d) {
+          var who = d.status === 'decided' ? d.by : 'Both founders';
+          var when = d.status === 'decided' ? dayMonth(parseDate(d.decidedOn)) : 'Due ' + dueInline(d.due);
+          return h('tr', { 'data-find': 'decision-' + d.id },
+            h('td', { 'data-cell': 'title' }, h('span', { 'class': 'cell-title' }, d.title), h('span', { 'class': 'item__meta' }, d.context)),
+            h('td', { 'data-cell': 'meta' }, who, h('span', { 'class': 'item__meta cell-sub' }, when)),
+            h('td', { 'data-cell': 'status' }, decisionState(d)),
+            h('td', { 'data-cell': 'mobile' }, who + ' · ' + when));
+        }))));
+  }
+
   function viewDecisions() {
-    var pending = pendingDecisions();
-    var log = sortedDecisions();
+    var pending = pendingDecisions().length;
     return {
       title: 'Decisions',
       nodes: [
-        pageHead({ eyebrow: 'Founder Command Centre', title: 'Decisions', sub: 'What was decided, by whom and when. Both founders agree on scope, major costs and stage changes.' }),
-        h('div', { 'class': 'grid' },
-          h('section', { 'class': 'stack dec-open', 'aria-labelledby': 'open-title' },
-            h('h2', { 'class': 'card__title', id: 'open-title' }, 'Needs both founders'),
-            pending.length
-              ? h('div', { 'class': 'cards-2' }, pending.map(function (d) {
-                return h('article', { 'class': 'card card--soft decision-card' }, decisionBlock(d));
-              }))
-              : emptyState('Nothing waiting', 'Decisions that need both founders will appear here.')),
-          card('dec-log', 'declog-title', 'Decision log', null,
-            h('div', { 'class': 'table-wrap' },
-              h('table', { 'class': 'data-table data-table--cards' },
-                h('caption', { 'class': 'visually-hidden' }, 'Decision log: what was decided, by whom and when'),
-                h('thead', null, h('tr', null,
-                  h('th', { scope: 'col' }, 'Decision'),
-                  h('th', { scope: 'col' }, 'Who'),
-                  h('th', { scope: 'col' }, 'When'),
-                  h('th', { scope: 'col' }, 'Status'))),
-                h('tbody', null, log.map(function (d) {
-                  return h('tr', { 'data-find': 'decision-' + d.id },
-                    h('td', null, d.title),
-                    h('td', null, d.status === 'decided' ? d.by : 'Both founders'),
-                    h('td', { 'class': 'num' }, d.status === 'decided' ? dayMonth(parseDate(d.decidedOn)) : 'Due ' + dueInline(d.due)),
-                    h('td', { 'data-cell': 'status' }, decisionStatus(d)));
-                }))))),
-          card('dec-meet', 'meet-title', 'Meeting notes and action items', null,
-            h('ul', { 'class': 'rows' }, S.meetings.map(function (m) {
-              return h('li', null, h('div', { 'class': 'row' },
-                icon('message-square', 'row__icon'),
-                h('span', { 'class': 'row__main' },
-                  h('span', { 'class': 'row__title' }, m.title),
-                  h('span', { 'class': 'row__meta' }, m.note + ' ' + plural(m.actions, 'action item', 'action items') + '.')),
-                h('span', { 'class': 'row__date' }, dayMonth(parseDate(m.date)))));
-            }))))
+        pageHead({ title: 'Decisions', sub: pending + ' open and ' + (decisions.length - pending) + ' decided. What was decided, by whom and when.' }),
+        h('div', { 'class': 'columns' },
+          h('div', { 'class': 'columns__main' },
+            bothFounders(),
+            section({ id: 'declog-title', title: 'Decision log' }, decisionTable())),
+          h('div', { 'class': 'columns__side' },
+            section({ id: 'meet-title', title: 'Meeting notes' },
+              h('ul', { 'class': 'agenda' }, S.meetings.map(function (m) {
+                return agendaItem(m.date, m.title, m.note + ' ' + plural(m.actions, 'action item', 'action items') + '.');
+              })))))
       ]
     };
   }
 
   function docRow(doc) {
-    return h('li', { 'data-find': 'doc-' + doc.id }, h('div', { 'class': 'row' },
-      h('span', { 'class': 'doc-icon' }, icon(doc.secure ? 'lock' : 'file-text')),
-      h('span', { 'class': 'row__main' },
-        h('span', { 'class': 'row__title' }, doc.title),
-        h('span', { 'class': 'row__meta' }, doc.where + ' · updated ' + dayMonth(parseDate(doc.updated)))),
-      doc.secure ? badge('neutral', 'Reference only', true) : null));
+    return h('li', { 'data-find': 'doc-' + doc.id }, h('div', { 'class': 'item' },
+      h('span', { 'class': 'item__main' },
+        h('span', { 'class': 'item__title' }, doc.secure ? icon('lock', 'inline-icon') : null, doc.title),
+        h('span', { 'class': 'item__meta' }, doc.where + (doc.secure ? ' · reference only' : '') + ' · updated ' + dayMonth(parseDate(doc.updated))))));
   }
 
   function viewKnowledge() {
@@ -943,9 +1036,9 @@
     return {
       title: 'Knowledge',
       nodes: [
-        pageHead({ eyebrow: 'Founder Command Centre', title: 'Knowledge', sub: 'Where things live, so work continues when one founder is away. Titles and places only: passwords never go here.' }),
-        h('div', { 'class': 'cards-2' }, groups.map(function (g, i) {
-          return card('', 'kg-' + i, g.name, null, h('ul', { 'class': 'rows' }, g.docs.map(docRow)));
+        pageHead({ title: 'Knowledge', sub: 'Where things live, so work carries on when one of you is away. Titles and places only: passwords never go here.' }),
+        h('div', { 'class': 'kgrid' }, groups.map(function (g, i) {
+          return section({ id: 'kg-' + i, title: g.name, count: g.docs.length }, h('ul', { 'class': 'list' }, g.docs.map(docRow)));
         }))
       ]
     };
@@ -964,16 +1057,14 @@
     return {
       title: 'More',
       nodes: [
-        pageHead({ eyebrow: 'Founder Command Centre', title: 'More' }),
-        h('section', { 'class': 'card more-list', 'aria-label': 'More sections' },
-          h('ul', { 'class': 'rows' }, items.map(function (it) {
-            return h('li', null, h('a', { 'class': 'row', href: '#' + it[0] },
-              h('span', { 'class': 'doc-icon' }, icon(it[1])),
-              h('span', { 'class': 'row__main' }, h('span', { 'class': 'row__title' }, it[2]), h('span', { 'class': 'row__meta' }, it[3])),
-              icon('chevron-right', 'row__icon')));
-          }))),
-        card('', 'more-viewer-title', 'Viewing as', null, viewerButtons('more')),
-        h('p', { 'class': 'sidenav__note' }, badge('neutral', 'Concept', true), h('span', null, 'Sample data'))
+        pageHead({ title: 'More' }),
+        h('ul', { 'class': 'list more-list', 'aria-label': 'More sections' }, items.map(function (it) {
+          return h('li', null, h('a', { 'class': 'item item--nav', href: '#' + it[0] },
+            icon(it[1], 'item__icon'),
+            h('span', { 'class': 'item__main' }, h('span', { 'class': 'item__title' }, it[2]), h('span', { 'class': 'item__meta' }, it[3])),
+            icon('chevron-right', 'item__icon')));
+        })),
+        section({ id: 'more-viewer-title', title: 'Viewing as' }, viewerButtons('more'))
       ]
     };
   }
@@ -1026,7 +1117,7 @@
         'aria-pressed': String(f.id === me),
         'aria-label': 'View as ' + f.first,
         title: 'View as ' + f.first
-      }, avatar(f, true), h('span', { 'class': 'viewer__name' }, f.first));
+      }, avatar(f), h('span', { 'class': 'viewer__name' }, f.first));
     }));
   }
 
@@ -1046,7 +1137,7 @@
     if (view.sticky === 'new-task') {
       sticky.append(h('button', { 'class': 'bf-btn bf-btn--primary', type: 'button', 'data-new-task': route.view === 'project' ? route.id : '', 'data-key': 'sticky-new' }, icon('plus'), 'New task'));
     } else if (view.sticky === 'mark-done') {
-      sticky.append(h('button', { 'class': 'bf-btn bf-btn--primary', type: 'button', 'data-done': view.stickyTask, 'data-key': 'sticky-done' }, icon('check'), 'Mark as done'));
+      sticky.append(h('button', { 'class': 'bf-btn bf-btn--primary', type: 'button', 'data-done': view.stickyTask, 'data-key': 'sticky-done' }, 'Mark as done'));
     }
     sticky.hidden = !view.sticky;
     $('app').setAttribute('data-sticky', String(!!view.sticky));
@@ -1060,7 +1151,7 @@
     var key = active && active.getAttribute ? active.getAttribute('data-key') : null;
     var view = buildView(route);
     var main = $('main');
-    main.replaceChildren.apply(main, view.nodes);
+    main.replaceChildren.apply(main, view.nodes.filter(Boolean).concat(pageFoot()));
     syncShell(view);
     if (opts.top) window.scrollTo(0, 0);
     if (opts.focusMain) {
@@ -1072,13 +1163,15 @@
     if (opts.find) highlight(opts.find);
   }
 
+  // A found item is marked for a moment: rows get a tint, everything else a ring.
   function highlight(findKey) {
     var target = document.querySelector('[data-find="' + findKey + '"]');
     if (!target) return;
+    var cls = target.tagName === 'TR' ? 'is-found-row' : 'is-found';
     target.scrollIntoView({ block: 'center', behavior: 'auto' });
-    target.classList.remove('is-found');
+    target.classList.remove(cls);
     void target.offsetWidth;
-    target.classList.add('is-found');
+    target.classList.add(cls);
   }
 
   var pendingFind = null;
@@ -1090,8 +1183,9 @@
     route = next;
     updateDraftOpen = false;
     var wide = window.matchMedia('(min-width: 1100px)').matches;
-    render({ top: !(sameTasks && wide), focusMain: !(sameTasks && wide), find: pendingFind });
-    if (sameTasks && wide && next.task) {
+    var keepPlace = sameTasks && wide && !!next.task;
+    render({ top: !keepPlace, focusMain: !keepPlace, find: pendingFind });
+    if (keepPlace) {
       var title = $('detail-title');
       if (title) { title.setAttribute('tabindex', '-1'); title.focus({ preventScroll: true }); }
     }
@@ -1125,7 +1219,6 @@
     var d = decisionById[id];
     if (!d || d.status !== 'open') return;
     if (d.approvals.indexOf(me) === -1) d.approvals.push(me);
-    stamp();
     var bothIn = founders.every(function (f) { return d.approvals.indexOf(f.id) !== -1; });
     if (!bothIn) {
       toast('Approved. Waiting on ' + other(me).first + '.');
@@ -1155,7 +1248,6 @@
     var t = taskById[id];
     if (!t || t.status === 'done') return;
     t.status = 'done';
-    stamp();
     toast('Done: ' + t.title + '.');
     render();
   }
@@ -1169,8 +1261,14 @@
   }
 
   document.addEventListener('click', function (ev) {
-    var el = ev.target.closest('[data-approve], [data-done], [data-viewer], [data-quick], [data-new-task], [data-toggle-update], [data-scope]');
-    if (!el) return;
+    var el = ev.target.closest('[data-approve], [data-done], [data-viewer], [data-clear], [data-new-task], [data-toggle-update], [data-scope], [data-history]');
+    if (!el) {
+      // A whole table row opens its task; the title link is the keyboard route.
+      var row = ev.target.closest('tr[data-href]');
+      var selecting = window.getSelection && String(window.getSelection()).length > 0;
+      if (row && !selecting && !ev.target.closest('a, button, input, select, textarea, label')) go(row.getAttribute('data-href'));
+      return;
+    }
     if (el.hasAttribute('data-approve')) approve(el.getAttribute('data-approve'));
     else if (el.hasAttribute('data-done')) markDone(el.getAttribute('data-done'));
     else if (el.hasAttribute('data-viewer')) setViewer(el.getAttribute('data-viewer'));
@@ -1180,12 +1278,16 @@
       render();
       if (updateDraftOpen) { var box = $('update-text'); if (box) box.focus(); }
     } else if (el.hasAttribute('data-scope')) {
-      filter = { owner: me, project: 'any', priority: 'any', due: 'any' };
-    } else if (el.hasAttribute('data-quick')) {
-      var quick = el.getAttribute('data-quick');
-      if (quick === 'all') filter = { owner: 'any', project: 'any', priority: 'any', due: 'any' };
-      if (quick === 'mine') filter.owner = filter.owner === me ? 'any' : me;
-      if (quick === 'week') filter.due = filter.due === 'week' ? 'any' : 'week';
+      filter = Object.assign({}, NO_FILTER, { owner: me });
+    } else if (el.hasAttribute('data-clear')) {
+      filter = Object.assign({}, NO_FILTER);
+      render();
+      // The button that was pressed is gone now, so focus moves to the first filter.
+      var ownerSelect = document.querySelector('[data-key="flt-owner"]');
+      if (ownerSelect && !document.activeElement.closest('.toolbar')) ownerSelect.focus({ preventScroll: true });
+    } else if (el.hasAttribute('data-history')) {
+      var cid = el.getAttribute('data-history');
+      if (openHistory.has(cid)) openHistory.delete(cid); else openHistory.add(cid);
       render();
     }
   });
@@ -1200,17 +1302,14 @@
       var p = projectById[parts[0]];
       var set = p.checks[p.stage];
       if (el.checked) set.add(parts[1]); else set.delete(parts[1]);
-      stamp();
       render();
     } else if (el.hasAttribute('data-task-check')) {
       var tp = el.getAttribute('data-task-check').split('|');
       taskById[tp[0]].checklist[Number(tp[1])].done = el.checked;
-      stamp();
       render();
     } else if (el.hasAttribute('data-status-for')) {
       var t = taskById[el.getAttribute('data-status-for')];
       t.status = el.value;
-      stamp();
       toast('Status changed to ' + STATUS[t.status][1].toLowerCase() + '.');
       render();
     }
@@ -1233,7 +1332,6 @@
     }
     t.updates.unshift({ by: me, when: 'Today ' + clockText(nowSec()), text: text });
     updateDraftOpen = false;
-    stamp();
     toast('Update posted.');
     render();
   });
@@ -1255,7 +1353,7 @@
   $('f-owner').replaceChildren.apply($('f-owner'), founders.map(function (f) {
     return [
       h('input', { type: 'radio', name: 'owner', id: 'f-owner-' + f.id, value: f.id }),
-      h('label', { 'for': 'f-owner-' + f.id }, avatar(f, true), f.first)
+      h('label', { 'for': 'f-owner-' + f.id }, f.first)
     ];
   }).reduce(function (a, b) { return a.concat(b); }, []));
 
@@ -1270,27 +1368,27 @@
     var title = $('f-title');
     var outcome = $('f-outcome');
     var due = $('f-due');
-    var first = null;
+    var firstBad = null;
 
     var titleText = title.value.trim();
     var titleMsg = '';
     if (!titleText) titleMsg = 'Write what will be done.';
     else if (VAGUE.test(titleText) || titleText.split(/\s+/).length < 3) titleMsg = 'Make it specific. Say what will be done, like “Draft pilot scope for coordinators”, not “work on app”.';
     fieldError(title, $('f-title-error'), showAll || touched.title ? titleMsg : '');
-    if (titleMsg && !first) first = title;
+    if (titleMsg && !firstBad) firstBad = title;
 
     var outcomeMsg = outcome.value.trim() ? '' : 'Say what done looks like, so the owner knows when to stop.';
     fieldError(outcome, $('f-outcome-error'), showAll || touched.outcome ? outcomeMsg : '');
-    if (outcomeMsg && !first) first = outcome;
+    if (outcomeMsg && !firstBad) firstBad = outcome;
 
     var dueMsg = '';
     if (!due.value) dueMsg = 'Pick a due date.';
     else if (dayDiff(TODAY, parseDate(due.value)) < 0) dueMsg = 'Pick today or a later date.';
     fieldError(due, $('f-due-error'), showAll || touched.due ? dueMsg : '');
-    if (dueMsg && !first) first = due;
+    if (dueMsg && !firstBad) firstBad = due;
 
-    if (focusFirst && first) first.focus();
-    return !first;
+    if (focusFirst && firstBad) firstBad.focus();
+    return !firstBad;
   }
 
   function openTaskDialog(projectId, from) {
@@ -1335,9 +1433,8 @@
     };
     tasks.push(t);
     taskById[t.id] = t;
-    stamp();
     dialog.close();
-    toast('Task added for ' + founderById[t.owner].first + ', due ' + dueInline(t.due) + '.');
+    toast('Task added for ' + first(t.owner) + ', due ' + dueInline(t.due) + '.');
     if (route.view === 'tasks') go('task-' + t.id, 'task-' + t.id);
     else render({ find: 'task-' + t.id });
   });
@@ -1375,7 +1472,7 @@
       items.push({ icon: 'folder', title: p.name, meta: 'Project · ' + S.stages[p.stage].name, text: p.name + ' ' + clientById[p.client].name, hash: 'project-' + p.id });
     });
     tasks.forEach(function (t) {
-      items.push({ icon: 'list-todo', title: t.title, meta: 'Task · ' + founderById[t.owner].first + ' · ' + STATUS[t.status][1], text: t.title + ' ' + t.outcome, hash: 'task-' + t.id, find: 'task-' + t.id });
+      items.push({ icon: 'list-todo', title: t.title, meta: 'Task · ' + first(t.owner) + ' · ' + STATUS[t.status][1], text: t.title + ' ' + t.outcome, hash: 'task-' + t.id, find: 'task-' + t.id });
     });
     clients.filter(function (c) { return !c.internal; }).forEach(function (c) {
       items.push({ icon: 'users', title: c.name, meta: 'Client · ' + c.deal, text: c.name + ' ' + c.source, hash: 'clients', find: 'client-' + c.id });
@@ -1407,7 +1504,7 @@
           icon(item.icon),
           h('span', { 'class': 'search__text' }, h('span', { 'class': 'search__title' }, item.title), h('span', { 'class': 'search__meta' }, item.meta)));
       })
-      : [h('p', { 'class': 'search__empty', role: 'status' }, icon('info'), 'Nothing matches “' + searchInput.value.trim() + '”. Try a project, client or task.')]);
+      : [h('p', { 'class': 'search__empty', role: 'status' }, 'Nothing matches “' + searchInput.value.trim() + '”. Try a project, client or task.')]);
     resultsBox.hidden = false;
     searchInput.setAttribute('aria-expanded', 'true');
     if (activeResult >= 0) searchInput.setAttribute('aria-activedescendant', 'search-opt-0');
@@ -1494,14 +1591,4 @@
   syncModeButton();
   syncOnline();
   render();
-
-  // The greeting follows the sample clock.
-  var lastHour = Math.floor(nowSec() / 3600);
-  window.setInterval(function () {
-    var hour = Math.floor(nowSec() / 3600);
-    if (hour !== lastHour && route.view === 'overview' && !dialog.open) {
-      lastHour = hour;
-      render();
-    }
-  }, 60000);
 })();

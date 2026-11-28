@@ -26,10 +26,10 @@ then visit `http://localhost:8000`.
 
 | Section | What it shows | Playbook |
 | --- | --- | --- |
-| **Overview** | A greeting, then the business health snapshot: active projects, open opportunities, outstanding tasks, pending decisions and the financial snapshot. Below: the project pipeline, my tasks, what needs both founders, upcoming deadlines and the decision log. | A |
-| **Projects** | The pipeline by stage, Discover, Design and Develop. Each project opens a workspace: client and project, the current stage's checklist and approval gate, tasks with their owners, deadlines and milestones, budget and deliverables, and files. | B |
-| **Tasks** | This week's three priorities, then the shared task list, filterable by founder, project, priority and due date. A task shows its owner, outcome, stage gate, checklist, status and written updates. | C |
-| **Clients** | Each opportunity's lead source, discovery status, proposal, potential revenue, next follow-up, owner and history. | D |
+| **Overview** | Today's date and one sentence on what is waiting on you, then the business health line: active projects, open opportunities, outstanding tasks, pending decisions and the financial snapshot. Below: what needs both founders, my tasks and the pipeline, with what's coming up and the decision log beside them. | A |
+| **Projects** | A board by stage, Discover, Design and Develop. Each project opens a workspace: what it is and the problem, the current stage's checklist and approval gate, its tasks, then details, milestones, deliverables and files. | B |
+| **Tasks** | This week's three priorities, then the shared task list as a table, filterable by founder, project, priority and due date. Opening a task shows its owner, due date, outcome, stage gate, checklist, status and written updates. | C |
+| **Clients** | Open and closed opportunities in two tables: lead source, discovery, proposal, next follow-up or outcome, owner, and notes that open under each row. Potential revenue isn't recorded yet, and the page says so. | D |
 | **Finance** | Revenue, expenses, outstanding invoices, project costs, cash position and recurring revenue. They stay empty until the finance sheet is linked: real records only, nothing estimated. | E |
 | **Decisions** | Decisions that need both founders, the decision log, and meeting notes with action items. | F |
 | **Knowledge** | Procedures, client briefs and proposals, technical documents and brand files, with where each one lives. Credentials are references only. | F |
@@ -56,18 +56,33 @@ Things you can do:
 - **Device sizes:** page titles, card titles, metrics, margins, card padding, gaps, button
   and input heights and icon sizes follow "Type, spacing and touch by device" for phone,
   tablet and laptop.
-- **Responsive behaviour:** side panels move under the main content, the pipeline becomes a
-  list, tables become cards below 600px, the task detail opens over the list below 1100px,
-  and the dialog becomes a bottom sheet on phones.
-- **Components:** buttons, inputs (label above, 2px focus and error borders), status badges
-  (28px, a dot in the text's colour, one or two words), metric tiles, navigation items and
-  cards follow "Core component specs".
+- **Responsive behaviour:** side panels move under the main content, the board and
+  pipeline become lists, tables stack into rows below 768px, the task detail opens over the
+  list below 1100px, and the dialog becomes a bottom sheet on phones.
+- **Components:** buttons, inputs (label above, 2px focus and error borders), the status
+  badge (28px, a dot in the text's colour, one or two words), navigation items and the
+  bottom sheet follow "Core component specs".
 - **Status words:** Not started, In progress, Blocked and Done for tasks; Open and Decided
   for decisions; Concept and Illustrative to label what's shown.
 - **Tokens only:** colour, type, space, radius and shadow come from the brand tokens.
   Lexend for headings, Atkinson Hyperlegible for everything read or counted, Lucide icons.
-- **Honesty:** every screen says "Sample data" and when it was updated. There are no
-  invented money figures.
+- **Honesty:** every page ends with a note that it's a concept with sample data. There are
+  no invented money figures.
+
+## How the pages are laid out
+
+The pages are written rather than boxed:
+
+- Sections are set apart by a heading, space and hairline rules, not by a card around each
+  one. The navigation sits on the canvas tint and the work sits on a plain surface.
+- One tinted block per screen marks what can't move without both founders: the decisions
+  waiting on approval, or a stage's approval gate.
+- Lists and tables keep their frame: a rule above, a rule under every row, aligned columns.
+- In lists and tables a status is a dot and a word. Blocked stands out, Done steps back,
+  and the full badge is kept for the task you have open.
+- People are named, not shown as initials, except in the viewer switch.
+- Icons appear where they do a job: navigation, opening and closing, errors, and the lock on
+  the credentials note.
 - **States:** empty states say what will appear and offer a next step; errors say what went
   wrong and how to fix it; an offline banner appears if the connection drops.
 
